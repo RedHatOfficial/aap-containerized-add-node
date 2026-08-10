@@ -118,5 +118,5 @@ See [COLLECTION_MAP.md](COLLECTION_MAP.md) for mermaid diagrams of the playbook 
 
 ## Known gaps
 
-- Cluster (multi-controller) topologies not yet lab-validated (AIO validated on containerized AAP 2.6).
+- Cluster (multi-controller) topologies not yet lab-validated (AIO validated on containerized AAP 2.6 and 2.7).
 - No automated integration tests against a live AAP cluster (CI covers lint/build/changelog).

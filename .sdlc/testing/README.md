@@ -1,50 +1,77 @@
 # Testing Framework
 
-Structured testing approach for validating the collection.
+Structured testing for this collection. **Shared testers:** start here, then use [TEST.md](../../TEST.md) for the living matrix and results log.
 
-## Test Types
+## Source of truth (read this first)
 
-| Type | Location | Purpose | When to Run |
-|------|----------|---------|-------------|
-| Static Analysis | CI | Lint, syntax, YAML validation | Every commit |
-| Unit Tests | `tests/unit/` | Role logic validation | Every commit |
-| Integration Tests | `tests/integration/` | Role interaction | Pre-release |
-| Scenario Tests | `scenarios/` | End-to-end lab validation | Pre-release |
+| Artifact | Shared in git? | Role |
+|----------|----------------|------|
+| **[TEST.md](../../TEST.md)** | Yes | **Authoritative** lab matrix (`T-*` IDs), pass criteria, results log |
+| **[test-plan.md](test-plan.md)** | Yes | Strategy, platform matrix, priorities |
+| **[scenarios/](scenarios/)** | Yes | Detailed procedures (`S-*`); keep in sync with `T-*` via the [mapping](scenarios/README.md#mapping-to-testmd) |
+| **[checklists/](checklists/)** | Yes | Reusable preflight / post-join checks |
+| **[examples/](../../examples/)** | Yes | Secrets *shape* (`add_node.secrets.yml`) — no real credentials |
+| **`.ignore/lab/`** | **No** (gitignored) | Per-tester secrets + optional raw playbook logs |
 
-## Directory Structure
+Do **not** commit lab hostnames/IPs/passwords or full ansible stdout dumps. Record shared outcomes in `TEST.md` (and the scenario Results Log). Keep raw logs under `.ignore/lab/runs/` locally if you want them.
+
+## For shared testers — workflow
+
+1. Read [TEST.md](../../TEST.md) Lab prerequisites + pick a `T-*` (or matching `S-*`) that is Untested or needs re-validation.
+2. Copy `examples/add_node.secrets.yml` → local `.ignore/lab/secrets.<lab>.yml` (never commit).
+3. Run from an installer host that can SSH to controller + nodes as the install user; capture stdout locally:
+
+   ```bash
+   # Optional helper (local only; under .ignore if present):
+   # .ignore/lab/runs/capture_add_node.sh aap27 T-27-AIO-EN-VIA-HN
+
+   SETUP=/path/to/containerized-setup
+   export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
+   ansible-playbook playbooks/add_node.yml \
+     -i "${SETUP}/inventory-growth" \
+     -e aap_setup_dir="${SETUP}" \
+     -e @.ignore/lab/secrets.<lab>.yml \
+     -e aap_add_node_skip_image_load_if_present=true \
+     | tee "/tmp/add-node-$(date -u +%Y%m%dT%H%MZ).log"
+   ```
+
+4. Verify with [checklists/verification.md](checklists/verification.md).
+5. **Update shared docs** in the same PR (or a follow-up docs PR):
+   - Append a row to [TEST.md](../../TEST.md) Results log
+   - Flip Status in the TEST.md matrix
+   - Append to the matching scenario Results Log (if the `S-*` file exists)
+   - Note AAP version, controller OS, **node OS**, topology, collection ref/commit
+
+## Test types
+
+| Type | Location | Purpose | When |
+|------|----------|---------|------|
+| Static analysis | CI | Lint, changelog, syntax, build | Every PR |
+| Scenario / lab | `TEST.md` + `scenarios/` | End-to-end on real AAP | Before release / when claiming a matrix cell |
+| Unit / integration | `tests/` (future) | ansible-test | Not required yet |
+
+## Directory structure
 
 ```
 .sdlc/testing/
-├── README.md              ← You are here
-├── test-plan.md           # Overall test strategy
-├── scenarios/             # Lab test scenarios
-│   ├── README.md
-│   ├── S-001-single-en.md
-│   ├── S-002-single-hop.md
-│   ├── S-003-multi-hop.md
-│   └── ...
-├── checklists/            # Pre-flight and verification
-│   ├── preflight.md
-│   └── verification.md
-└── results/               # Test run results (gitignored)
-    └── .gitkeep
+├── README.md                 ← You are here
+├── test-plan.md              # Strategy + platform matrix
+├── scenarios/                # S-* procedures (+ mapping to T-*)
+├── checklists/               # Preflight + verification
+└── results/README.md         # How results are recorded (no secrets)
 
-tests/                     # Ansible test structure
-├── unit/                  # ansible-test unit tests
-└── integration/           # ansible-test integration tests
+TEST.md                       # Authoritative T-* matrix + results log
+examples/add_node.secrets.yml # Secrets template
+.ignore/lab/                  # Local only: secrets + optional run logs
 ```
 
-## Quick Reference
+## Quick reference
 
-| Task | Command |
-|------|---------|
-| Lint | `ansible-lint` |
-| Syntax check | `ansible-playbook --syntax-check playbooks/*.yml` |
-| Run scenario | See scenario file for specific commands |
-| Record result | Update scenario's "Results Log" section |
-
-## Test Artifacts
-
-- **TEST.md** (root): Quick reference and results log
-- **scenarios/**: Detailed test procedures
-- **checklists/**: Reusable verification steps
+| Task | Where |
+|------|-------|
+| What is tested / untested? | [TEST.md](../../TEST.md) |
+| Platform / topology priorities | [test-plan.md](test-plan.md) |
+| How to run a scenario | Matching `scenarios/S-*.md` or TEST.md scenario details |
+| Map `T-*` ↔ `S-*` | [scenarios/README.md](scenarios/README.md#mapping-to-testmd) |
+| Record a shared result | TEST.md Results log (+ scenario Results Log) |
+| Keep raw ansible logs | Local `.ignore/lab/runs/` only |
