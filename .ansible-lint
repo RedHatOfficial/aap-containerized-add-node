@@ -5,9 +5,12 @@ exclude_paths:
   - .git/
   - collections/
   - site/
+  - installer-overlay/
+  - changelogs/
 
 skip_list:
   - name[casing]  # Allow task names with mixed case
+  - var-naming[no-role-prefix]  # Collection uses shared aap_add_node_* prefix across roles
 
 warn_list:
   - experimental
