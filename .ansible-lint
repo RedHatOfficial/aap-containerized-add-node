@@ -1,0 +1,17 @@
+---
+profile: production
+
+exclude_paths:
+  - .git/
+  - collections/
+  - site/
+
+skip_list:
+  - name[casing]  # Allow task names with mixed case
+
+warn_list:
+  - experimental
+
+enable_list:
+  - no-changed-when
+  - no-handler

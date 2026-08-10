@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ansible
+*.retry
+*.log
+
+# Collections build artifacts
+*.tar.gz
+
+# Local development
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets - NEVER commit these
+*.vault
+**/secrets.yml
+**/vault.yml
+credentials.yml
+.env
+.env.*
+
+# Lab/test artifacts
+bundles/
+site/
+*.jsonl
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml

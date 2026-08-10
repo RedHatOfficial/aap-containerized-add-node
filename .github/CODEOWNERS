@@ -1,0 +1,10 @@
+# Default owners for everything
+* @pgriffit
+
+# Documentation
+docs/ @pgriffit
+*.md @pgriffit
+
+# Playbooks and roles
+playbooks/ @pgriffit
+roles/ @pgriffit
