@@ -20,13 +20,13 @@ Generate self-contained "join bundle" for air-gapped execution node provisioning
 
 ## Rationale
 
-Some environments cannot allow SSH from installer host to execution nodes due to:
+Some environments cannot allow SSH from control host to execution nodes due to:
 - Security policy (egress-only networks)
 - Compliance requirements
 - Network segmentation
 
 Bundle enables two-phase join:
-1. Generate bundle on installer host (SSH to controller only)
+1. Generate bundle on control host (SSH to controller only)
 2. Transfer and execute on EN (no inbound SSH required)
 
 ## Acceptance Criteria

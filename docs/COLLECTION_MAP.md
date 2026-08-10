@@ -88,7 +88,7 @@ flowchart LR
 | `fetch_mesh_material` | Fetch mesh CA cert/key + work public key from controller `~/aap/…` |
 | `enable_controller_listener` | Optional AIO: `local-only` → `tcp-listener` |
 | `host_prep` | `ansible.containerized_installer.common` on new nodes |
-| `fetch_or_mint_certs` | Mint node TLS with mesh CA on installer host |
+| `fetch_or_mint_certs` | Mint node TLS with mesh CA on control host |
 | `register_instance` | `provision_instance` → `add_receptor_address` → `register_peers` → `register_queue` |
 | `install_receptor_node` | `ansible.containerized_installer.receptor` + minted certs |
 | `verify_mesh` | Re-check `list_instances` for new hostnames |

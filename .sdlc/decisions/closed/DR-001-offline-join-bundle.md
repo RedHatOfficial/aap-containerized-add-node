@@ -24,14 +24,14 @@ Should this collection support generating self-contained "join bundles" for air-
 
 ## Context
 
-ADR-001 establishes that Ansible automation is the only interface. This DR addresses a specific gap: environments where the installer host cannot SSH to execution nodes.
+ADR-001 establishes that Ansible automation is the only interface. This DR addresses a specific gap: environments where the control host cannot SSH to execution nodes.
 
 AAPRFE-3069 describes customers who cannot allow inbound SSH to execution nodes due to security/compliance policy:
 
 > "Allow the controller to generate a self-contained 'join bundle'... which can be executed directly on the target RHEL host to join the mesh with minimal manual steps — useful for environments where the control plane cannot reach the node directly at all."
 
 Current state:
-- Collection requires SSH from installer host to execution nodes
+- Collection requires SSH from control host to execution nodes
 - Some environments have strict egress-only policies on EN networks
 - No documented workaround for air-gapped scenarios
 
@@ -58,7 +58,7 @@ Bundle contents:
 - Optional: receptor container image
 
 Workflow:
-1. Run `generate_bundle.yml` on installer host (SSH to controller only)
+1. Run `generate_bundle.yml` on control host (SSH to controller only)
 2. Transfer bundle to EN via approved channel (USB, SFTP, etc.)
 3. Run `install.yml` locally on EN
 

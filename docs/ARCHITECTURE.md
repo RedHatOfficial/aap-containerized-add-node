@@ -59,7 +59,7 @@
 
 | Material | Where |
 |----------|--------|
-| Mesh CA private key | Fetched to installer host `bundles/_mesh_material/` or override paths |
+| Mesh CA private key | Fetched to control host `bundles/_mesh_material/` or override paths |
 | `aap_add_node_*` toggles | Extra-vars / vault (`examples/add_node.secrets.yml`) |
 
 ```bash

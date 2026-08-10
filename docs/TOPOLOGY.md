@@ -320,12 +320,12 @@ exec2.example.com receptor_peers='["controller1.example.com", "controller3.examp
 ansible_user=aapuser
 ```
 
-### Example 6: Separate Installer Host
+### Example 6: Separate Control Host
 
 Running from a host that is not the controller.
 
 ```ini
-# inventory.ini - Running from separate installer host
+# inventory.ini - Running from separate control host
 
 [automationcontroller]
 # NOT local - SSH to controller required

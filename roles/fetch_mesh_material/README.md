@@ -2,7 +2,7 @@
 
 Fetch mesh CA cert/key and work signing public key from the first `automationcontroller` host (install-user home), or keep user-supplied override paths when already set.
 
-Publishes paths on `aap_add_node_operator` for later plays (`host_prep`, `fetch_or_mint_certs`).
+Publishes paths on `aap_add_node_control` for later plays (`host_prep`, `fetch_or_mint_certs`).
 
 ## Requirements
 

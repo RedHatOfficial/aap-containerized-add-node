@@ -24,7 +24,7 @@ COL=/path/to/redhat_official.aap_containerized_add_node
 export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
 
 # 1) Edit ${SETUP}/inventory (or inventory-growth): add hosts under [execution_nodes]
-# 2) Run from installer host that can SSH to controller + new nodes as the install user
+# 2) Run from control host that can SSH to controller + new nodes as the install user
 ansible-playbook "${COL}/playbooks/add_node.yml" \
   -i "${SETUP}/inventory-growth" \
   -e aap_setup_dir="${SETUP}" \
@@ -34,7 +34,7 @@ ansible-playbook "${COL}/playbooks/add_node.yml" \
 
 Lab secrets (gitignored under `.ignore/lab/`) are per cluster, e.g.
 `.ignore/lab/secrets.aap26.yml` / `.ignore/lab/secrets.aap27.yml`.
-Copy them to the installer host or pass with `-e @…` as needed.
+Copy them to the control host or pass with `-e @…` as needed.
 
 ### Pass criteria (all join scenarios)
 
@@ -63,11 +63,11 @@ Then remove or update the host line in inventory before abandoning a join; keep 
 | Item | Guidance |
 |------|----------|
 | Controller | Containerized AAP; task container `automation-controller-task` running |
-| SSH | Installer host → controller and new nodes as **non-root install user** (passwordless) |
+| SSH | Control host → controller and new nodes as **non-root install user** (passwordless) |
 | Disk on new EN/HN | Prefer **≥32 GB** usable on `/` (lab: **64 GB** after ENOSPC on ~9 GB roots while loading `ee-supported`) |
 | Images | Bundle install: `bundle/images` present under `aap_setup_dir` |
 | Inventory | Same installer inventory the cluster used; new hosts only in `[execution_nodes]` |
-| Peers | Prefer outbound dial; INI `receptor_peers='["hop.or.controller"]'` (real list); `aap_add_node_peers_from_control_nodes: false` |
+| Peers | Prefer outbound dial; INI `receptor_peers='["hop.or.controller"]'` (real list). Do not set `aap_add_node_enable_controller_peer` unless you need inbound dial. |
 
 ---
 

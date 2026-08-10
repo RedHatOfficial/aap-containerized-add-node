@@ -1,7 +1,7 @@
 ---
 # Collections must specify a minimum required ansible version to upload
 # to galaxy
-# 2.15 is what many AAP controller hosts ship; 2.16+ preferred on the installer host.
+# 2.15 is what many AAP controller hosts ship; 2.16+ preferred on the control host.
 requires_ansible: '>=2.15.0'
 
 # Content that Ansible needs to load from another location or that has

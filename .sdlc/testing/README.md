@@ -19,7 +19,7 @@ Do **not** commit lab hostnames/IPs/passwords or full ansible stdout dumps. Reco
 
 1. Read [TEST.md](../../TEST.md) Lab prerequisites + pick a `T-*` (or matching `S-*`) that is Untested or needs re-validation.
 2. Copy `examples/add_node.secrets.yml` → local `.ignore/lab/secrets.<lab>.yml` (never commit).
-3. Run from an installer host that can SSH to controller + nodes as the install user; capture stdout locally:
+3. Run from an control host that can SSH to controller + nodes as the install user; capture stdout locally:
 
    ```bash
    # Optional helper (local only; under .ignore if present):

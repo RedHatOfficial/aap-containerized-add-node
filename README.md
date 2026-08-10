@@ -36,7 +36,7 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 
 ## Current Limitations
 
-- Requires SSH access from installer host to controller and new nodes
+- Requires SSH access from control host to controller and new nodes
 - Controller task container must be running
 - Air-gapped bundle generation not yet implemented (see [DR-001](.sdlc/decisions/open/DR-001-offline-join-bundle.md))
 - Cluster topologies not yet lab-validated (2.6 / 2.7 AIO tested)
@@ -47,7 +47,7 @@ Architecture decisions, requirements, and development phases: [.sdlc/](.sdlc/REA
 
 ## Prerequisites
 
-- **Installer host** runs `ansible-playbook` with this collection and can reach the cluster over SSH.
+- **Control host** runs `ansible-playbook` with this collection and can reach the cluster over SSH.
 - **SSH user on `automationcontroller`:** the same **non-root install user** used for the containerized install (home has `~/aap/…`). Used for `podman exec … awx-manage` and mesh CA fetch. **No sudo** for those steps (`become: false`).
 - **SSH user on new EN/HN:** same non-root install-user pattern (collection rejects root).
 - **Optional sudo:** controller `firewalld` when enabling a receptor `tcp-listener` (`enable_controller_listener`).
@@ -77,7 +77,7 @@ The maintenance window comes from running the **full** installer against every p
 | Step | Where | What |
 |------|--------|------|
 | 1 | Controller (`awx-manage`) | `list_instances` (discover) → `provision_instance` → `add_receptor_address` → `register_peers` → `register_queue` |
-| 2 | Installer host (mesh CA from controller) | Mint node cert/key; copy mesh CA cert + work public key |
+| 2 | Control host (mesh CA from controller) | Mint node cert/key; copy mesh CA cert + work public key |
 | 3 | New node only | Install receptor via containerized installer role from `aap_setup_dir` |
 | 4 | Controller (single-node) | Enable receptor `tcp-listener` if still `local-only` |
 | 5 | Controller (`awx-manage`) | `list_instances` again to verify the new hostname |

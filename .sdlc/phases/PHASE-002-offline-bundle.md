@@ -13,7 +13,7 @@ Ready
 
 ## Objective
 
-Support air-gapped environments where installer host cannot SSH to execution nodes.
+Support air-gapped environments where control host cannot SSH to execution nodes.
 
 ## Requirements Addressed
 
@@ -42,7 +42,7 @@ Constraints:
 ## Workflow
 
 ```
-Phase 1: Generate (installer host)
+Phase 1: Generate (control host)
 ┌─────────────────────────────────────────────┐
 │ ansible-playbook generate_bundle.yml        │
 │   - SSH to controller (fetch CA, keys)      │
