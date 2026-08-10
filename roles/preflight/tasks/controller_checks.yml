@@ -1,0 +1,39 @@
+---
+# Controller accessibility and state checks
+# Reuses existing assert_controller_container role
+
+- name: Validate controller access and container state
+  ansible.builtin.include_role:
+    name: redhat_official.aap_containerized_add_node.assert_controller_container
+
+# Check AIO local-only status (disruption warning)
+- name: Get controller receptor.conf
+  ansible.builtin.slurp:
+    src: "{{ ansible_user_dir }}/aap/receptor/etc/receptor.conf"
+  delegate_to: "{{ groups['automationcontroller'][0] }}"
+  register: _receptor_conf_raw
+  ignore_errors: true
+
+- name: Parse receptor.conf for local-only
+  ansible.builtin.set_fact:
+    _controller_is_local_only: "{{ 'local-only' in (_receptor_conf_raw.content | b64decode) }}"
+  when: _receptor_conf_raw is succeeded
+
+- name: Warn about AIO disruption if local-only
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+               AIO DISRUPTION WARNING
+      ========================================
+      Controller is configured with 'local-only' receptor.
+
+      Adding execution nodes will:
+      - Enable tcp-listener on controller
+      - Restart controller receptor service
+      - Cause 5-10 SECOND MESH DISRUPTION
+      - Running jobs may fail mid-execution
+
+      Recommendation: Schedule during maintenance window.
+      ========================================
+  when:
+    - _controller_is_local_only | default(false) | bool

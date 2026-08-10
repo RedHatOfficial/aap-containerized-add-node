@@ -1,0 +1,27 @@
+---
+# Example inventory for outbound-peer join (AAP 2.5+).
+# Prefer using your real installer inventory instead of this file.
+# Per-host receptor_peers / aap_add_node_peers belong in that inventory.
+#
+# INI equivalent (must use JSON-in-quotes so Ansible stores a real list):
+#   exec-new.example.org receptor_type=execution receptor_peers='["hop1.example.org"]'
+
+all:
+  children:
+    automationcontroller:
+      hosts:
+        controller1.example.org:
+    execution_nodes:
+      hosts:
+        # Already in cluster — discovery will skip
+        hop1.example.org:
+          receptor_type: hop
+        exec1.example.org:
+          receptor_type: execution
+        # New — discovery will target only this host if missing from API
+        exec-new.example.org:
+          receptor_type: execution
+          receptor_peers:
+            - hop1.example.org
+  vars:
+    aap_setup_dir: /path/to/ansible-automation-platform-setup-2.x

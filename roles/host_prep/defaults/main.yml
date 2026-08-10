@@ -1,0 +1,20 @@
+---
+# aap_setup_dir, aap_add_node_mesh_ca_cert, and aap_add_node_mesh_ca_key
+# are required (see meta/argument_specs.yml); no empty defaults.
+aap_add_node_bundle_install: false
+aap_add_node_teardown_repos: true
+aap_add_node_type: execution
+aap_add_node_listener_port: 27199
+aap_add_node_platform_version: ''
+aap_add_node_default_registry_ns_aap: ''
+aap_add_node_default_receptor_image: receptor-rhel9:latest
+# Skip installer common image copy/uncompress/podman_load (and registry pull).
+# Use for lab re-runs: -e aap_add_node_skip_image_load=true
+aap_add_node_skip_image_load: false
+# When true (default), auto-skip the same path if receptor + EE images already exist.
+aap_add_node_skip_image_load_if_present: true
+aap_add_node_check_version_skew: true
+aap_add_node_fail_on_version_skew: false
+receptor_user: awx
+receptor_group: awx
+receptor_firewall_zone: public

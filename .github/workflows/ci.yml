@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -22,6 +23,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install ansible-core ansible-lint yamllint
 
+      - name: Install collection dependencies
+        run: ansible-galaxy collection install -r requirements.yml
+
       - name: Run yamllint
         run: yamllint .
 
@@ -40,6 +44,12 @@ jobs:
 
       - name: Install Ansible
         run: pip install ansible-core
+
+      - name: Install collection dependencies
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Install collection locally
+        run: ansible-galaxy collection install . --force
 
       - name: Syntax check playbooks
         run: |

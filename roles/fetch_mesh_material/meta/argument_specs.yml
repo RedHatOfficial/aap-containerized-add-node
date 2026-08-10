@@ -1,0 +1,33 @@
+---
+argument_specs:
+  main:
+    short_description: Fetch mesh CA and work public key from the controller (or use overrides).
+    options:
+      aap_add_node_mesh_ca_cert:
+        description: Optional local mesh CA cert path (empty to fetch from controller).
+        type: path
+        default: ''
+      aap_add_node_mesh_ca_key:
+        description: Optional local mesh CA key path (empty to fetch from controller).
+        type: path
+        default: ''
+      aap_add_node_work_public_key:
+        description: Optional local work signing public key path (empty to fetch from controller).
+        type: path
+        default: ''
+      aap_add_node_material_dir:
+        description: Local directory where fetched mesh material is stored.
+        type: path
+        default: '{{ playbook_dir }}/../../bundles/_mesh_material'
+      aap_add_node_remote_mesh_ca_cert:
+        description: Mesh CA cert path relative to the controller install-user home.
+        type: str
+        default: aap/tls/ca.cert
+      aap_add_node_remote_mesh_ca_key:
+        description: Mesh CA key path relative to the controller install-user home.
+        type: str
+        default: aap/tls/ca.key
+      aap_add_node_remote_work_public_key:
+        description: Work public key path relative to the controller install-user home.
+        type: str
+        default: aap/receptor/etc/signing_public.pem

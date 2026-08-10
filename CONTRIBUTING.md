@@ -2,6 +2,25 @@
 
 Thank you for your interest in contributing! This document provides guidelines for contributing to this project.
 
+## IMPORTANT: AI Agent Contributors
+
+**All AI agents working on this repository MUST:**
+
+1. **Read `CLAUDE.md`** — Project constitution and constraints
+2. **Read `AGENTS.md`** — Agent roles and architectural invariants
+3. **Use skills in `.agents/skills/`** — Follow skill procedures for all SDLC tasks
+
+| Task | Skill |
+|------|-------|
+| Check status | `/sdlc-status` |
+| Create requirement | `/req-new` |
+| Capture decision question | `/dr-new` |
+| Resolve decision | `/dr-review` |
+| Document architecture | `/adr-new` |
+| Submit PR | `/pr-new` |
+
+**Do NOT bypass skills** — they contain correct logic and ensure consistency.
+
 ## Code of Conduct
 
 This project follows the [Red Hat Community Code of Conduct](https://www.redhat.com/en/about/digital-accessibility). Please be respectful and inclusive in all interactions.
@@ -68,6 +87,32 @@ yamllint .
 - No trailing whitespace
 - Files end with newline
 - Use `true`/`false` (not `yes`/`no`)
+- **All YAML files must start with `---`** (document start marker)
+- **Line length max 200 chars** — wrap long Jinja expressions with `>-`
+
+### Common Lint Issues
+
+The CI runs `ansible-lint` with production profile. Common issues to avoid:
+
+| Issue | Solution |
+|-------|----------|
+| `yaml[document-start]` | Add `---` as first line of all YAML files |
+| `yaml[line-length]` | Wrap lines >200 chars using YAML folded style (`>-`) |
+| `name[template]` | Allowed — we use Jinja in task names for per-host context |
+| `var-naming[no-role-prefix]` | Allowed — collection uses shared `aap_add_node_*` prefix |
+| `no-handler` | Allowed — some `when: changed` tasks aren't handlers |
+
+**Example wrapping long lines:**
+```yaml
+# Bad - 296 characters
+aap_add_node_receptor_image: "{{ 'registry.redhat.io/' ~ (hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('ansible-automation-platform-26')) ~ '/' ~ (hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest')) }}"
+
+# Good - wrapped with >-
+aap_add_node_receptor_image: >-
+  {{ 'registry.redhat.io/' ~
+     (hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('ansible-automation-platform-26')) ~ '/' ~
+     (hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest')) }}
+```
 
 ### Documentation
 

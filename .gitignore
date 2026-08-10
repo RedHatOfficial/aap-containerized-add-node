@@ -43,3 +43,15 @@ site/
 htmlcov/
 .coverage
 coverage.xml
+
+# Molecule/testing
+molecule/
+
+# Ansible Galaxy
+galaxy.yml.bak
+
+# Claude Code
+.claude/
+
+# Pre-commit
+.pre-commit-config.yaml.bak

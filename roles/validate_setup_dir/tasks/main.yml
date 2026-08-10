@@ -1,0 +1,123 @@
+---
+- name: Require aap_setup_dir is a directory
+  ansible.builtin.assert:
+    that:
+      - aap_setup_dir is directory
+    fail_msg: >
+      Set aap_setup_dir to the extracted containerized AAP setup directory
+      (containerized-setup-* tree with ansible.containerized_installer).
+
+- name: Stat setup markers
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ aap_setup_dir }}/setup.sh"
+    - "{{ aap_setup_dir }}/ansible.cfg"
+    - "{{ aap_setup_dir }}/collections/ansible_collections/ansible/automation_platform_installer"
+    - "{{ aap_setup_dir }}/collections/ansible_collections/ansible/containerized_installer"
+    - "{{ aap_setup_dir }}/bundle"
+    - "{{ aap_setup_dir }}/collections/ansible_collections/ansible/containerized_installer/roles/common/defaults/main.yml"
+  register: _setup_markers
+
+- name: Validate setup tree and publish operator facts
+  vars:
+    _has_rpm_installer: "{{ _setup_markers.results[2].stat.exists }}"
+    _has_containerized_installer: "{{ _setup_markers.results[3].stat.exists }}"
+    _has_bundle: "{{ _setup_markers.results[4].stat.exists }}"
+    _has_containerized_common_defaults: "{{ _setup_markers.results[5].stat.exists }}"
+  block:
+    - name: Reject RPM installer trees
+      ansible.builtin.assert:
+        that:
+          - not (_has_rpm_installer | bool) or (_has_containerized_installer | bool)
+        fail_msg: >
+          aap_setup_dir looks like an RPM automation_platform_installer tree.
+          This collection supports containerized AAP only. Point aap_setup_dir at a
+          containerized-setup-* directory that includes ansible.containerized_installer.
+
+    - name: Require containerized installer collection
+      ansible.builtin.assert:
+        that:
+          - _has_containerized_installer | bool
+        fail_msg: >
+          Could not find ansible.containerized_installer under {{ aap_setup_dir }}.
+          Set aap_setup_dir to an extracted containerized AAP setup tree.
+
+    - name: Slurp containerized common defaults
+      when: _has_containerized_common_defaults | bool
+      ansible.builtin.slurp:
+        src: "{{ aap_setup_dir }}/collections/ansible_collections/ansible/containerized_installer/roles/common/defaults/main.yml"
+      register: _ctr_defaults_slurp
+
+    # One publish set_fact: registry defaults + platform version cascade via vars.
+    - name: Set setup facts on this host
+      ansible.builtin.set_fact:
+        aap_setup_dir: "{{ aap_setup_dir }}"
+        aap_add_node_bundle_install: "{{ _has_bundle | bool }}"
+        aap_setup_collections: "{{ aap_setup_dir }}/collections"
+        aap_add_node_platform_version: "{{ _platform_version }}"
+        aap_add_node_default_registry_ns_aap: "{{ _registry_ns }}"
+        aap_add_node_default_receptor_image: "{{ _receptor_image }}"
+        aap_add_node_has_work: true
+      vars:
+        _text: >-
+          {{
+            (_ctr_defaults_slurp.content | b64decode)
+            if (_has_containerized_common_defaults | bool)
+               and (_ctr_defaults_slurp is defined)
+               and (_ctr_defaults_slurp.content is defined)
+            else ''
+          }}
+        _ns_matches: "{{ _text | regex_findall('registry_ns_aap:\\s*(\\S+)') }}"
+        _img_matches: "{{ _text | regex_findall(\"receptor_image:\\s*'([^']+)'\") }}"
+        _registry_ns: >-
+          {{
+            (_ns_matches | first | default('ansible-automation-platform-26'))
+            if (_has_containerized_common_defaults | bool) and (_text | length > 0)
+            else ''
+          }}
+        _receptor_image: >-
+          {{
+            (_img_matches | first | default('receptor-rhel9:latest'))
+            if (_has_containerized_common_defaults | bool) and (_text | length > 0)
+            else 'receptor-rhel9:latest'
+          }}
+        _name_matches: "{{ aap_setup_dir | basename | regex_findall('([0-9]+\\.[0-9]+)') }}"
+        _platform_from_ns: >-
+          {{
+            (_registry_ns | regex_replace('^.*-([0-9])([0-9]+)$', '\\1.\\2'))
+            if (_registry_ns | length > 0)
+            else ''
+          }}
+        _platform_from_name: "{{ _name_matches | first | default('') }}"
+        _platform_version: >-
+          {{
+            aap_add_node_platform_version
+            if (aap_add_node_platform_version | default('') | length) > 0
+            else (
+              _platform_from_ns
+              if (_platform_from_ns | length > 0)
+              else _platform_from_name
+            )
+          }}
+
+# Stable host name for cross-play hostvars (inventory "localhost" may be a FQDN).
+- name: Publish operator control host for later plays
+  ansible.builtin.add_host:
+    name: aap_add_node_operator
+    groups: aap_add_node_control
+    aap_setup_dir: "{{ aap_setup_dir }}"
+    aap_add_node_bundle_install: "{{ aap_add_node_bundle_install }}"
+    aap_setup_collections: "{{ aap_setup_collections }}"
+    aap_add_node_platform_version: "{{ aap_add_node_platform_version }}"
+    aap_add_node_default_registry_ns_aap: "{{ aap_add_node_default_registry_ns_aap }}"
+    aap_add_node_default_receptor_image: "{{ aap_add_node_default_receptor_image }}"
+    aap_add_node_has_work: true
+
+- name: Show setup alignment summary
+  ansible.builtin.debug:
+    msg:
+      - "aap_setup_dir={{ aap_setup_dir }}"
+      - "bundle_install={{ aap_add_node_bundle_install }}"
+      - "platform_version={{ aap_add_node_platform_version | default('unknown') }}"
+      - "collections={{ aap_setup_collections }}"
