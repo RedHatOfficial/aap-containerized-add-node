@@ -7,11 +7,14 @@ Scope: **containerized AAP 2.6+ only** (RPM / OpenShift out of scope).
 
 ## How to use this file
 
-1. Pick a scenario ID below.
+1. Pick a scenario ID below (or matching `S-*` in [.sdlc/testing/scenarios/](.sdlc/testing/scenarios/)).
 2. Confirm **Lab prerequisites**.
 3. Follow **Pre-flight**, **Run**, and **Pass criteria**.
-4. Record date, cluster FQDN, collection commit/version, and pass/fail in **Last result**.
+4. Record date, cluster FQDN, collection commit/version, node OS, and pass/fail in **Last result** / **Results log**.
 5. On failure, note the failing play/task and whether a re-run or `deprovision_instance` was needed (see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)).
+
+Shared-tester workflow (secrets, what to commit vs keep local): [.sdlc/testing/README.md](.sdlc/testing/README.md).
+`T-*` ↔ `S-*` mapping: [.sdlc/testing/scenarios/README.md](.sdlc/testing/scenarios/README.md#mapping-to-testmd).
 
 ### Installer command pattern
 
@@ -81,14 +84,15 @@ Then remove or update the host line in inventory before abandoning a join; keep 
 | T-26-CLU-EN | Execution on multi-controller cluster | Containerized 2.6 cluster | :white_large_square: Untested |
 | T-26-CLU-HN | Hop on multi-controller cluster | Containerized 2.6 cluster | :white_large_square: Untested |
 | T-26-CLU-EN-VIA-HN | Hop + EN via hop on cluster | Containerized 2.6 cluster | :white_large_square: Untested |
-| T-27-AIO-EN | Execution peers controller | Containerized 2.7 AIO | :white_large_square: Untested |
-| T-27-AIO-HN | Hop peers controller | Containerized 2.7 AIO | :white_large_square: Untested |
-| T-27-AIO-EN-VIA-HN | Hop + EN via hop | Containerized 2.7 AIO | :white_large_square: Untested |
+| T-27-AIO-EN | Execution peers controller | Containerized 2.7 AIO | :white_check_mark: Tested (S-001; RHEL 9 + RHEL 10) |
+| T-27-AIO-HN | Hop peers controller | Containerized 2.7 AIO | :white_check_mark: Tested (covered by EN-VIA-HN; RHEL 9) |
+| T-27-AIO-EN-VIA-HN | Hop + EN via hop | Containerized 2.7 AIO | :white_check_mark: Tested (RHEL 9 EN/HN; controller RHEL 10) |
 | T-27-CLU-* | Cluster variants (EN / HN / via hop) | Containerized 2.7 cluster | :white_large_square: Untested |
 | T-SKIP-IMG | Forced `aap_add_node_skip_image_load=true` with images already present | Any tested target | :white_large_square: Optional / partial (default `*_if_present` used in lab) |
 | T-LISTENER | AIO `local-only` → `tcp-listener` on first mesh join | AIO (any version) | :white_large_square: Untested as isolated case (often already listening after first hop) |
 
 High-level matrix also lives in [README.md](README.md#tested-against).
+Detailed procedures + Results Logs: [.sdlc/testing/scenarios/](.sdlc/testing/scenarios/) (`S-*`; see [mapping](.sdlc/testing/scenarios/README.md#mapping-to-testmd)).
 
 ---
 
@@ -252,11 +256,11 @@ Use the same Pre-flight / Run / Pass criteria as the matching 2.6 AIO scenario; 
 
 | ID | Change from 2.6 AIO analog |
 |----|----------------------------|
-| T-27-AIO-* | 2.7 containerized tree + 2.7 AIO |
+| T-27-AIO-RERUN / DEPROV-REJOIN / FULL-UPGRADE | Same intents as T-26 analogs on 2.7 |
 | T-*-CLU-* | ≥2 controllers in `[automationcontroller]`; confirm `groups['automationcontroller'][0]` is fine for `awx-manage`; peers as designed for HA mesh |
-| T-*-AIO-FULL-UPGRADE | After additive join, run full `ansible.containerized_installer.install` on that version’s setup tree |
+| RHEL 10 hop | Hop node on RHEL 10.x (EN already covered by S-001) |
 
-**Last result:** — (not run)
+**Last result:** T-27-AIO-EN-VIA-HN — 2026-08-10 on `aap27` (see results log).
 
 ---
 
@@ -283,3 +287,6 @@ Use the same Pre-flight / Run / Pass criteria as the matching 2.6 AIO scenario; 
 | 2026-08-07 | T-26-AIO-RERUN | aap26 AIO | lab branch | Pass | After 64G resize |
 | 2026-08-07 | T-26-AIO-DEPROV-REJOIN | aap26 AIO | lab branch | Pass | New VMs, same names, new IPs |
 | 2026-08-07 | T-26-AIO-FULL-UPGRADE | aap26 AIO | lab (post-join mesh) | Pass | Full install via aap26-11.1_bundle; list-form receptor_peers; HN+EN healthy after |
+| 2026-08 | T-27-AIO-EN | 2.7.1 AIO | S-001 results log | Pass | RHEL 9 and RHEL 10 EN (see [.sdlc/testing/scenarios/S-001-single-en.md](.sdlc/testing/scenarios/S-001-single-en.md)) |
+| 2026-08-10 | T-27-AIO-EN-VIA-HN | aap27 AIO | small-fixes-and-initial-alignment | Pass | Controller RHEL 10.2; HN+EN RHEL 9.8; both green after settle; log `.ignore/lab/runs/aap27-add-node-2026-08-10.log` |
+| 2026-08-10 | T-27-AIO-HN | aap27 AIO | (same run as EN-VIA-HN) | Pass | Hop→`aap27.lennysh.net` in combined join |

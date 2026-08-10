@@ -45,6 +45,6 @@ Collection: `ansible.containerized_installer`.
 | Area | Note |
 |------|------|
 | Target (current) | Containerized 2.6+ |
-| Lab-validated | Containerized 2.6 AIO (execution + hop; EN via hop) |
+| Lab-validated | Containerized 2.6 + 2.7 AIO (EN + hop; EN via hop; RHEL 10 EN per S-001) |
 | Cluster topologies | Not yet lab-validated |
 | RPM | Research only — rejected by `validate_setup_dir` |

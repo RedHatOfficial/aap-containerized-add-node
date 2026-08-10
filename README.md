@@ -23,7 +23,8 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 | Containerized AAP 2.6+ | Supported |
 | Containerized AAP 2.7+ | Supported |
 | RHEL 9 execution/hop nodes | Tested |
-| RHEL 10 execution/hop nodes | Tested |
+| RHEL 10 execution nodes | Tested (S-001 / AAP 2.7.1) |
+| RHEL 10 hop nodes | Untested |
 
 ## Not Supported
 
@@ -38,7 +39,7 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 - Requires SSH access from installer host to controller and new nodes
 - Controller task container must be running
 - Air-gapped bundle generation not yet implemented (see [DR-001](.sdlc/decisions/open/DR-001-offline-join-bundle.md))
-- Cluster topologies not yet lab-validated (AIO tested)
+- Cluster topologies not yet lab-validated (2.6 / 2.7 AIO tested)
 
 ## SDLC
 
@@ -89,7 +90,7 @@ The maintenance window comes from running the **full** installer against every p
 
 ## Status
 
-End-to-end roles are implemented and driven by `aap_setup_dir` for version alignment (registry/image defaults + `ansible.containerized_installer.receptor`). Lab-validated on containerized AAP 2.6 AIO (execution and hop); other containerized topologies still need validation before production use.
+End-to-end roles are implemented and driven by `aap_setup_dir` for version alignment (registry/image defaults + `ansible.containerized_installer.receptor`). Lab-validated on containerized AAP **2.6** and **2.7** AIO (execution and hop; EN via hop). Cluster topologies still need validation before production use.
 
 Each role has a `roles/<name>/README.md`. Flow overview: [docs/COLLECTION_MAP.md](docs/COLLECTION_MAP.md).
 
@@ -99,12 +100,12 @@ See [CHANGELOG.rst](CHANGELOG.rst) for release notes (fragments under `changelog
 
 ## Tested against
 
-Reusable scenario checklists, inventory sketches, and a results log: [TEST.md](TEST.md).
+Reusable scenario checklists, inventory sketches, and a results log: [TEST.md](TEST.md). Shared-tester workflow and `T-*`/`S-*` mapping: [.sdlc/testing/README.md](.sdlc/testing/README.md).
 
 | Target | Execution | Hop | Parallel | Post-join full upgrade |
 |--------|-----------|-----|----------|------------------------|
 | Containerized AAP 2.6, AIO | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: **Tested** (see T-26-AIO-FULL-UPGRADE in [TEST.md](TEST.md)) |
-| Containerized AAP 2.7, AIO | :white_check_mark: **Tested** (RHEL 9 + RHEL 10) | :white_large_square: Untested | :white_check_mark: **Tested** | :white_large_square: Untested |
+| Containerized AAP 2.7, AIO | :white_check_mark: **Tested** (RHEL 9 + RHEL 10 EN; see S-001 / T-27) | :white_check_mark: **Tested** (RHEL 9 hop) | :white_check_mark: **Tested** (T-27-AIO-EN-VIA-HN) | :white_large_square: Untested |
 | Containerized AAP 2.6/2.7, cluster | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested |
 
 ## To Do
