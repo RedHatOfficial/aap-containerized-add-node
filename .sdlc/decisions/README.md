@@ -4,14 +4,13 @@ Questions and decisions requiring input before implementation.
 
 ## Open Decisions
 
-| DR | Title | Priority | Category |
-|----|-------|----------|----------|
-| [DR-001](open/DR-001-offline-join-bundle.md) | Offline Join Bundle | High | Architecture |
+None
 
 ## Closed Decisions
 
 | DR | Title | Outcome |
 |----|-------|---------|
+| [DR-001](closed/DR-001-offline-join-bundle.md) | Offline Join Bundle | Implement (PHASE-002) |
 | [DR-002](closed/DR-002-controller-ui-integration.md) | Controller UI Integration | Not Implementing (ADR-001) |
 | [DR-003](closed/DR-003-awx-cli-integration.md) | awx-cli Integration | Not Implementing (ADR-001) |
 

@@ -2,11 +2,12 @@
 
 ## Status
 
-Planned
+Ready
 
 ## Timeline
 
-TBD — depends on DR-001 decision
+- **Target Start**: TBD
+- **Target Complete**: TBD
 
 ---
 
@@ -18,16 +19,17 @@ Support air-gapped environments where installer host cannot SSH to execution nod
 
 | REQ | Title | Status |
 |-----|-------|--------|
-| [REQ-005](../specs/REQ-005-offline-bundle.md) | Offline Join Bundle | Open |
+| [REQ-005](../specs/REQ-005-offline-bundle.md) | Offline Join Bundle | Approved |
 
-## Blocking Decision
+## Decision
 
-[DR-001: Offline Join Bundle](../decisions/open/DR-001-offline-join-bundle.md)
+[DR-001: Offline Join Bundle](../decisions/closed/DR-001-offline-join-bundle.md) — **Decided: Implement**
 
-Must resolve:
-- Security review of TLS key handling in bundle
-- Customer validation of two-phase workflow
-- Bundle size constraints (with/without images)
+Constraints:
+- No API/UI/platform changes — collection only
+- Same approach as online — reuse existing roles
+- Self-contained — bundle includes everything needed
+- Fully documented — clear offline prerequisites
 
 ## Proposed Deliverables
 
