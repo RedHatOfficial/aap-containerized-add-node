@@ -1,0 +1,28 @@
+---
+# Parse instance_group_* groups from inventory (RPM installer pattern)
+# Sets aap_add_node_instance_groups per host if not already defined
+
+- name: Build instance groups list from inventory groups
+  ansible.builtin.set_fact:
+    _discovered_instance_groups: >-
+      {{
+        groups.keys()
+        | select('match', '^instance_group_')
+        | select('in', group_names)
+        | map('regex_replace', '^instance_group_', '')
+        | list
+      }}
+
+- name: Merge discovered groups with explicit variable
+  ansible.builtin.set_fact:
+    aap_add_node_instance_groups: >-
+      {{
+        (aap_add_node_instance_groups | default([]))
+        + (_discovered_instance_groups | default([]))
+        | unique
+      }}
+
+- name: Report discovered instance groups
+  ansible.builtin.debug:
+    msg: "Instance groups for {{ inventory_hostname }}: {{ aap_add_node_instance_groups | join(', ') | default('none') }}"
+  when: aap_add_node_instance_groups | length > 0

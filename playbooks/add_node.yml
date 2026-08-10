@@ -1,0 +1,128 @@
+---
+# Add EN/HN to containerized AAP 2.5+ without full installer re-run.
+#
+# Required:
+#   -i <installer inventory>          # same inventory the BU maintains
+#   -e aap_setup_dir=/path/to/setup   # extracted containerized-setup-* tree
+#
+# Optional secrets file: -e @examples/add_node.secrets.yml
+#
+# For image/role parity from the setup tree:
+#   export ANSIBLE_COLLECTIONS_PATH=$aap_setup_dir/collections:$ANSIBLE_COLLECTIONS_PATH
+
+- name: Validate setup directory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: redhat_official.aap_containerized_add_node.validate_setup_dir
+
+- name: Preflight checks (skip with -e aap_add_node_preflight_enabled=false)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: redhat_official.aap_containerized_add_node.preflight
+      when: aap_add_node_preflight_enabled | default(true) | bool
+
+- name: Discover execution_nodes missing from Controller
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: redhat_official.aap_containerized_add_node.discover_new_nodes
+
+- name: Fetch mesh CA and work public key from controller
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: redhat_official.aap_containerized_add_node.fetch_mesh_material
+      when: hostvars['aap_add_node_operator'].aap_add_node_has_work | default(false) | bool
+
+# Single-node installs ship receptor as local-only; enable tcp-listener so EN can dial out.
+- name: Enable mesh listener on automationcontroller
+  hosts: automationcontroller
+  gather_facts: true
+  roles:
+    - role: redhat_official.aap_containerized_add_node.enable_controller_listener
+      when: hostvars['aap_add_node_operator'].aap_add_node_has_work | default(false) | bool
+
+- name: Host preparation on new nodes only (images from aap_setup_dir)
+  hosts: aap_add_node_targets
+  # containerized installer expects non-root (tasks use become selectively)
+  become: false
+  gather_facts: true
+  vars:
+    aap_setup_dir: "{{ hostvars['aap_add_node_operator'].aap_setup_dir }}"
+    aap_add_node_bundle_install: "{{ hostvars['aap_add_node_operator'].aap_add_node_bundle_install | default(false) }}"
+    aap_add_node_platform_version: "{{ hostvars['aap_add_node_operator'].aap_add_node_platform_version | default('') }}"
+    aap_add_node_default_registry_ns_aap: "{{ hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('') }}"
+    aap_add_node_default_receptor_image: "{{ hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest') }}"
+    aap_add_node_mesh_ca_cert: "{{ hostvars['aap_add_node_operator'].aap_add_node_mesh_ca_cert }}"
+    aap_add_node_mesh_ca_key: "{{ hostvars['aap_add_node_operator'].aap_add_node_mesh_ca_key }}"
+    # Override inventory PWD-relative bundle_dir from growth inventory
+    bundle_dir: "{{ hostvars['aap_add_node_operator'].aap_setup_dir }}/bundle"
+    bundle_install: "{{ hostvars['aap_add_node_operator'].aap_add_node_bundle_install | default(true) }}"
+  environment:
+    ANSIBLE_COLLECTIONS_PATH: "{{ aap_setup_dir }}/collections:{{ lookup('env', 'ANSIBLE_COLLECTIONS_PATH') | default('', true) }}"
+  roles:
+    - role: redhat_official.aap_containerized_add_node.host_prep
+
+- name: Mint receptor certificates for each new node
+  hosts: aap_add_node_targets
+  gather_facts: false
+  vars:
+    aap_add_node_mesh_ca_cert: "{{ hostvars['aap_add_node_operator'].aap_add_node_mesh_ca_cert }}"
+    aap_add_node_mesh_ca_key: "{{ hostvars['aap_add_node_operator'].aap_add_node_mesh_ca_key }}"
+    aap_add_node_work_public_key: "{{ hostvars['aap_add_node_operator'].aap_add_node_work_public_key | default('') }}"
+  tasks:
+    - name: Mint certs on operator host
+      ansible.builtin.include_role:
+        name: redhat_official.aap_containerized_add_node.fetch_or_mint_certs
+        apply:
+          delegate_to: localhost
+          become: false
+
+- name: Register new instances via awx-manage on controller
+  hosts: aap_add_node_targets
+  serial: 1  # Serialize registration to avoid DB race condition when adding multiple nodes
+  gather_facts: true
+  roles:
+    - role: redhat_official.aap_containerized_add_node.register_instance
+
+- name: Install and configure receptor on new nodes
+  hosts: aap_add_node_targets
+  become: false
+  gather_facts: true
+  vars:
+    aap_setup_dir: "{{ hostvars['aap_add_node_operator'].aap_setup_dir }}"
+    aap_add_node_bundle_install: "{{ hostvars['aap_add_node_operator'].aap_add_node_bundle_install | default(false) }}"
+    aap_add_node_default_registry_ns_aap: "{{ hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('') }}"
+    aap_add_node_default_receptor_image: "{{ hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest') }}"
+    aap_add_node_receptor_image: "{{ 'registry.redhat.io/' ~ (hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('ansible-automation-platform-26')) ~ '/' ~ (hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest')) }}"
+    bundle_dir: "{{ hostvars['aap_add_node_operator'].aap_setup_dir }}/bundle"
+    bundle_install: "{{ hostvars['aap_add_node_operator'].aap_add_node_bundle_install | default(true) }}"
+  environment:
+    ANSIBLE_COLLECTIONS_PATH: "{{ hostvars['aap_add_node_operator'].aap_setup_dir }}/collections:{{ lookup('env', 'ANSIBLE_COLLECTIONS_PATH') | default('', true) }}"
+  roles:
+    - role: redhat_official.aap_containerized_add_node.install_receptor_node
+
+# Optional: Have controller dial out to new nodes (CAUSES MESH DISRUPTION)
+# Enable with: -e aap_add_node_enable_controller_peer=true
+- name: Update controller peers (CAUSES MESH DISRUPTION - skip unless inbound dial needed)
+  hosts: automationcontroller
+  gather_facts: true
+  roles:
+    - role: redhat_official.aap_containerized_add_node.update_controller_peers
+      when:
+        - aap_add_node_enable_controller_peer | default(false) | bool
+        - hostvars['aap_add_node_operator'].aap_add_node_has_work | default(false) | bool
+
+- name: Verify instances via awx-manage list_instances
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: redhat_official.aap_containerized_add_node.verify_mesh
+      when: hostvars['aap_add_node_operator'].aap_add_node_has_work | default(false) | bool

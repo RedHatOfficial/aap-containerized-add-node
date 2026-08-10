@@ -1,0 +1,32 @@
+---
+- name: List instances via awx-manage on controller
+  ansible.builtin.include_role:
+    name: redhat_official.aap_containerized_add_node.list_instances
+
+- name: Assert each new hostname appears in list_instances
+  ansible.builtin.assert:
+    that:
+      - (hostvars[item].aap_add_node_hostname | default(item)) in aap_add_node_existing_hostnames
+    fail_msg: >
+      Instance '{{ hostvars[item].aap_add_node_hostname | default(item) }}' not found in
+      awx-manage list_instances output.
+    success_msg: >
+      Found '{{ hostvars[item].aap_add_node_hostname | default(item) }}' in Controller instance list.
+  loop: "{{ groups[aap_add_node_target_group] | default([]) }}"
+  when: (groups[aap_add_node_target_group] | default([])) | length > 0
+
+- name: Warn when a new hostname is registered but has no heartbeat yet
+  ansible.builtin.debug:
+    msg: >-
+      '{{ hostvars[item].aap_add_node_hostname | default(item) }}' is registered but has no
+      heartbeat in list_instances yet (mesh/health may still be catching up).
+      Re-run the playbook if it does not become ready shortly.
+  loop: "{{ groups[aap_add_node_target_group] | default([]) }}"
+  when:
+    - (groups[aap_add_node_target_group] | default([])) | length > 0
+    - (hostvars[item].aap_add_node_hostname | default(item)) not in (aap_add_node_ready_hostnames | default([]))
+
+- name: Show list_instances excerpt for verification
+  ansible.builtin.debug:
+    var: aap_add_node_list_instances_stdout
+  when: (groups[aap_add_node_target_group] | default([])) | length > 0

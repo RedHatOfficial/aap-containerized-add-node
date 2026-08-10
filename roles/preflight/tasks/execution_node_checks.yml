@@ -1,0 +1,88 @@
+---
+# Per-execution-node preflight checks
+# _target_host is set by loop in main.yml
+# Note: connection: ssh is required because play uses connection: local
+
+# P2/P3: SSH authentication and host key
+- name: "Test SSH to {{ _target_host }}"
+  ansible.builtin.ping:
+  delegate_to: "{{ _target_host }}"
+  connection: ssh
+  become: false
+  register: _en_ssh
+  ignore_errors: true
+  ignore_unreachable: true
+
+- name: "Assert SSH to {{ _target_host }} succeeded"
+  ansible.builtin.assert:
+    that:
+      - not (_en_ssh.unreachable | default(false) | bool)
+      - _en_ssh is succeeded
+    fail_msg: >-
+      Cannot SSH to execution node '{{ _target_host }}'.
+      If host key issue: ssh-keyscan {{ hostvars[_target_host].ansible_host | default(_target_host) }} >> ~/.ssh/known_hosts
+      If auth issue: ssh-copy-id {{ hostvars[_target_host].ansible_user | default(ansible_user | default('root')) }}@{{ hostvars[_target_host].ansible_host | default(_target_host) }}
+
+# P7: Network connectivity to controller port 27199
+- name: Get controller hostname
+  ansible.builtin.set_fact:
+    _controller_host: "{{ groups['automationcontroller'][0] }}"
+
+- name: "Test TCP connectivity from {{ _target_host }} to controller:{{ aap_add_node_listener_port }}"
+  ansible.builtin.wait_for:
+    host: "{{ _controller_host }}"
+    port: "{{ aap_add_node_listener_port }}"
+    timeout: "{{ aap_add_node_preflight_timeout }}"
+    state: started
+  delegate_to: "{{ _target_host }}"
+  connection: ssh
+  become: false
+  register: _en_connectivity
+  ignore_errors: true
+  when: >-
+    (hostvars[_target_host].receptor_peers | default([]) | length > 0) or
+    (hostvars[_target_host].aap_add_node_peers | default([]) | length > 0)
+
+- name: "Warn if {{ _target_host }} cannot reach controller:{{ aap_add_node_listener_port }}"
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: {{ _target_host }} cannot reach {{ _controller_host }}:{{ aap_add_node_listener_port }}.
+      Check firewall rules or network routing. This may be OK if controller enables tcp-listener later.
+  when:
+    - _en_connectivity is defined
+    - _en_connectivity is failed
+
+# P8: DNS resolution of controller
+- name: "Test DNS resolution of controller from {{ _target_host }}"
+  ansible.builtin.command:
+    cmd: "getent hosts {{ _controller_host }}"
+  delegate_to: "{{ _target_host }}"
+  connection: ssh
+  become: false
+  register: _en_dns
+  changed_when: false
+  failed_when: false
+
+- name: "Assert DNS resolution works on {{ _target_host }}"
+  ansible.builtin.assert:
+    that:
+      - _en_dns.rc == 0
+    fail_msg: >-
+      Cannot resolve controller hostname '{{ _controller_host }}' from {{ _target_host }}.
+      Add to /etc/hosts: echo "CONTROLLER_IP {{ _controller_host }}" | sudo tee -a /etc/hosts
+  when: _en_dns is defined
+
+# P10: Machine-ID uniqueness check (cloned VMs often have duplicate machine-id)
+- name: "Get machine-id from {{ _target_host }}"
+  ansible.builtin.slurp:
+    src: /etc/machine-id
+  delegate_to: "{{ _target_host }}"
+  connection: ssh
+  become: false
+  register: _en_machine_id
+
+- name: "Store machine-id for {{ _target_host }}"
+  ansible.builtin.set_fact:
+    _preflight_machine_ids: "{{ _preflight_machine_ids | default({}) | combine({_target_host: (_en_machine_id.content | b64decode | trim)}) }}"
+  delegate_to: localhost
+  delegate_facts: true

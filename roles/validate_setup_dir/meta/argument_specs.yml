@@ -1,0 +1,33 @@
+---
+argument_specs:
+  main:
+    short_description: Validate containerized AAP setup directory and publish operator facts.
+    options:
+      aap_setup_dir:
+        description: Path to the extracted containerized-setup tree (must contain ansible.containerized_installer).
+        type: path
+        required: true
+      aap_add_node_inventory_group:
+        description: Inventory group holding execution/hop node candidates.
+        type: str
+        default: execution_nodes
+      aap_add_node_target_group:
+        description: Dynamic group name for hosts that need joining.
+        type: str
+        default: aap_add_node_targets
+      aap_add_node_listener_port:
+        description: Default receptor listener port.
+        type: int
+        default: 27199
+      aap_add_node_mesh_ca_cert:
+        description: Optional local path to mesh CA cert (empty to fetch from controller).
+        type: path
+        default: ''
+      aap_add_node_mesh_ca_key:
+        description: Optional local path to mesh CA key (empty to fetch from controller).
+        type: path
+        default: ''
+      aap_add_node_work_public_key:
+        description: Optional local path to work signing public key (empty to fetch from controller).
+        type: path
+        default: ''

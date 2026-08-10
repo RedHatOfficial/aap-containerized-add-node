@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - Add a ``README.md`` for each role documenting purpose, variables, and examples.
+  - Mark containerized AAP 2.6 AIO hop (and EN-via-hop) joins as lab-tested in the README matrix.

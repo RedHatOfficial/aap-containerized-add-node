@@ -1,0 +1,7 @@
+---
+# Ensure automationcontroller receptor accepts inbound mesh (tcp-listener).
+# Single-node installs use local-only until execution_nodes exist.
+aap_add_node_listener_port: 27199
+aap_add_node_enable_controller_listener: true
+receptor_firewall_zone: public
+receptor_protocol: tcp

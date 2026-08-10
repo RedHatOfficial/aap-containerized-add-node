@@ -1,0 +1,21 @@
+---
+# Compare expected receptor image on this new host vs an existing inventory EN.
+- name: Pick a reference execution node already in the cluster
+  ansible.builtin.set_fact:
+    _skew_ref: "{{ item }}"
+  when:
+    - _skew_ref is not defined
+    - item != inventory_hostname
+    - item not in (groups['aap_add_node_targets'] | default([]))
+  loop: "{{ groups['execution_nodes'] | default([]) }}"
+
+- name: Skip skew check when no reference host
+  ansible.builtin.meta: end_host
+  when: _skew_ref is not defined
+
+- name: Note expected receptor image
+  ansible.builtin.debug:
+    msg: >
+      Expected receptor image from setup/inventory:
+      {{ aap_add_node_receptor_image | default(_receptor_image | default('unset')) }}.
+      Confirm the same tag is running on {{ _skew_ref }}.

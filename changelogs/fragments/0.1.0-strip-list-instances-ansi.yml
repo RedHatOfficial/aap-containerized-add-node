@@ -1,0 +1,5 @@
+---
+bugfixes:
+  - Strip ANSI color codes from ``awx-manage list_instances`` output so discovery
+    and verify match real hostnames (colored output previously re-targeted healthy
+    nodes and failed verify asserts).

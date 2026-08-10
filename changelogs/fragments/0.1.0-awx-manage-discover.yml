@@ -1,0 +1,6 @@
+---
+major_changes:
+  - Discover, register, and verify new nodes via ``awx-manage`` on the controller (no gateway OAuth token required).
+  - Re-runs target provisioned-but-incomplete nodes (no heartbeat) so a failed mid-join can finish without deprovisioning.
+minor_changes:
+  - Add antsibull-changelog, pre-commit, ansible-lint, and GitHub Actions CI/release workflows aligned with ``redhat_official.aap_containerized_add_node``.
