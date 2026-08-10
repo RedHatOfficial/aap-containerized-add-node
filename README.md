@@ -23,7 +23,7 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 | Containerized AAP 2.6+ | Supported |
 | Containerized AAP 2.7+ | Supported |
 | RHEL 9 execution/hop nodes | Tested |
-| RHEL 10 execution/hop nodes | Tested |
+| RHEL 10 execution/hop nodes | Tested (S-001; T-27-AIO-EN-VIA-HN on 2.7) |
 
 ## Not Supported
 
@@ -31,14 +31,14 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 |----------|--------|
 | RPM installs | Different installer mechanics |
 | OpenShift / Operator | Out of scope |
-| AAP 2.4 and earlier | Pre-gateway architecture |
+| AAP 2.5 and earlier | Out of scope (pre-2.6 / pre-gateway) |
 
 ## Current Limitations
 
-- Requires SSH access from installer host to controller and new nodes
+- Requires SSH access from control host to controller and new nodes
 - Controller task container must be running
 - Air-gapped bundle generation not yet implemented (see [DR-001](.sdlc/decisions/open/DR-001-offline-join-bundle.md))
-- Cluster topologies not yet lab-validated (AIO tested)
+- Cluster topologies not yet lab-validated (2.6 / 2.7 AIO tested)
 
 ## SDLC
 
@@ -46,7 +46,7 @@ Architecture decisions, requirements, and development phases: [.sdlc/](.sdlc/REA
 
 ## Prerequisites
 
-- **Installer host** runs `ansible-playbook` with this collection and can reach the cluster over SSH.
+- **Control host** runs `ansible-playbook` with this collection and can reach the cluster over SSH.
 - **SSH user on `automationcontroller`:** the same **non-root install user** used for the containerized install (home has `~/aap/…`). Used for `podman exec … awx-manage` and mesh CA fetch. **No sudo** for those steps (`become: false`).
 - **SSH user on new EN/HN:** same non-root install-user pattern (collection rejects root).
 - **Optional sudo:** controller `firewalld` when enabling a receptor `tcp-listener` (`enable_controller_listener`).
@@ -76,7 +76,7 @@ The maintenance window comes from running the **full** installer against every p
 | Step | Where | What |
 |------|--------|------|
 | 1 | Controller (`awx-manage`) | `list_instances` (discover) → `provision_instance` → `add_receptor_address` → `register_peers` → `register_queue` |
-| 2 | Installer host (mesh CA from controller) | Mint node cert/key; copy mesh CA cert + work public key |
+| 2 | Control host (mesh CA from controller) | Mint node cert/key; copy mesh CA cert + work public key |
 | 3 | New node only | Install receptor via containerized installer role from `aap_setup_dir` |
 | 4 | Controller (single-node) | Enable receptor `tcp-listener` if still `local-only` |
 | 5 | Controller (`awx-manage`) | `list_instances` again to verify the new hostname |
@@ -89,23 +89,23 @@ The maintenance window comes from running the **full** installer against every p
 
 ## Status
 
-End-to-end roles are implemented and driven by `aap_setup_dir` for version alignment (registry/image defaults + `ansible.containerized_installer.receptor`). Lab-validated on containerized AAP 2.6 AIO (execution and hop); other containerized topologies still need validation before production use.
+End-to-end roles are implemented and driven by `aap_setup_dir` for version alignment (registry/image defaults + `ansible.containerized_installer.receptor`). Lab-validated on containerized AAP **2.6** and **2.7** AIO (execution and hop; EN via hop). Cluster topologies still need validation before production use.
 
 Each role has a `roles/<name>/README.md`. Flow overview: [docs/COLLECTION_MAP.md](docs/COLLECTION_MAP.md).
 
 Upstream path to fold this into the containerized installer: [INSTALLER_PLAN.md](INSTALLER_PLAN.md). Drop-in file tree for local installer experiments: [installer-overlay/](installer-overlay/).
 
-See [CHANGELOG.md](CHANGELOG.md) for release notes. Contribution and release process: [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CHANGELOG.rst](CHANGELOG.rst) for release notes (fragments under `changelogs/fragments/`). Contribution and release process: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Tested against
 
-Reusable scenario checklists, inventory sketches, and a results log: [TEST.md](TEST.md).
+Reusable scenario checklists, inventory sketches, and a results log: [TEST.md](TEST.md). Shared-tester workflow and `T-*`/`S-*` mapping: [.sdlc/testing/README.md](.sdlc/testing/README.md).
 
-| Target | Execution | Hop | Parallel |
-|--------|-----------|-----|----------|
-| Containerized AAP 2.6, AIO | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: Tested |
-| Containerized AAP 2.7, AIO | :white_check_mark: **Tested** (RHEL 9 + RHEL 10) | :white_large_square: Untested | :white_check_mark: **Tested** |
-| Containerized AAP 2.6/2.7, cluster | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested |
+| Target | Execution | Hop | Parallel | Post-join full upgrade |
+|--------|-----------|-----|----------|------------------------|
+| Containerized AAP 2.6, AIO | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: **Tested** (see T-26-AIO-FULL-UPGRADE in [TEST.md](TEST.md)) |
+| Containerized AAP 2.7, AIO | :white_check_mark: **Tested** (RHEL 9 + RHEL 10; see S-001 / T-27) | :white_check_mark: **Tested** (RHEL 9 + RHEL 10 hop) | :white_check_mark: **Tested** (T-27-AIO-EN-VIA-HN) | :white_large_square: Untested |
+| Containerized AAP 2.6/2.7, cluster | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested |
 
 ## To Do
 
@@ -176,7 +176,8 @@ Troubleshooting (SSH, container name, rollback): [docs/TROUBLESHOOTING.md](docs/
 
 | Flavor | Versions | Role |
 |--------|----------|------|
-| Containerized setup | 2.5, 2.6, 2.7 | **Supported target** |
+| Containerized setup | 2.6, 2.7 | **Supported target** |
+| Containerized setup | 2.5 and earlier | Historical research only — not supported |
 | RPM setup | 2.5, 2.6 | Historical research only — not supported |
 | OpenShift install bundles | 2.5, 2.6, 2.7 | Reference only — how receptor join is packaged elsewhere |
 

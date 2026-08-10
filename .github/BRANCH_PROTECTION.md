@@ -12,7 +12,7 @@ Settings → Branches → Add rule → `main`
   - [x] Require review from Code Owners
 - [x] **Require status checks to pass before merging**
   - [x] Require branches to be up to date before merging
-  - Required checks: `lint`, `syntax-check`, `build`
+  - Required checks: `changelog`, `lint`, `syntax-check`, `build`
 - [x] **Require linear history** (no merge commits)
 - [x] **Do not allow bypassing the above settings**
 - [ ] Do not allow force pushes
@@ -27,7 +27,7 @@ Settings → Branches → Add rule → `devel`
   - [x] Dismiss stale pull request approvals when new commits are pushed
 - [x] **Require status checks to pass before merging**
   - [x] Require branches to be up to date before merging
-  - Required checks: `lint`, `syntax-check`, `build`
+  - Required checks: `changelog`, `lint`, `syntax-check`, `build`
 - [x] **Require linear history**
 - [ ] Do not allow force pushes
 - [ ] Do not allow deletions

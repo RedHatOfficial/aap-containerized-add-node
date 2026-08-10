@@ -19,7 +19,7 @@
     - "{{ aap_setup_dir }}/collections/ansible_collections/ansible/containerized_installer/roles/common/defaults/main.yml"
   register: _setup_markers
 
-- name: Validate setup tree and publish operator facts
+- name: Validate setup tree and publish control-host facts
   vars:
     _has_rpm_installer: "{{ _setup_markers.results[2].stat.exists }}"
     _has_containerized_installer: "{{ _setup_markers.results[3].stat.exists }}"
@@ -101,10 +101,11 @@
             )
           }}
 
-# Stable host name for cross-play hostvars (inventory "localhost" may be a FQDN).
-- name: Publish operator control host for later plays
+# Stable scratch host for cross-play hostvars (inventory "localhost" may be a FQDN).
+# Host and group share the name aap_add_node_control; later plays use hostvars['aap_add_node_control'].
+- name: Publish control host for later plays
   ansible.builtin.add_host:
-    name: aap_add_node_operator
+    name: aap_add_node_control
     groups: aap_add_node_control
     aap_setup_dir: "{{ aap_setup_dir }}"
     aap_add_node_bundle_install: "{{ aap_add_node_bundle_install }}"

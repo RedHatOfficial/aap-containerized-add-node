@@ -14,7 +14,7 @@ Ansible collection for adding execution nodes and hop nodes to existing containe
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Installer Host                                │
+│                    Control Host                                │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │  ansible-playbook playbooks/add_node.yml                 │   │
 │  │    -i inventory -e aap_setup_dir=/path/to/setup          │   │
@@ -65,6 +65,9 @@ Full workflow: `.agents/skills/workflow/SKILL.md`
 - **Installer inventory format** — match `ansible.containerized_installer`
 - **receptor_peers is a list** — never a bare string
 - **Outbound dial default** — inbound dial requires explicit opt-in
+- **Role README required** — every `roles/<name>/` must have `README.md`
+- **Role argument_specs required** — new roles must include `meta/argument_specs.yml`
+  (no Jinja in argspec defaults/descriptions; resolve fact-dependent values in tasks)
 - Do NOT modify files outside task scope
 - Do NOT add features not in requirements
 - Ask for clarification if specs are ambiguous
@@ -91,6 +94,7 @@ Skills ensure consistency across contributors. Do not bypass skills by guessing 
 Before completing any task:
 - [ ] `ansible-lint` passes
 - [ ] `ansible-playbook --syntax-check` passes
+- [ ] New/changed roles include `README.md` and `meta/argument_specs.yml`
 - [ ] Documentation updated (if applicable)
 - [ ] ADR added (if architectural decision)
 
@@ -100,14 +104,14 @@ Before completing any task:
 |----------|--------|
 | Containerized AAP 2.6+ | Supported |
 | Containerized AAP 2.7+ | Supported |
-| RHEL 9.x nodes | Tested |
-| RHEL 10.x nodes | Tested |
+| RHEL 9.x execution/hop nodes | Tested |
+| RHEL 10.x execution/hop nodes | Tested (S-001; T-27-AIO-EN-VIA-HN on 2.7) |
 
 ## Not Supported
 
 - RPM installs (different installer mechanics)
 - OpenShift / Operator (out of scope)
-- AAP 2.4 and earlier (pre-gateway architecture)
+- AAP 2.5 and earlier (pre-gateway architecture)
 
 ## References
 

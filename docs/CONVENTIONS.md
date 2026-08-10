@@ -129,6 +129,23 @@ redhat_official.aap_containerized_add_node/
     └── CONVENTIONS.md        # This file
 ```
 
+## Role requirements
+
+Every role under `roles/<name>/` must include:
+
+| Artifact | Required | Notes |
+|----------|----------|-------|
+| `README.md` | **Yes** | Purpose, requirements, variables table, example playbook |
+| `meta/argument_specs.yml` | **Yes** for new roles | Document and validate entry variables |
+
+Guidelines for `argument_specs.yml`:
+
+- Cover role entry variables (those in `defaults/` and required inputs)
+- Prefer static defaults; do **not** put Jinja in argspec defaults or descriptions
+  (Ansible templates them during validation and fails if facts are missing)
+- Resolve fact-dependent paths (for example remote home directories) in tasks after
+  `gather_facts`, or accept an empty default and set the path in tasks
+
 ## Notes
 
 - Gateway tokens (`ansible.platform.token`) do NOT work with controller API

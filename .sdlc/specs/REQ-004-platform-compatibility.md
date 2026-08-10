@@ -30,22 +30,22 @@ Collection must work across this matrix.
 ## Acceptance Criteria
 
 ### AAP Versions
-- [ ] AAP 2.6.x containerized — tested
-- [ ] AAP 2.7.x containerized — tested
-- [ ] AAP 2.5 — out of scope (documented)
-- [ ] RPM installs — out of scope (documented)
-- [ ] OpenShift — out of scope (documented)
+- [x] AAP 2.6.x containerized — tested
+- [x] AAP 2.7.x containerized — tested
+- [x] AAP 2.5 and earlier — out of scope (documented)
+- [x] RPM installs — out of scope (documented)
+- [x] OpenShift — out of scope (documented)
 
 ### Node OS Versions
-- [ ] RHEL 9.x execution nodes — tested
-- [ ] RHEL 9.x hop nodes — tested
-- [ ] RHEL 10.x execution nodes — tested
-- [ ] RHEL 10.x hop nodes — tested
+- [x] RHEL 9.x execution nodes — tested
+- [x] RHEL 9.x hop nodes — tested
+- [x] RHEL 10.x execution nodes — tested (S-001; EN-via-HN on aap27)
+- [x] RHEL 10.x hop nodes — tested (T-27-AIO-EN-VIA-HN, aap27-hn-02, 2026-08-10)
 - [ ] Other Linux — not tested, may work
 
 ### Controller OS
-- [ ] Controller on RHEL 9 — tested
-- [ ] Controller on RHEL 10 — follows AAP support matrix
+- [x] Controller on RHEL 9 — tested (aap26 lab)
+- [x] Controller on RHEL 10 — tested (aap27 lab, RHEL 10.2)
 
 ## Implementation
 
@@ -53,15 +53,16 @@ Collection must work across this matrix.
 |----------|-------------|
 | `meta/runtime.yml` | Ansible version requirements |
 | `galaxy.yml` | Collection metadata |
-| CHANGELOG.md | Tested versions documented |
+| CHANGELOG.rst | Tested versions documented |
 
 ## Test Matrix
 
 | AAP | Controller OS | Node OS | Status |
 |-----|---------------|---------|--------|
-| 2.7.1 | RHEL 9.x | RHEL 9.x | Tested |
-| 2.7.1 | RHEL 9.x | RHEL 10.0 | Tested |
-| 2.6.x | RHEL 9.x | RHEL 9.x | Tested |
+| 2.6.x | RHEL 9.x | RHEL 9.x | Tested (aap26) |
+| 2.7.x | RHEL 10.x | RHEL 9.x | Tested (aap27 EN-VIA-HN, 2026-08-10) |
+| 2.7.1 | (lab) | RHEL 10.x EN | Tested (S-001 single EN) |
+| 2.7.x | RHEL 10.x | RHEL 10.x HN+EN | Tested (aap27 EN-VIA-HN, hn-02/en-02, 2026-08-10) |
 
 ## Verification
 

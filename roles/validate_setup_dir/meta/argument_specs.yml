@@ -1,7 +1,7 @@
 ---
 argument_specs:
   main:
-    short_description: Validate containerized AAP setup directory and publish operator facts.
+    short_description: Validate containerized AAP setup directory and publish control-host facts.
     options:
       aap_setup_dir:
         description: Path to the extracted containerized-setup tree (must contain ansible.containerized_installer).

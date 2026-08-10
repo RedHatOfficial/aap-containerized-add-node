@@ -36,9 +36,9 @@
       - "Ready (heartbeat) instances: {{ aap_add_node_ready_hostnames | default([]) }}"
       - "Hosts to add or finish: {{ aap_add_node_new_inventory_hosts }}"
 
-- name: Update operator control host with discovery result
+- name: Update control host with discovery result
   ansible.builtin.add_host:
-    name: aap_add_node_operator
+    name: aap_add_node_control
     groups: aap_add_node_control
     aap_add_node_has_work: "{{ aap_add_node_has_work }}"
     aap_add_node_new_inventory_hosts: "{{ aap_add_node_new_inventory_hosts }}"

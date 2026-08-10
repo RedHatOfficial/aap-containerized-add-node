@@ -9,7 +9,6 @@ aap_add_node_target_group: aap_add_node_targets
 
 # Mesh / instance defaults
 aap_add_node_listener_port: 27199
-aap_add_node_peers_from_control_nodes: false
 aap_add_node_enabled: true
 
 # Mesh material — leave empty to fetch from first automationcontroller host

@@ -5,6 +5,7 @@
 - **Priority**: P1
 - **Topology**: AIO + EN (outbound dial)
 - **Status**: Tested
+- **TEST.md**: T-26-AIO-EN, T-27-AIO-EN
 
 ## Description
 
@@ -93,6 +94,6 @@ podman exec automation-controller-task \
 
 | Date | AAP Version | Node OS | Result | Notes |
 |------|-------------|---------|--------|-------|
-| 2026-08 | 2.6 | RHEL 9 | Pass | Initial validation |
+| 2026-08 | 2.6 | RHEL 9 | Pass | Initial validation — see also TEST.md T-26-AIO-EN |
 | 2026-08 | 2.7.1 | RHEL 9 | Pass | — |
-| 2026-08 | 2.7.1 | RHEL 10 | Pass | — |
+| 2026-08 | 2.7.1 | RHEL 10 | Pass | Isolated EN→controller (S-001); TEST.md T-27-AIO-EN |
