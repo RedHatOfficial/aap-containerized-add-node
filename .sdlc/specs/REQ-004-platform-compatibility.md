@@ -39,8 +39,8 @@ Collection must work across this matrix.
 ### Node OS Versions
 - [x] RHEL 9.x execution nodes — tested
 - [x] RHEL 9.x hop nodes — tested
-- [x] RHEL 10.x execution nodes — tested (S-001, AAP 2.7.1)
-- [ ] RHEL 10.x hop nodes — tested
+- [x] RHEL 10.x execution nodes — tested (S-001; EN-via-HN on aap27)
+- [x] RHEL 10.x hop nodes — tested (T-27-AIO-EN-VIA-HN, aap27-hn-02, 2026-08-10)
 - [ ] Other Linux — not tested, may work
 
 ### Controller OS
@@ -62,7 +62,7 @@ Collection must work across this matrix.
 | 2.6.x | RHEL 9.x | RHEL 9.x | Tested (aap26) |
 | 2.7.x | RHEL 10.x | RHEL 9.x | Tested (aap27 EN-VIA-HN, 2026-08-10) |
 | 2.7.1 | (lab) | RHEL 10.x EN | Tested (S-001 single EN) |
-| 2.7.x | any | RHEL 10.x hop | Untested |
+| 2.7.x | RHEL 10.x | RHEL 10.x HN+EN | Tested (aap27 EN-VIA-HN, hn-02/en-02, 2026-08-10) |
 
 ## Verification
 

@@ -104,9 +104,8 @@ Before completing any task:
 |----------|--------|
 | Containerized AAP 2.6+ | Supported |
 | Containerized AAP 2.7+ | Supported |
-| RHEL 9.x nodes | Tested |
-| RHEL 10.x execution nodes | Tested (S-001, AAP 2.7.1) |
-| RHEL 10.x hop nodes | Untested |
+| RHEL 9.x execution/hop nodes | Tested |
+| RHEL 10.x execution/hop nodes | Tested (S-001; T-27-AIO-EN-VIA-HN on 2.7) |
 
 ## Not Supported
 

@@ -19,7 +19,7 @@ Add hop and execution node in one inventory / one `add_node.yml` run. Hop peers 
 | Container | `automation-controller-task` running |
 | SSH | Passwordless to controller, hop, and EN |
 | Node disk | ≥ 32 GB each (prefer 64 GB) |
-| Node OS | RHEL 9.x validated; RHEL 10 EN validated only as S-001 (direct), not yet as EN-via-HN |
+| Node OS | RHEL 9.x and RHEL 10.x validated (EN-via-HN) |
 
 ## Inventory
 
@@ -59,3 +59,4 @@ Confirm `receptor_peers` is a **list** (`ansible-inventory --host …`).
 |------|-------------|---------------|---------|--------|-------|
 | 2026-08 | 2.6 AIO | RHEL 9 | RHEL 9 | Pass | T-26-AIO-EN-VIA-HN — see TEST.md |
 | 2026-08-10 | 2.7 AIO | RHEL 10.2 | RHEL 9.8 HN+EN | Pass | T-27-AIO-EN-VIA-HN; raw log local only under `.ignore/lab/runs/` |
+| 2026-08-10 | 2.7 AIO | RHEL 10.2 | RHEL 10.2 HN+EN | Pass | T-27-AIO-EN-VIA-HN; `aap27-hn-02`/`en-02`; commit `ccbcf67`; settled green |

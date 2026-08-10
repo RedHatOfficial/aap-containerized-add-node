@@ -20,7 +20,7 @@
 | 2.6.x | RHEL 9 | RHEL 9 | P1 | Tested |
 | 2.7.x | RHEL 10 | RHEL 9 | P1 | Tested (T-27-AIO-EN-VIA-HN, 2026-08-10) |
 | 2.7.1 | (lab) | RHEL 10 EN | P1 | Tested (S-001) |
-| 2.7.x | any | RHEL 10 hop | P1 | Untested |
+| 2.7.x | RHEL 10 | RHEL 10 HN+EN | P1 | Tested (T-27-AIO-EN-VIA-HN, 2026-08-10) |
 | 2.6.x | RHEL 9 | RHEL 10 | P2 | Untested |
 
 ### Topology Combinations
@@ -112,7 +112,6 @@ End-to-end lab validation:
 ## Known Limitations
 
 1. **Cluster topologies untested** — AIO validated (2.6 + 2.7); HA cluster needs validation
-2. **RHEL 10 hop untested** — RHEL 10 EN covered by S-001
-3. **No automated scenario runner** — Manual execution required
-4. **No molecule / ansible-test integration yet** — CI is lint/build/changelog
-5. **Dual IDs** — Lab matrix uses `T-*` in TEST.md; procedures use `S-*` — see [scenarios/README.md](scenarios/README.md#mapping-to-testmd)
+2. **No automated scenario runner** — Manual execution required
+3. **No molecule / ansible-test integration yet** — CI is lint/build/changelog
+4. **Dual IDs** — Lab matrix uses `T-*` in TEST.md; procedures use `S-*` — see [scenarios/README.md](scenarios/README.md#mapping-to-testmd)
