@@ -1,4 +1,4 @@
-# ADR-001: CLI-First Approach
+# ADR-001: Ansible Automation Only
 
 ## Status
 
@@ -10,16 +10,23 @@ Accepted
 
 ## Context
 
-AAPRFE-3069 requests both UI-driven and CLI-driven workflows for adding execution nodes. The RFE consolidates customer pain points around manual, error-prone processes that don't scale.
+AAPRFE-3069 requests workflows for adding execution nodes post-install. The RFE consolidates customer pain points around manual, error-prone processes that don't scale.
 
-- UI integration requires upstream Controller changes (new views, API endpoints)
-- Customers need a solution now, not after a product release cycle
-- The underlying operations (awx-manage, receptor install) are already CLI-based
-- Ansible collections are the standard automation pattern for AAP operations
+Key observations:
+- The underlying operations (awx-manage, receptor install) are already automation tasks
+- Customers adding nodes at scale (28+ environments, 100K+ managed nodes) need scriptable solutions
+- Manual CLI commands don't scale and are error-prone (AAPRFE-1752 required 7 manual steps)
+- UI workflows add administrative overhead without enabling automation
 
 ## Decision
 
-**We will implement as an Ansible collection first, deferring UI integration to upstream product work.**
+**We will provide Ansible automation only. No UI. No separate CLI tool.**
+
+This is a deliberate design choice to:
+1. Minimize administrative tasks through automation
+2. Enable integration with existing automation pipelines
+3. Avoid duplication between CLI and automation
+4. Match how customers actually deploy at scale
 
 The collection:
 1. Wraps existing awx-manage commands in idempotent roles
@@ -30,60 +37,81 @@ The collection:
 
 ## Alternatives Considered
 
-### Alternative 1: Wait for Upstream UI Support
+### Alternative 1: Add UI Workflow
 
-**Description**: Do nothing until AAP product team implements native UI.
-
-**Pros**:
-- Fully integrated solution
-- No separate tooling to maintain
-
-**Cons**:
-- Unknown timeline
-- Customers blocked in the meantime
-
-**Why not chosen**: Customer need is immediate; product roadmap uncertain.
-
-### Alternative 2: Build Standalone CLI Tool
-
-**Description**: Create a dedicated `aap-add-node` CLI binary.
+**Description**: Build or request "Add Node" wizard in Controller UI.
 
 **Pros**:
-- Simple user experience
-- No Ansible knowledge required
+- Accessible to non-automation users
 
 **Cons**:
-- Duplicates installer infrastructure
-- Separate maintenance burden
-- Not aligned with AAP automation patterns
+- Adds administrative overhead
+- Not scriptable for scale deployments
+- Duplicates automation capability
 
-**Why not chosen**: Ansible collection is the standard pattern and reuses existing installer roles.
+**Why not chosen**: UI doesn't solve the scale problem. Customers with 28+ environments need automation, not clicks.
+
+### Alternative 2: Build Separate CLI Tool
+
+**Description**: Create `aap-add-node` CLI binary alongside collection.
+
+**Pros**:
+- Simple one-off usage
+
+**Cons**:
+- Duplicates collection functionality
+- Two tools to maintain
+- CLI still not scriptable like Ansible
+
+**Why not chosen**: Ansible automation already covers CLI use cases without duplication. Running a playbook is equivalent effort to running a CLI command.
+
+### Alternative 3: Propose awx-manage Additions
+
+**Description**: Add `awx-manage add_execution_node` upstream.
+
+**Pros**:
+- Native to AAP
+
+**Cons**:
+- Still requires SSH to controller
+- Still manual (not automated)
+- Upstream contribution overhead
+
+**Why not chosen**: Doesn't improve on collection approach. Automation is the answer, not more CLI commands.
 
 ## Consequences
 
 ### Positive
 
-- Immediately usable by customers with Ansible skills
+- Single automation path — no confusion between UI/CLI/automation
 - Scriptable for customers with many isolated environments
-- Can be integrated into existing automation pipelines
-- No upstream product dependencies for initial release
+- Integrates with existing Ansible workflows and CI/CD
+- No upstream dependencies
+- No duplication to maintain
 
 ### Negative
 
-- Not accessible to users who only use the UI
-- Requires Ansible knowledge to operate
-- No single-click "add node" experience
+- Requires Ansible knowledge (appropriate for AAP users)
+
+### Neutral
+
+- Users wanting "button-click" can wrap in AAP Job Template with Survey
+
+## Implementation Notes
+
+- Collection is the interface; no other interfaces planned
+- Job Template + Survey provides UI-like experience if needed
+- Documentation emphasizes automation-first approach
 
 ## Related Decisions
 
-- DR-002: Controller UI Integration (gap)
-- DR-003: awx-cli Integration (gap)
+- DR-001: Offline Join Bundle (still requires decision — different concern)
 
 ## References
 
 - [AAPRFE-3069](https://redhat.atlassian.net/browse/AAPRFE-3069)
-- [AAPRFE-1752](https://redhat.atlassian.net/browse/AAPRFE-1752) (consolidated)
-- [AAPRFE-1967](https://redhat.atlassian.net/browse/AAPRFE-1967) (consolidated)
+- [AAPRFE-1752](https://redhat.atlassian.net/browse/AAPRFE-1752) (7 manual steps problem)
+- [AAPRFE-1967](https://redhat.atlassian.net/browse/AAPRFE-1967) (outbound-only requirement)
 
 ---
 
@@ -91,4 +119,5 @@ The collection:
 
 | Date | Author | Change |
 |------|--------|--------|
-| 2026-08-10 | pgriffit | Initial proposal and acceptance |
+| 2026-08-10 | pgriffit | Initial proposal |
+| 2026-08-10 | pgriffit | Revised: Automation-only is design choice, not gap |

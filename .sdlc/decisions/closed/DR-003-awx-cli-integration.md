@@ -2,7 +2,9 @@
 
 ## Status
 
-Open
+Decided — Not Implementing
+
+**Decision:** Separate CLI tool would duplicate automation. Ansible collection covers CLI use case. See ADR-001.
 
 ## Raised By
 

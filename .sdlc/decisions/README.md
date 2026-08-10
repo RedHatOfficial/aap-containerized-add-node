@@ -7,12 +7,13 @@ Questions and decisions requiring input before implementation.
 | DR | Title | Priority | Category |
 |----|-------|----------|----------|
 | [DR-001](open/DR-001-offline-join-bundle.md) | Offline Join Bundle | High | Architecture |
-| [DR-002](open/DR-002-controller-ui-integration.md) | Controller UI Integration | Medium | Product |
-| [DR-003](open/DR-003-awx-cli-integration.md) | awx-cli Integration | Medium | Architecture |
 
 ## Closed Decisions
 
-None yet.
+| DR | Title | Outcome |
+|----|-------|---------|
+| [DR-002](closed/DR-002-controller-ui-integration.md) | Controller UI Integration | Not Implementing (ADR-001) |
+| [DR-003](closed/DR-003-awx-cli-integration.md) | awx-cli Integration | Not Implementing (ADR-001) |
 
 ## Creating a New DR
 

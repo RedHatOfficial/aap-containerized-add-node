@@ -2,7 +2,9 @@
 
 ## Status
 
-Open
+Decided — Not Implementing
+
+**Decision:** UI integration is out of scope. Ansible automation is the interface. See ADR-001.
 
 ## Raised By
 

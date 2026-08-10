@@ -6,50 +6,58 @@ Spec-Driven Development artifacts for AAP Containerized Add Node collection.
 
 This collection addresses [AAPRFE-3069](https://redhat.atlassian.net/browse/AAPRFE-3069): "Support adding/joining execution nodes to an existing mesh post-install"
 
+## Design Philosophy
+
+**Ansible automation is the interface.** No UI. No separate CLI.
+
+This is a deliberate design choice (ADR-001):
+- Minimizes administrative tasks through automation
+- Enables integration with existing pipelines
+- Avoids duplication between UI/CLI/automation
+- Matches how customers deploy at scale
+
 ## Coverage Matrix
 
-| AAPRFE-3069 Requirement | Status | Artifact |
-|-------------------------|--------|----------|
-| Add EN to existing mesh post-install | Implemented | - |
-| No full installer re-run | Implemented | - |
-| Outbound-only mode (EN → Controller) | Implemented | - |
-| Inbound mode (Controller → EN) | Implemented | - |
-| Node-initiated peering | Implemented | - |
-| Wrap awx-manage provision_instance | Implemented | - |
-| Correct status reporting | Implemented | - |
-| Scriptable/automatable | Implemented | - |
-| Self-contained "join bundle" | Gap | DR-001 |
-| UI-driven workflow | Gap | DR-002 |
-| CLI "add node" command | Gap | DR-003 |
-| Controller generates bundle from UI | Gap | DR-002 |
+| AAPRFE-3069 Requirement | Status | Notes |
+|-------------------------|--------|-------|
+| Add EN to existing mesh post-install | Implemented | Core functionality |
+| No full installer re-run | Implemented | Only new nodes touched |
+| Outbound-only mode (EN → Controller) | Implemented | Default, zero disruption |
+| Inbound mode (Controller → EN) | Implemented | Optional |
+| Node-initiated peering | Implemented | `receptor_peers` |
+| Wrap awx-manage provision_instance | Implemented | `register_instance` role |
+| Correct status reporting | Implemented | `verify_mesh` role |
+| Scriptable/automatable | Implemented | Ansible collection |
+| Self-contained "join bundle" | Open | DR-001 |
+| UI-driven workflow | Not Implementing | ADR-001 |
+| CLI "add node" command | Not Implementing | ADR-001 |
 
 ## Directory Structure
 
 | Directory | Purpose |
 |-----------|---------|
 | `adrs/` | Architecture Decision Records |
-| `decisions/open/` | Open decision requests (gaps, questions) |
+| `decisions/open/` | Open decision requests |
 | `decisions/closed/` | Resolved decisions |
-| `context/` | Project knowledge (architecture, conventions) |
-| `research/` | Investigation documents |
 | `templates/` | Document templates |
 
-## Open Decisions
+## Decisions Summary
 
-| DR | Title | Priority | Category |
-|----|-------|----------|----------|
-| DR-001 | Offline Join Bundle | High | Architecture |
-| DR-002 | Controller UI Integration | Medium | Product |
-| DR-003 | awx-cli Integration | Medium | Architecture |
-
-## ADRs
+### ADRs (Architecture Decisions)
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| ADR-001 | CLI-First Approach | Accepted |
+| [ADR-001](adrs/ADR-001-cli-first-approach.md) | Ansible Automation Only | Accepted |
 
-## Quick Reference
+### Open DRs (Need Input)
 
-- `/sdlc-status` — View current state
-- `/dr-new` — Raise a new question
-- `/adr-new` — Document a decision
+| DR | Title | Priority |
+|----|-------|----------|
+| [DR-001](decisions/open/DR-001-offline-join-bundle.md) | Offline Join Bundle | High |
+
+### Closed DRs
+
+| DR | Title | Outcome |
+|----|-------|---------|
+| [DR-002](decisions/closed/DR-002-controller-ui-integration.md) | Controller UI Integration | Not Implementing |
+| [DR-003](decisions/closed/DR-003-awx-cli-integration.md) | awx-cli Integration | Not Implementing |
