@@ -30,7 +30,7 @@
           - _aap_add_node_ctrl_ping is succeeded
         fail_msg: >-
           Cannot SSH to automationcontroller host '{{ _awx_manage_host }}' from the
-          operator. This collection needs SSH to run awx-manage (podman exec) and to
+          control host. This collection needs SSH to run awx-manage (podman exec) and to
           fetch mesh CA material. Check ansible_host, SSH keys, and ProxyJump, then retry.
           ping result: {{ _aap_add_node_ctrl_ping.msg | default(_aap_add_node_ctrl_ping) }}
 

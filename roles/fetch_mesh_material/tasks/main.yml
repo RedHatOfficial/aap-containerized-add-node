@@ -102,9 +102,9 @@
     aap_add_node_mesh_ca_key: "{{ aap_add_node_mesh_ca_key if (aap_add_node_mesh_ca_key | default('') | length) else aap_add_node_material_dir ~ '/mesh-CA.key' }}"
     aap_add_node_work_public_key: "{{ aap_add_node_work_public_key if (aap_add_node_work_public_key | default('') | length) else aap_add_node_material_dir ~ '/work_public_key.pem' }}"
 
-- name: Publish mesh material paths on operator control host
+- name: Publish mesh material paths on control host
   ansible.builtin.add_host:
-    name: aap_add_node_operator
+    name: aap_add_node_control
     groups: aap_add_node_control
     aap_add_node_mesh_ca_cert: "{{ aap_add_node_mesh_ca_cert }}"
     aap_add_node_mesh_ca_key: "{{ aap_add_node_mesh_ca_key }}"

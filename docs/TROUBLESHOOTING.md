@@ -4,7 +4,7 @@
 
 ### Who needs SSH?
 
-From the **installer host** (where you run `ansible-playbook`):
+From the **control host** (where you run `ansible-playbook`):
 
 | Target | User | Privilege |
 |--------|------|-----------|
@@ -68,7 +68,7 @@ Also:
 
 1. **Inventory** — remove the host from `[execution_nodes]` if you are abandoning the join; otherwise a later full installer run may re-add or conflict. Keeping it in inventory without a healthy instance is OK only if you intend to finish the join.
 2. **New node** — stop/remove receptor containers and leftover `~/aap` material if you are not retrying (site-specific; this collection does not ship an uninstall play).
-3. **Installer host** — optional cleanup under `bundles/<hostname>/` and `bundles/_mesh_material/` (minted certs / fetched CA copies).
+3. **Control host** — optional cleanup under `bundles/<hostname>/` and `bundles/_mesh_material/` (minted certs / fetched CA copies).
 
 There is **no** automated rollback playbook yet. Treat `deprovision_instance` as the Controller-side undo; node disk cleanup is manual.
 

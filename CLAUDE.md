@@ -14,7 +14,7 @@ Ansible collection for adding execution nodes and hop nodes to existing containe
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Installer Host                                │
+│                    Control Host                                │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │  ansible-playbook playbooks/add_node.yml                 │   │
 │  │    -i inventory -e aap_setup_dir=/path/to/setup          │   │

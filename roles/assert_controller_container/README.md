@@ -7,7 +7,7 @@ Used by `list_instances` and `register_instance` before `podman exec`.
 ## Requirements
 
 - Inventory group `automationcontroller` (same as the containerized installer inventory).
-- SSH from the installer host to `groups['automationcontroller'][0]` as the install user.
+- SSH from the control host to `groups['automationcontroller'][0]` as the install user.
 - Podman and a running controller task container on that host.
 
 ## Role Variables

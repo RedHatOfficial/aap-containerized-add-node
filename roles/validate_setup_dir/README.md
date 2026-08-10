@@ -1,11 +1,11 @@
 # validate_setup_dir
 
-Validate `aap_setup_dir` as a containerized AAP setup tree (`ansible.containerized_installer` present; RPM-only trees rejected). Derive registry/image defaults and publish installer host facts on `aap_add_node_operator` for later plays.
+Validate `aap_setup_dir` as a containerized AAP setup tree (`ansible.containerized_installer` present; RPM-only trees rejected). Derive registry/image defaults and publish control-host facts on `aap_add_node_control` for later plays.
 
 ## Requirements
 
 - Local access to an extracted `containerized-setup-*` directory.
-- Run on the installer host (typically `localhost`).
+- Run on the control host (typically `localhost`).
 
 ## Role Variables
 

@@ -105,13 +105,13 @@ The CI runs `ansible-lint` with production profile. Common issues to avoid:
 **Example wrapping long lines:**
 ```yaml
 # Bad - 296 characters
-aap_add_node_receptor_image: "{{ 'registry.redhat.io/' ~ (hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('ansible-automation-platform-26')) ~ '/' ~ (hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest')) }}"
+aap_add_node_receptor_image: "{{ 'registry.redhat.io/' ~ (hostvars['aap_add_node_control'].aap_add_node_default_registry_ns_aap | default('ansible-automation-platform-26')) ~ '/' ~ (hostvars['aap_add_node_control'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest')) }}"
 
 # Good - wrapped with >-
 aap_add_node_receptor_image: >-
   {{ 'registry.redhat.io/' ~
-     (hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('ansible-automation-platform-26')) ~ '/' ~
-     (hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest')) }}
+     (hostvars['aap_add_node_control'].aap_add_node_default_registry_ns_aap | default('ansible-automation-platform-26')) ~ '/' ~
+     (hostvars['aap_add_node_control'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest')) }}
 ```
 
 ### Documentation
