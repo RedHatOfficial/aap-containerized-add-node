@@ -1,27 +1,60 @@
 ---
 name: CI
 
+concurrency:
+  group: ci-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main, devel]
   pull_request:
     branches: [main, devel]
 
+env:
+  FORCE_COLOR: "1"
+
 jobs:
-  lint:
-    runs-on: ubuntu-latest
+  changelog:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Fetch PR base branch
+        run: git fetch --no-tags origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ansible-core ansible-lint yamllint
+        run: pip install pyyaml
+
+      - name: Validate changelog fragment
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        run: python3 .github/scripts/validate_changelog.py --ref ${{ github.event.pull_request.base.ref }}
+
+      - name: Skip changelog (skip-changelog label)
+        if: ${{ contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        run: echo "skip-changelog label present; fragment not required"
+
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install --upgrade pip ansible-core ansible-lint yamllint
 
       - name: Install collection dependencies
         run: ansible-galaxy collection install -r requirements.yml
@@ -33,14 +66,14 @@ jobs:
         run: ansible-lint
 
   syntax-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install Ansible
         run: pip install ansible-core
@@ -52,20 +85,17 @@ jobs:
         run: ansible-galaxy collection install . --force
 
       - name: Syntax check playbooks
-        run: |
-          for playbook in playbooks/*.yml; do
-            ansible-playbook "$playbook" --syntax-check
-          done
+        run: for playbook in playbooks/*.yml; do ansible-playbook "$playbook" --syntax-check; done
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install Ansible
         run: pip install ansible-core
@@ -74,8 +104,8 @@ jobs:
         run: ansible-galaxy collection build --force
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
         with:
           name: collection
-          path: '*.tar.gz'
+          path: "*.tar.gz"
           retention-days: 5

@@ -20,7 +20,7 @@ Open the repository to public access and establish support model.
 1. Make repository publicly accessible on GitHub
 2. Document support model and Red Hat Support Exception requirement
 3. Establish contribution guidelines for external contributors
-4. Publish to Ansible Galaxy (optional)
+4. Ship releases via GitHub Release tarball for **manual** customer distribution (Galaxy/Automation Hub out of scope)
 
 ## Support Model
 
@@ -44,8 +44,10 @@ Documentation must clearly state:
 | Public repo | Change visibility to public |
 | SUPPORT.md | Support model documentation |
 | README update | Add support disclaimer prominently |
-| Galaxy publish | Optional: `ansible-galaxy collection publish` |
+| GitHub Release tarball | Tag builds attach `.tar.gz` for manual handoff (`release.yml`) |
 | CONTRIBUTING.md update | External contributor guidelines |
+
+**Out of scope:** Ansible Galaxy and Automation Hub publish — this collection is distributed manually under the Support Exception model.
 
 ## Prerequisites
 
@@ -64,3 +66,5 @@ Documentation must clearly state:
 ## Notes
 
 Upstream migration to `ansible.containerized_installer` (original PHASE-003 scope) is a separate track — that would make this capability officially supported without exception. This phase covers the interim public release.
+
+Galaxy/Automation Hub publishing remains deferred/out of scope while distribution is manual customer handoff of the GitHub Release artifact.
