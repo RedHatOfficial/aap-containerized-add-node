@@ -20,7 +20,7 @@ Brief description of changes.
 
 - [ ] My code follows the project style guidelines
 - [ ] I have updated documentation as needed
-- [ ] I have updated CHANGELOG.md
+- [ ] I have added a changelog fragment under `changelogs/fragments/` (or labeled `skip-changelog`)
 - [ ] I have added tests if applicable
 - [ ] All CI checks pass
 

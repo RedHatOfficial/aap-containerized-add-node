@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 # Ansible
+.ansible/
 *.retry
 *.log
 
@@ -55,3 +56,6 @@ galaxy.yml.bak
 
 # Pre-commit
 .pre-commit-config.yaml.bak
+
+# Other
+.ignore/

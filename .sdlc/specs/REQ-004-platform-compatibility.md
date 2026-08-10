@@ -53,7 +53,7 @@ Collection must work across this matrix.
 |----------|-------------|
 | `meta/runtime.yml` | Ansible version requirements |
 | `galaxy.yml` | Collection metadata |
-| CHANGELOG.md | Tested versions documented |
+| CHANGELOG.rst | Tested versions documented |
 
 ## Test Matrix
 

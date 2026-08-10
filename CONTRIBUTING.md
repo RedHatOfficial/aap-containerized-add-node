@@ -117,8 +117,26 @@ aap_add_node_receptor_image: >-
 ### Documentation
 
 - Update README.md for user-facing changes
-- Update CHANGELOG.md for all changes
+- Add an antsibull changelog fragment under `changelogs/fragments/` for changes that
+  modify `roles/`, `playbooks/`, or plugins (CI enforces this on PRs)
 - Use present tense ("Add feature" not "Added feature")
+- Apply the `skip-changelog` label only for docs-only or infra PRs that do not need a fragment
+
+#### Changelog fragments
+
+Release notes are generated into [CHANGELOG.rst](CHANGELOG.rst) via antsibull-changelog.
+[CHANGELOG.md](CHANGELOG.md) only points at that file — do not maintain duplicate release notes there.
+
+Example fragment (`changelogs/fragments/my-change.yml`):
+
+```yaml
+---
+bugfixes:
+  - Fix receptor peer list parsing for INI inventories.
+```
+
+Valid section keys are defined in `changelogs/config.yaml` (e.g. `minor_changes`,
+`bugfixes`, `breaking_changes`, `trivial`).
 
 ## Security
 
@@ -151,8 +169,10 @@ Test against a real AAP environment:
 
 1. Changes merge to `devel`
 2. When ready for release, `devel` merges to `main`
-3. Tag created on `main` (e.g., `v1.0.0`)
-4. Collection built and published to Galaxy
+3. Run `antsibull-changelog release` (updates `CHANGELOG.rst` / `changelogs/changelog.yaml`) and bump `galaxy.yml` version
+4. Tag created on `main` (e.g., `v1.0.0`)
+5. `release.yml` builds the collection and attaches the `.tar.gz` to a GitHub Release
+6. Distribute that tarball to customers manually (not published to Ansible Galaxy or Automation Hub)
 
 ## Questions?
 

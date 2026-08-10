@@ -95,17 +95,17 @@ Each role has a `roles/<name>/README.md`. Flow overview: [docs/COLLECTION_MAP.md
 
 Upstream path to fold this into the containerized installer: [INSTALLER_PLAN.md](INSTALLER_PLAN.md). Drop-in file tree for local installer experiments: [installer-overlay/](installer-overlay/).
 
-See [CHANGELOG.md](CHANGELOG.md) for release notes. Contribution and release process: [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CHANGELOG.rst](CHANGELOG.rst) for release notes (fragments under `changelogs/fragments/`). Contribution and release process: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Tested against
 
 Reusable scenario checklists, inventory sketches, and a results log: [TEST.md](TEST.md).
 
-| Target | Execution | Hop | Parallel |
-|--------|-----------|-----|----------|
-| Containerized AAP 2.6, AIO | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: Tested |
-| Containerized AAP 2.7, AIO | :white_check_mark: **Tested** (RHEL 9 + RHEL 10) | :white_large_square: Untested | :white_check_mark: **Tested** |
-| Containerized AAP 2.6/2.7, cluster | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested |
+| Target | Execution | Hop | Parallel | Post-join full upgrade |
+|--------|-----------|-----|----------|------------------------|
+| Containerized AAP 2.6, AIO | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: **Tested** (see T-26-AIO-FULL-UPGRADE in [TEST.md](TEST.md)) |
+| Containerized AAP 2.7, AIO | :white_check_mark: **Tested** (RHEL 9 + RHEL 10) | :white_large_square: Untested | :white_check_mark: **Tested** | :white_large_square: Untested |
+| Containerized AAP 2.6/2.7, cluster | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested |
 
 ## To Do
 
