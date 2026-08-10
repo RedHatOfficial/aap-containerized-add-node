@@ -117,6 +117,9 @@ aap_add_node_receptor_image: >-
 ### Documentation
 
 - Update README.md for user-facing changes
+- Every role under `roles/<name>/` must have a `README.md`
+- New roles must include `meta/argument_specs.yml` (no Jinja in argspec
+  defaults/descriptions)
 - Add an antsibull changelog fragment under `changelogs/fragments/` for changes that
   modify `roles/`, `playbooks/`, or plugins (CI enforces this on PRs)
 - Use present tense ("Add feature" not "Added feature")
