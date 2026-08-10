@@ -100,7 +100,10 @@
     aap_add_node_bundle_install: "{{ hostvars['aap_add_node_operator'].aap_add_node_bundle_install | default(false) }}"
     aap_add_node_default_registry_ns_aap: "{{ hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('') }}"
     aap_add_node_default_receptor_image: "{{ hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest') }}"
-    aap_add_node_receptor_image: "{{ 'registry.redhat.io/' ~ (hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('ansible-automation-platform-26')) ~ '/' ~ (hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest')) }}"
+    aap_add_node_receptor_image: >-
+      {{ 'registry.redhat.io/' ~
+         (hostvars['aap_add_node_operator'].aap_add_node_default_registry_ns_aap | default('ansible-automation-platform-26')) ~ '/' ~
+         (hostvars['aap_add_node_operator'].aap_add_node_default_receptor_image | default('receptor-rhel9:latest')) }}
     bundle_dir: "{{ hostvars['aap_add_node_operator'].aap_setup_dir }}/bundle"
     bundle_install: "{{ hostvars['aap_add_node_operator'].aap_add_node_bundle_install | default(true) }}"
   environment:
