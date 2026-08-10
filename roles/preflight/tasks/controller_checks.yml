@@ -6,11 +6,21 @@
   ansible.builtin.include_role:
     name: redhat_official.aap_containerized_add_node.assert_controller_container
 
-# Check AIO local-only status (disruption warning)
+# Check AIO local-only status (disruption warning).
+# Preflight runs with gather_facts: false on localhost; pull user facts on the
+# controller so ansible_user_dir is defined for the delegated slurp.
+- name: Gather controller user facts for receptor path
+  ansible.builtin.setup:
+    gather_subset:
+      - user
+  delegate_to: "{{ groups['automationcontroller'][0] }}"
+  delegate_facts: true
+
 - name: Get controller receptor.conf
   ansible.builtin.slurp:
-    src: "{{ ansible_user_dir }}/aap/receptor/etc/receptor.conf"
+    src: "{{ hostvars[groups['automationcontroller'][0]].ansible_user_dir }}/aap/receptor/etc/receptor.conf"
   delegate_to: "{{ groups['automationcontroller'][0] }}"
+  become: false
   register: _receptor_conf_raw
   ignore_errors: true
 
