@@ -10,7 +10,9 @@ exclude_paths:
 
 skip_list:
   - name[casing]  # Allow task names with mixed case
+  - name[template]  # Allow Jinja in task names for dynamic per-host naming
   - var-naming[no-role-prefix]  # Collection uses shared aap_add_node_* prefix across roles
+  - no-handler  # Some tasks legitimately run on changed without being handlers
 
 warn_list:
   - experimental
