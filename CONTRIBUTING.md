@@ -2,6 +2,25 @@
 
 Thank you for your interest in contributing! This document provides guidelines for contributing to this project.
 
+## IMPORTANT: AI Agent Contributors
+
+**All AI agents working on this repository MUST:**
+
+1. **Read `CLAUDE.md`** — Project constitution and constraints
+2. **Read `AGENTS.md`** — Agent roles and architectural invariants
+3. **Use skills in `.agents/skills/`** — Follow skill procedures for all SDLC tasks
+
+| Task | Skill |
+|------|-------|
+| Check status | `/sdlc-status` |
+| Create requirement | `/req-new` |
+| Capture decision question | `/dr-new` |
+| Resolve decision | `/dr-review` |
+| Document architecture | `/adr-new` |
+| Submit PR | `/pr-new` |
+
+**Do NOT bypass skills** — they contain correct logic and ensure consistency.
+
 ## Code of Conduct
 
 This project follows the [Red Hat Community Code of Conduct](https://www.redhat.com/en/about/digital-accessibility). Please be respectful and inclusive in all interactions.

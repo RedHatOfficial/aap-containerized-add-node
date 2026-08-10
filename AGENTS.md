@@ -4,6 +4,27 @@ This document defines the specialized agents used in collection development. It 
 operational companion to `CLAUDE.md` (the project constitution). Read both before
 touching code.
 
+## IMPORTANT: Use Agent Skills
+
+**All AI agents working on this repository MUST use the skills defined in `.agents/skills/`.**
+
+Before performing any SDLC task, invoke the appropriate skill:
+
+```
+/sdlc-status    → Check project status
+/workflow       → Get guidance on what to do next
+/req-new        → Create a requirement
+/dr-new         → Capture a question or blocker
+/dr-review      → Resolve a decision request
+/adr-new        → Document an architecture decision
+/pr-new         → Submit a pull request
+/lean-ci        → CI/CD workflow guidance
+```
+
+**Do NOT bypass skills by guessing implementation details.** Skills contain the correct
+logic, templates, and conventions for this project. Using skills ensures consistency
+across all contributors (human and AI).
+
 ## Architectural Invariants
 
 These are non-negotiable. Violating any of them will break the system or create

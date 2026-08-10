@@ -58,6 +58,7 @@ Full workflow: `.agents/skills/workflow/SKILL.md`
 
 ## Agent Constraints
 
+- **Follow agent skills** — use skills in `.agents/skills/` for SDLC tasks
 - **Follow ADRs** — no deviation without a new ADR
 - **ansible-lint must pass** — run before committing
 - **Non-root execution** — collection rejects root user
@@ -67,6 +68,23 @@ Full workflow: `.agents/skills/workflow/SKILL.md`
 - Do NOT modify files outside task scope
 - Do NOT add features not in requirements
 - Ask for clarification if specs are ambiguous
+
+## Agent Skills (Required)
+
+**All AI agents working on this repo MUST use the skills defined in `.agents/skills/`.**
+
+| Task | Skill to Use |
+|------|--------------|
+| Check project status | `/sdlc-status` |
+| What to do next | `/workflow` |
+| Create requirement | `/req-new` |
+| Capture question/blocker | `/dr-new` |
+| Resolve decision | `/dr-review` |
+| Document architecture decision | `/adr-new` |
+| Submit pull request | `/pr-new` |
+| CI/CD guidance | `/lean-ci` |
+
+Skills ensure consistency across contributors. Do not bypass skills by guessing implementation details.
 
 ## Quality Gates
 

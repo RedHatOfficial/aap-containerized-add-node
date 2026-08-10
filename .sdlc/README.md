@@ -16,6 +16,21 @@ This is a deliberate design choice (ADR-001):
 - Avoids duplication between UI/CLI/automation
 - Matches how customers deploy at scale
 
+## For AI Agent Contributors
+
+**All AI agents MUST use the skills in `.agents/skills/` for SDLC tasks.**
+
+| Task | Invoke |
+|------|--------|
+| Check status | `/sdlc-status` |
+| What to do next | `/workflow` |
+| New requirement | `/req-new` |
+| Capture question | `/dr-new` |
+| Resolve decision | `/dr-review` |
+| Architecture decision | `/adr-new` |
+
+Skills ensure consistency. Do not bypass them by guessing implementation.
+
 ## Coverage Matrix
 
 | AAPRFE-3069 Requirement | Status | REQ | Phase |
