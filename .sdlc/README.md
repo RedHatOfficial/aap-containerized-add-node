@@ -48,6 +48,10 @@ This is a deliberate design choice (ADR-001):
 | ADR | Title | Status |
 |-----|-------|--------|
 | [ADR-001](adrs/ADR-001-cli-first-approach.md) | Ansible Automation Only | Accepted |
+| [ADR-002](adrs/ADR-002-serial-registration.md) | Serial Registration | Accepted |
+| [ADR-003](adrs/ADR-003-outbound-first-topology.md) | Outbound-First Topology | Accepted |
+| [ADR-004](adrs/ADR-004-installer-role-reuse.md) | Installer Role Reuse | Accepted |
+| [ADR-005](adrs/ADR-005-preflight-opt-out.md) | Preflight as Opt-Out | Accepted |
 
 ### Open DRs (Need Input)
 
