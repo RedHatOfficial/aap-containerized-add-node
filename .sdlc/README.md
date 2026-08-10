@@ -41,6 +41,7 @@ This is a deliberate design choice (ADR-001):
 | [specs/](specs/) | Requirements specifications |
 | [phases/](phases/) | Development phases |
 | [decisions/](decisions/) | Open and closed decision requests |
+| [testing/](testing/) | Test plans, scenarios, checklists |
 | [research/](research/) | Background research |
 | [context/](context/) | Supporting documentation references |
 | [templates/](templates/) | Document templates |
