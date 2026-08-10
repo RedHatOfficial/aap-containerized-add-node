@@ -64,6 +64,14 @@ write an ADR first.
     restart any existing services. Only inbound dial (opt-in) causes controller receptor
     restart.
 
+11. **Every role has a README.md**. New and existing roles under `roles/<name>/` must
+    include `README.md` (purpose, variables, examples). No exceptions.
+
+12. **Every role has argument_specs where possible**. New roles must ship
+    `meta/argument_specs.yml` for entry variables. Avoid Jinja in argspec defaults or
+    descriptions (it is templated during validation and breaks without facts). Prefer
+    static defaults in the argspec; resolve fact-dependent paths in tasks.
+
 ## Agent Roles
 
 ### 1. Collection Developer Agent
@@ -89,6 +97,8 @@ write an ADR first.
 - Must pass `ansible-lint`
 - Must not duplicate installer logic
 - Must use `become: false` for controller awx-manage tasks
+- Must add `roles/<name>/README.md` for every role
+- Must add `roles/<name>/meta/argument_specs.yml` for every new role (document entry vars)
 
 ---
 
@@ -179,6 +189,10 @@ These rules were learned from past development sessions:
 
 5. **Namespace in FQCNs must match galaxy.yml**. Role references must use
    `redhat_official.aap_containerized_add_node.<role>` not shortened forms.
+
+6. **New roles need README + argument_specs**. Every role requires `README.md`.
+   New roles also require `meta/argument_specs.yml`. Do not put Jinja
+   (`{{ ansible_user_dir }}`, etc.) in argspec defaults or descriptions.
 
 ## Skills Reference
 
