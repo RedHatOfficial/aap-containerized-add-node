@@ -1,6 +1,6 @@
 # Findings: historical installer research
 
-> **Not runtime docs.** Current collection supports **containerized AAP 2.5+ only**
+> **Not runtime docs.** Current collection supports **containerized AAP 2.6+ only**
 > (`awx-manage` over SSH + `ansible.containerized_installer` from `aap_setup_dir`).
 > RPM and OpenShift are unsupported. Material below informed the design.
 
@@ -44,7 +44,7 @@ Collection: `ansible.containerized_installer`.
 
 | Area | Note |
 |------|------|
-| Target (current) | Containerized 2.5+ |
-| Lab-validated | Containerized 2.6 AIO (multiple ENs) |
-| Hop joins | Implemented, not yet lab-validated |
+| Target (current) | Containerized 2.6+ |
+| Lab-validated | Containerized 2.6 AIO (execution + hop; EN via hop) |
+| Cluster topologies | Not yet lab-validated |
 | RPM | Research only — rejected by `validate_setup_dir` |

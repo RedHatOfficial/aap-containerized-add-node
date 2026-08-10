@@ -32,7 +32,7 @@ Collection must work across this matrix.
 ### AAP Versions
 - [ ] AAP 2.6.x containerized — tested
 - [ ] AAP 2.7.x containerized — tested
-- [ ] AAP 2.5 — out of scope (documented)
+- [ ] AAP 2.5 and earlier — out of scope (documented)
 - [ ] RPM installs — out of scope (documented)
 - [ ] OpenShift — out of scope (documented)
 

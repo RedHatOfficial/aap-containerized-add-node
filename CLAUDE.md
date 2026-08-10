@@ -111,7 +111,7 @@ Before completing any task:
 
 - RPM installs (different installer mechanics)
 - OpenShift / Operator (out of scope)
-- AAP 2.4 and earlier (pre-gateway architecture)
+- AAP 2.5 and earlier (pre-gateway architecture)
 
 ## References
 

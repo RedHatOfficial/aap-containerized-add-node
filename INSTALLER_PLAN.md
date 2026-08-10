@@ -10,9 +10,9 @@ Upstream-oriented design note. This collection (`redhat_official.aap_containeriz
 |----------|---------------------------|--------|
 | 1st | **2.7** | First installer landing target |
 | 2nd | **2.6** | Backport / follow-on after 2.7 |
-| Out of scope | **2.5** | Not planned for this installer migration |
+| Out of scope | **2.5 and earlier** | Not a target for this collection or installer migration |
 
-This collection may still be used as a stopgap on 2.5/2.6 labs; the upstream playbook work should not block on 2.5.
+This collection is a stopgap for **2.6/2.7** labs until the upstream additive playbook lands; do not plan 2.5 support.
 
 **Working tree in this repo:** [installer-overlay/](installer-overlay/) mirrors `ansible.containerized_installer` paths so you can `rsync` into an extracted setup tree and run `ansible.containerized_installer.add_execution_nodes`. The Galaxy collection at the repo root remains the standalone reference. See [installer-overlay/README.md](installer-overlay/README.md).
 
@@ -203,7 +203,7 @@ Reuse scenarios from [TEST.md](TEST.md) against the **new containerized installe
 | T-*-AIO-DEPROV-REJOIN | Deprovision, rebuild, join again |
 | T-26-AIO-FULL-UPGRADE / T-27-AIO-FULL-UPGRADE | Full `install` after collection- or overlay-added HN+EN (inventory list-form peers) |
 
-Do **not** require 2.5 validation for installer merge.
+Do **not** require 2.5 (or earlier) validation for installer merge.
 
 ### Upstream
 
@@ -222,7 +222,7 @@ Do **not** require 2.5 validation for installer merge.
 ## 7. Non-goals
 
 - **RPM installer** — out of scope; this plan targets containerized only.
-- **Containerized AAP 2.5** — out of scope for this installer migration (2.7 first, then 2.6).
+- **Containerized AAP 2.5 and earlier** — out of scope (2.7 first, then 2.6).
 - **OpenShift** — already has UI install-bundle add-node.
 - **Changing greenfield `ansible.containerized_installer.install` behavior** beyond not breaking it (full install remains the path for new clusters).
 - **Automated deprovision / uninstall playbook** — optional later; manual `awx-manage deprovision_instance` remains sufficient initially.

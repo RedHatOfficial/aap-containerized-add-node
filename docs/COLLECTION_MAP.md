@@ -1,6 +1,6 @@
 # Collection map — Mermaid
 
-Current runtime map for **containerized AAP 2.5+**. See [ARCHITECTURE.md](ARCHITECTURE.md) for design, [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for SSH/rollback, and [FINDINGS.md](FINDINGS.md) for historical installer research (RPM/OpenShift).
+Current runtime map for **containerized AAP 2.6+**. See [ARCHITECTURE.md](ARCHITECTURE.md) for design, [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for SSH/rollback, and [FINDINGS.md](FINDINGS.md) for historical installer research (RPM/OpenShift).
 
 GitHub Mermaid notes: quote node labels that contain `[`, `]`, `{`, `}`, `/`, or `$`.
 
@@ -11,7 +11,7 @@ GitHub Mermaid notes: quote node labels that contain `[`, `]`, `{`, `}`, `/`, or
 ```mermaid
 flowchart TB
   subgraph IN["In scope"]
-    AAP["Containerized AAP 2.5+"]
+    AAP["Containerized AAP 2.6+"]
     NODE["Add EN and/or HN"]
     ADD["Additive only - new hosts"]
     AWX["awx-manage via podman exec"]
@@ -21,7 +21,7 @@ flowchart TB
   subgraph OUT["Out of scope"]
     OCP["OpenShift / operator"]
     RPM["RPM installer"]
-    V24["AAP 2.4 / pre-gateway"]
+    V25["AAP 2.5 and earlier"]
     FULL["Full installer re-run"]
     GW["Gateway OAuth registration"]
   end

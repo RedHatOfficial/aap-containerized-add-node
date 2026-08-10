@@ -1,5 +1,5 @@
 ---
-# Example inventory for outbound-peer join (AAP 2.5+).
+# Example inventory for outbound-peer join (AAP 2.6+).
 # Prefer using your real installer inventory instead of this file.
 # Per-host receptor_peers / aap_add_node_peers belong in that inventory.
 #

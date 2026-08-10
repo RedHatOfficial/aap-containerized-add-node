@@ -1,6 +1,6 @@
 # Architecture: additive EN/HN join for containerized AAP
 
-> **Scope:** containerized AAP **2.5+** only. RPM and OpenShift are **not** supported.
+> **Scope:** containerized AAP **2.6+** only. RPM and OpenShift are **not** supported.
 > Historical installer research (including RPM) lives in [FINDINGS.md](FINDINGS.md).
 
 ## Goals
@@ -15,7 +15,7 @@
 
 - OpenShift / operator clusters
 - RPM installer trees
-- AAP 2.4 / pre-gateway auth
+- AAP 2.5 and earlier (including pre-gateway / 2.4)
 - Greenfield full installs (`setup.sh` / full `install.yml`)
 - Automated deprovision / rollback playbook (manual steps in [TROUBLESHOOTING.md](TROUBLESHOOTING.md))
 - Gateway OAuth / `ansible.controller.instance` registration
@@ -118,5 +118,5 @@ See [COLLECTION_MAP.md](COLLECTION_MAP.md) for mermaid diagrams of the playbook 
 
 ## Known gaps
 
-- Hop-node joins are implemented but **not yet lab-validated** (execution nodes validated on containerized AAP 2.6 AIO).
+- Cluster (multi-controller) topologies not yet lab-validated (AIO validated on containerized AAP 2.6).
 - No automated integration tests against a live AAP cluster (CI covers lint/build/changelog).

@@ -31,7 +31,7 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 |----------|--------|
 | RPM installs | Different installer mechanics |
 | OpenShift / Operator | Out of scope |
-| AAP 2.4 and earlier | Pre-gateway architecture |
+| AAP 2.5 and earlier | Out of scope (pre-2.6 / pre-gateway) |
 
 ## Current Limitations
 
@@ -176,7 +176,8 @@ Troubleshooting (SSH, container name, rollback): [docs/TROUBLESHOOTING.md](docs/
 
 | Flavor | Versions | Role |
 |--------|----------|------|
-| Containerized setup | 2.5, 2.6, 2.7 | **Supported target** |
+| Containerized setup | 2.6, 2.7 | **Supported target** |
+| Containerized setup | 2.5 and earlier | Historical research only — not supported |
 | RPM setup | 2.5, 2.6 | Historical research only — not supported |
 | OpenShift install bundles | 2.5, 2.6, 2.7 | Reference only — how receptor join is packaged elsewhere |
 
