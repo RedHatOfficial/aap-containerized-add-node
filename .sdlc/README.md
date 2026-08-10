@@ -18,32 +18,52 @@ This is a deliberate design choice (ADR-001):
 
 ## Coverage Matrix
 
-| AAPRFE-3069 Requirement | Status | Notes |
-|-------------------------|--------|-------|
-| Add EN to existing mesh post-install | Implemented | Core functionality |
-| No full installer re-run | Implemented | Only new nodes touched |
-| Outbound-only mode (EN → Controller) | Implemented | Default, zero disruption |
-| Inbound mode (Controller → EN) | Implemented | Optional |
-| Node-initiated peering | Implemented | `receptor_peers` |
-| Wrap awx-manage provision_instance | Implemented | `register_instance` role |
-| Correct status reporting | Implemented | `verify_mesh` role |
-| Scriptable/automatable | Implemented | Ansible collection |
-| Self-contained "join bundle" | Open | DR-001 |
-| UI-driven workflow | Not Implementing | ADR-001 |
-| CLI "add node" command | Not Implementing | ADR-001 |
+| AAPRFE-3069 Requirement | Status | REQ | Phase |
+|-------------------------|--------|-----|-------|
+| Add EN to existing mesh post-install | Implemented | REQ-001 | PHASE-001 |
+| No full installer re-run | Implemented | REQ-001 | PHASE-001 |
+| Hop node support | Implemented | REQ-002 | PHASE-001 |
+| Execution node support | Implemented | REQ-002 | PHASE-001 |
+| Outbound-only mode (EN → Controller) | Implemented | REQ-003 | PHASE-001 |
+| Inbound mode (Controller → EN) | Implemented | REQ-003 | PHASE-001 |
+| AAP 2.6+ support | Implemented | REQ-004 | PHASE-001 |
+| RHEL 9 nodes | Implemented | REQ-004 | PHASE-001 |
+| RHEL 10 nodes | Implemented | REQ-004 | PHASE-001 |
+| Self-contained "join bundle" | Open | REQ-005 | PHASE-002 |
+| UI-driven workflow | Not Implementing | — | ADR-001 |
+| CLI "add node" command | Not Implementing | — | ADR-001 |
 
 ## Directory Structure
 
 | Directory | Purpose |
 |-----------|---------|
-| `adrs/` | Architecture Decision Records |
-| `decisions/open/` | Open decision requests |
-| `decisions/closed/` | Resolved decisions |
-| `templates/` | Document templates |
+| [adrs/](adrs/) | Architecture Decision Records |
+| [specs/](specs/) | Requirements specifications |
+| [phases/](phases/) | Development phases |
+| [decisions/](decisions/) | Open and closed decision requests |
+| [research/](research/) | Background research |
+| [context/](context/) | Supporting documentation references |
+| [templates/](templates/) | Document templates |
 
-## Decisions Summary
+## Phases
 
-### ADRs (Architecture Decisions)
+| Phase | Title | Status |
+|-------|-------|--------|
+| [PHASE-001](phases/PHASE-001-initial-collection.md) | Initial Collection | Complete |
+| [PHASE-002](phases/PHASE-002-offline-bundle.md) | Offline Bundle | Planned |
+| [PHASE-003](phases/PHASE-003-upstream-migration.md) | Upstream Migration | Future |
+
+## Requirements
+
+| REQ | Title | Status | Phase |
+|-----|-------|--------|-------|
+| [REQ-001](specs/REQ-001-additive-node-join.md) | Additive Node Join | Implemented | PHASE-001 |
+| [REQ-002](specs/REQ-002-hop-and-execution-nodes.md) | Hop and Execution Node Support | Implemented | PHASE-001 |
+| [REQ-003](specs/REQ-003-bidirectional-peering.md) | Bidirectional Peering | Implemented | PHASE-001 |
+| [REQ-004](specs/REQ-004-platform-compatibility.md) | Platform Compatibility | Implemented | PHASE-001 |
+| [REQ-005](specs/REQ-005-offline-bundle.md) | Offline Join Bundle | Open | PHASE-002 |
+
+## ADRs (Architecture Decisions)
 
 | ADR | Title | Status |
 |-----|-------|--------|
@@ -53,13 +73,13 @@ This is a deliberate design choice (ADR-001):
 | [ADR-004](adrs/ADR-004-installer-role-reuse.md) | Installer Role Reuse | Accepted |
 | [ADR-005](adrs/ADR-005-preflight-opt-out.md) | Preflight as Opt-Out | Accepted |
 
-### Open DRs (Need Input)
+## Open DRs (Need Input)
 
 | DR | Title | Priority |
 |----|-------|----------|
 | [DR-001](decisions/open/DR-001-offline-join-bundle.md) | Offline Join Bundle | High |
 
-### Closed DRs
+## Closed DRs
 
 | DR | Title | Outcome |
 |----|-------|---------|

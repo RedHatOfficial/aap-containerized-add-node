@@ -6,7 +6,43 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 
 **Collection:** `redhat_official.aap_containerized_add_node`
 
-RPM installs, OpenShift, and AAP 2.4 are out of scope.
+## Summary
+
+| | |
+|---|---|
+| **Purpose** | Day-2 mesh node addition without maintenance window |
+| **Supports** | AAP 2.6+, 2.7+ containerized |
+| **Node Types** | Execution nodes, Hop nodes |
+| **Node OS** | RHEL 9.x, RHEL 10.x |
+| **Topology** | Outbound dial (default), Inbound dial (optional) |
+
+## Supported
+
+| Platform | Status |
+|----------|--------|
+| Containerized AAP 2.6+ | Supported |
+| Containerized AAP 2.7+ | Supported |
+| RHEL 9 execution/hop nodes | Tested |
+| RHEL 10 execution/hop nodes | Tested |
+
+## Not Supported
+
+| Platform | Reason |
+|----------|--------|
+| RPM installs | Different installer mechanics |
+| OpenShift / Operator | Out of scope |
+| AAP 2.4 and earlier | Pre-gateway architecture |
+
+## Current Limitations
+
+- Requires SSH access from installer host to controller and new nodes
+- Controller task container must be running
+- Air-gapped bundle generation not yet implemented (see [DR-001](.sdlc/decisions/open/DR-001-offline-join-bundle.md))
+- Cluster topologies not yet lab-validated (AIO tested)
+
+## SDLC
+
+Architecture decisions, requirements, and development phases: [.sdlc/](.sdlc/README.md)
 
 ## Prerequisites
 
