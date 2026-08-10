@@ -19,7 +19,7 @@ Add a hop node that peers to the controller (`receptor_type=hop`). Often validat
 | Container | `automation-controller-task` running |
 | SSH | Passwordless to controller and hop (install user) |
 | Node disk | ≥ 32 GB (prefer 64 GB) |
-| Node OS | RHEL 9.x (RHEL 10 hop still untested) |
+| Node OS | RHEL 9.x and RHEL 10.x (covered by EN-VIA-HN joins) |
 
 ## Inventory
 
@@ -54,3 +54,4 @@ Same installer command pattern as [TEST.md](../../../TEST.md). Verify with [veri
 |------|-------------|---------|--------|-------|
 | 2026-08 | 2.6 AIO | RHEL 9 | Pass | T-26-AIO-HN — see TEST.md |
 | 2026-08-10 | 2.7 AIO | RHEL 9 | Pass | Covered by T-27-AIO-EN-VIA-HN (hop → `aap27.lennysh.net`) |
+| 2026-08-10 | 2.7 AIO | RHEL 10.2 | Pass | Covered by T-27-AIO-EN-VIA-HN (`aap27-hn-02` → controller) |

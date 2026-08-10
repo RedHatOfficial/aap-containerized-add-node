@@ -23,8 +23,7 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 | Containerized AAP 2.6+ | Supported |
 | Containerized AAP 2.7+ | Supported |
 | RHEL 9 execution/hop nodes | Tested |
-| RHEL 10 execution nodes | Tested (S-001 / AAP 2.7.1) |
-| RHEL 10 hop nodes | Untested |
+| RHEL 10 execution/hop nodes | Tested (S-001; T-27-AIO-EN-VIA-HN on 2.7) |
 
 ## Not Supported
 
@@ -105,7 +104,7 @@ Reusable scenario checklists, inventory sketches, and a results log: [TEST.md](T
 | Target | Execution | Hop | Parallel | Post-join full upgrade |
 |--------|-----------|-----|----------|------------------------|
 | Containerized AAP 2.6, AIO | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: **Tested** (see T-26-AIO-FULL-UPGRADE in [TEST.md](TEST.md)) |
-| Containerized AAP 2.7, AIO | :white_check_mark: **Tested** (RHEL 9 + RHEL 10 EN; see S-001 / T-27) | :white_check_mark: **Tested** (RHEL 9 hop) | :white_check_mark: **Tested** (T-27-AIO-EN-VIA-HN) | :white_large_square: Untested |
+| Containerized AAP 2.7, AIO | :white_check_mark: **Tested** (RHEL 9 + RHEL 10; see S-001 / T-27) | :white_check_mark: **Tested** (RHEL 9 + RHEL 10 hop) | :white_check_mark: **Tested** (T-27-AIO-EN-VIA-HN) | :white_large_square: Untested |
 | Containerized AAP 2.6/2.7, cluster | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested |
 
 ## To Do

@@ -7,8 +7,8 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | Scenario | TEST.md IDs (typical) | Status | Notes |
 |----------|------------------------|--------|-------|
 | [S-001](S-001-single-en.md) | T-26-AIO-EN, T-27-AIO-EN | :white_check_mark: Tested | EN → controller |
-| [S-002](S-002-single-hop.md) | T-26-AIO-HN, T-27-AIO-HN | :white_check_mark: Tested | HN → controller (also covered by EN-VIA-HN) |
-| [S-003](S-003-multi-hop.md) | T-26-AIO-EN-VIA-HN, T-27-AIO-EN-VIA-HN | :white_check_mark: Tested | HN + EN via hop, one playbook run |
+| [S-002](S-002-single-hop.md) | T-26-AIO-HN, T-27-AIO-HN | :white_check_mark: Tested | HN → controller (also covered by EN-VIA-HN; RHEL 9 + 10) |
+| [S-003](S-003-multi-hop.md) | T-26-AIO-EN-VIA-HN, T-27-AIO-EN-VIA-HN | :white_check_mark: Tested | HN + EN via hop; RHEL 9 + RHEL 10 pairs on 2.7 |
 | S-010 (planned) | — | :white_large_square: Untested | Inbound dial / controller peers to node |
 | S-020 | — | :white_check_mark: Tested (with joins) | Covered by [checklists/preflight.md](../checklists/preflight.md) |
 | S-030 | Parallel column in TEST.md | :white_check_mark: Tested (implicit in S-003) | Multi-node serial registration |
