@@ -91,13 +91,12 @@ Skills ensure consistency. Do not bypass them by guessing implementation.
 
 ## Open DRs (Need Input)
 
-| DR | Title | Priority |
-|----|-------|----------|
-| [DR-001](decisions/open/DR-001-offline-join-bundle.md) | Offline Join Bundle | High |
+None
 
 ## Closed DRs
 
 | DR | Title | Outcome |
 |----|-------|---------|
+| [DR-001](decisions/closed/DR-001-offline-join-bundle.md) | Offline Join Bundle | Implement (PHASE-002) |
 | [DR-002](decisions/closed/DR-002-controller-ui-integration.md) | Controller UI Integration | Not Implementing |
 | [DR-003](decisions/closed/DR-003-awx-cli-integration.md) | awx-cli Integration | Not Implementing |

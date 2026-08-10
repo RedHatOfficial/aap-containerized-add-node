@@ -2,7 +2,7 @@
 
 ## Status
 
-Open
+Decided
 
 ## Raised By
 
@@ -110,30 +110,51 @@ Workflow:
 
 Option A aligns with ADR-001 (automation-only). Bundle generation is just another playbook.
 
-Pending:
-- Security review of credential handling in bundles
-- Customer validation of two-phase workflow
-
 ---
 
 ## Related Artifacts
 
 - AAPRFE-3069: Parent RFE
 - ADR-001: Ansible Automation Only
+- REQ-005: Offline Join Bundle
+- PHASE-002: Offline Bundle
 
 ---
 
 ## Decision
 
-**Status**: Open
-**Date**: 
-**Decided By**: 
+**Status**: Decided
+**Date**: 2026-08-10
+**Decided By**: pgriffit
 
-**Decision**: [TBD]
+**Decision**: Option A — Implement bundle generation playbook
 
 **Rationale**: 
 
+Must implement with these constraints:
+1. **No API/UI/platform changes** — collection only, no upstream dependencies
+2. **Same approach as online** — reuse existing roles, same registration mechanics
+3. **Self-contained** — bundle includes everything needed for offline execution
+4. **Fully documented** — clear docs for offline prerequisites and workflow
+
+The bundle generation is just another playbook that:
+- Runs `generate_bundle.yml` with SSH to controller only (fetch CA, pre-register instance)
+- Produces archive containing: TLS certs, receptor.conf, install playbook, optionally images
+- User transfers bundle via approved channel
+- User runs `install.yml` locally on EN (no SSH required)
+
+Same `awx-manage` registration, same receptor install — just split into two phases.
+
+**Constraints**:
+- Bundle must work without internet access on EN
+- TLS keys in bundle — document secure handling
+- Images optional (user can pre-pull or include in bundle)
+- No changes to Controller, Gateway, or any AAP component
+
 **Action Items**:
-- [ ] Security review of TLS key handling in bundles
-- [ ] Customer feedback on two-phase workflow acceptability
-- [ ] Prototype if approved
+- [ ] Create `playbooks/generate_bundle.yml`
+- [ ] Create `roles/generate_bundle/`
+- [ ] Create `playbooks/install_from_bundle.yml` (runs locally on EN)
+- [ ] Document offline prerequisites in `docs/OFFLINE.md`
+- [ ] Document secure bundle handling
+- [ ] Test in air-gapped lab environment

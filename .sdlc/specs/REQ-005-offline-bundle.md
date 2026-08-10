@@ -2,7 +2,7 @@
 
 ## Status
 
-Open
+Approved
 
 ## Parent
 
@@ -39,16 +39,22 @@ Bundle enables two-phase join:
 - [ ] Bundle can be audited before execution
 - [ ] Documentation covers secure handling of credentials in bundle
 
-## Open Questions
+## Constraints (from DR-001)
 
-See [DR-001](../decisions/open/DR-001-offline-join-bundle.md):
-- Security review of TLS key handling
-- Customer validation of two-phase workflow
-- Bundle size with/without images
+Per DR-001 decision:
+1. **No API/UI/platform changes** — collection only
+2. **Same approach as online** — reuse existing roles
+3. **Self-contained** — bundle includes everything needed
+4. **Fully documented** — clear offline prerequisites
 
 ## Implementation
 
-TBD — awaiting DR-001 decision.
+| Artifact | Description |
+|----------|-------------|
+| `playbooks/generate_bundle.yml` | Generate bundle (SSH to controller only) |
+| `playbooks/install_from_bundle.yml` | Install locally on EN (no SSH) |
+| `roles/generate_bundle/` | Bundle assembly role |
+| `docs/OFFLINE.md` | Air-gapped installation guide |
 
 ## Related
 
