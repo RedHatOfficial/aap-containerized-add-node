@@ -1,5 +1,5 @@
 ---
-# Add EN/HN to containerized AAP 2.5+ without full installer re-run.
+# Add EN/HN to containerized AAP 2.6+ without full installer re-run.
 #
 # Required:
 #   -i <installer inventory>          # same inventory the BU maintains

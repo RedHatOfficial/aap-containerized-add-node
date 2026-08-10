@@ -3,7 +3,7 @@
 Reusable checklist for validating `redhat_official.aap_containerized_add_node` against containerized AAP.
 Update the **Status** column and the per-scenario **Last result** notes when you re-run.
 
-Scope: **containerized AAP 2.5+ only** (RPM / OpenShift out of scope).
+Scope: **containerized AAP 2.6+ only** (RPM / OpenShift out of scope).
 
 ## How to use this file
 
@@ -78,9 +78,6 @@ Then remove or update the host line in inventory before abandoning a join; keep 
 | T-26-AIO-RERUN | Re-run after failed mid-join (no deprovision) | Containerized 2.6 AIO | :white_check_mark: Tested (disk ENOSPC → resize → re-run) |
 | T-26-AIO-DEPROV-REJOIN | Deprovision, new VMs/same names, join again | Containerized 2.6 AIO | :white_check_mark: Tested |
 | T-26-AIO-FULL-UPGRADE | Full `install` / upgrade after collection-added HN+EN | Containerized 2.6 AIO | :white_check_mark: Tested |
-| T-25-AIO-EN | Execution peers controller | Containerized 2.5 AIO | :white_large_square: Untested |
-| T-25-AIO-HN | Hop peers controller | Containerized 2.5 AIO | :white_large_square: Untested |
-| T-25-AIO-EN-VIA-HN | Hop + EN via hop | Containerized 2.5 AIO | :white_large_square: Untested |
 | T-26-CLU-EN | Execution on multi-controller cluster | Containerized 2.6 cluster | :white_large_square: Untested |
 | T-26-CLU-HN | Hop on multi-controller cluster | Containerized 2.6 cluster | :white_large_square: Untested |
 | T-26-CLU-EN-VIA-HN | Hop + EN via hop on cluster | Containerized 2.6 cluster | :white_large_square: Untested |
@@ -255,7 +252,6 @@ Use the same Pre-flight / Run / Pass criteria as the matching 2.6 AIO scenario; 
 
 | ID | Change from 2.6 AIO analog |
 |----|----------------------------|
-| T-25-AIO-* | `aap_setup_dir` = 2.5 containerized tree; cluster is 2.5 AIO |
 | T-27-AIO-* | 2.7 containerized tree + 2.7 AIO |
 | T-*-CLU-* | ≥2 controllers in `[automationcontroller]`; confirm `groups['automationcontroller'][0]` is fine for `awx-manage`; peers as designed for HA mesh |
 | T-*-AIO-FULL-UPGRADE | After additive join, run full `ansible.containerized_installer.install` on that version’s setup tree |
