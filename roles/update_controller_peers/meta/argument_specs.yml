@@ -16,6 +16,9 @@ argument_specs:
         type: int
         default: 27199
       aap_add_node_receptor_config_dir:
-        description: Directory containing receptor.conf on the controller host.
+        description: >-
+          Directory containing receptor.conf on the controller host.
+          When empty or omitted, tasks resolve it under the remote user
+          home aap/receptor/etc path (requires gathered facts).
         type: path
-        default: "{{ ansible_user_dir }}/aap/receptor/etc"
+        default: ''
