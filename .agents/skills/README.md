@@ -9,6 +9,23 @@ Agent skills for development workflow and spec-driven development.
 | Skill | Purpose | Arguments |
 |-------|---------|-----------|
 | `sdlc-status` | Show project status and blockers | `[phase or req]` |
+| `workflow` | Get workflow guidance | `[next\|blockers\|start\|decision]` |
+| `req-new` | Create requirement spec | `[Feature] [--phase X]` |
+| `dr-new` | Create Decision Request | `[Question] [--priority X]` |
+| `dr-review` | Resolve Decision Request | `[DR-NNN] [--quick]` |
+| `adr-new` | Create Architecture Decision Record | `[Title] [--from-dr X]` |
+
+### Pull Requests
+
+| Skill | Purpose | Arguments |
+|-------|---------|-----------|
+| `pr-new` | Prepare and submit a pull request | `[branch-name] [--title 'PR title']` |
+
+### Utilities
+
+| Skill | Purpose | Arguments |
+|-------|---------|-----------|
+| `lean-ci` | Guide for GitHub Actions workflows | `[workflow-name]` |
 
 ## Skill Structure
 
@@ -19,6 +36,20 @@ skills/
 │   ├── SKILL.md
 │   └── references/
 │       └── status-values.md
+├── workflow/
+│   └── SKILL.md
+├── req-new/
+│   └── SKILL.md
+├── dr-new/
+│   └── SKILL.md
+├── dr-review/
+│   └── SKILL.md
+├── adr-new/
+│   └── SKILL.md
+├── pr-new/
+│   └── SKILL.md
+└── lean-ci/
+    └── SKILL.md
 ```
 
 ## SKILL.md Format
