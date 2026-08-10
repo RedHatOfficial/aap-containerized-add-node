@@ -29,7 +29,9 @@ ansible-playbook "${COL}/playbooks/add_node.yml" \
   -e aap_add_node_skip_image_load_if_present=true
 ```
 
-Lab secrets (gitignored) may live under `lab/secrets.yml` and be copied to the installer host as needed.
+Lab secrets (gitignored under `.ignore/lab/`) are per cluster, e.g.
+`.ignore/lab/secrets.aap26.yml` / `.ignore/lab/secrets.aap27.yml`.
+Copy them to the installer host or pass with `-e @…` as needed.
 
 ### Pass criteria (all join scenarios)
 
