@@ -24,86 +24,102 @@ Should this collection support generating self-contained "join bundles" for air-
 
 ## Context
 
+ADR-001 establishes that Ansible automation is the only interface. This DR addresses a specific gap: environments where the installer host cannot SSH to execution nodes.
+
 AAPRFE-3069 describes customers who cannot allow inbound SSH to execution nodes due to security/compliance policy:
 
-> "Allow the controller to generate a self-contained 'join bundle' (inventory + credentials + ansible-navigator + EE) from data entered in the controller UI, which can be executed directly on the target RHEL host to join the mesh with minimal manual steps — useful for environments where the control plane cannot reach the node directly at all."
+> "Allow the controller to generate a self-contained 'join bundle'... which can be executed directly on the target RHEL host to join the mesh with minimal manual steps — useful for environments where the control plane cannot reach the node directly at all."
 
 Current state:
 - Collection requires SSH from installer host to execution nodes
 - Some environments have strict egress-only policies on EN networks
-- Manual bundle creation is error-prone and undocumented
+- No documented workaround for air-gapped scenarios
+
+This is an automation question, not a UI question — bundle generation would be another playbook, consistent with ADR-001.
 
 ## Impact of Not Deciding
 
 - Air-gapped customers cannot use this collection
-- Manual workarounds remain error-prone
 - Partial coverage of AAPRFE-3069 requirements
+- Customers must create bundles manually (error-prone)
 
 ---
 
 ## Options Considered
 
-### Option A: Implement Bundle Generation in Collection
+### Option A: Implement Bundle Generation Playbook
 
-**Description**: Add `playbooks/generate_bundle.yml` that creates self-contained archive.
+**Description**: Add `playbooks/generate_bundle.yml` that creates self-contained archive for offline execution.
+
+Bundle contents:
+- Pre-minted TLS certificates (signed by mesh CA)
+- receptor.conf template
+- Install playbook for local execution
+- Optional: receptor container image
+
+Workflow:
+1. Run `generate_bundle.yml` on installer host (SSH to controller only)
+2. Transfer bundle to EN via approved channel (USB, SFTP, etc.)
+3. Run `install.yml` locally on EN
 
 **Pros**:
 - Supports air-gapped environments
-- No SSH to EN required
+- Consistent with automation-only approach (ADR-001)
 - Bundle can be audited before execution
+- Pre-registers instance so heartbeat appears after local install
 
 **Cons**:
 - Two-phase process (generate + execute)
-- Credentials in bundle require careful handling
-- Bundle may be large if images included (~600MB)
+- TLS private keys in bundle require secure handling
+- Bundle size ~50MB minimum, ~600MB with images
 
 **Effort**: Medium
 
-### Option B: Document Manual Bundle Creation
+### Option B: Document Manual Process
 
-**Description**: Provide documentation for manually creating bundles.
+**Description**: Provide step-by-step documentation for manually creating bundles.
 
 **Pros**:
 - No code changes
-- Users can customize for their environment
+- Users can customize
 
 **Cons**:
-- Error-prone
-- Not automatable at scale
-- Poor UX
+- Error-prone (7+ manual steps)
+- Not automatable
+- Contradicts ADR-001 philosophy
 
 **Effort**: Low
 
-### Option C: Defer to Upstream
+### Option C: Out of Scope
 
-**Description**: Request product team implement bundle generation in Controller.
+**Description**: Air-gapped scenarios are not supported. Document limitation.
 
 **Pros**:
-- Proper UI integration
-- Product-supported feature
+- No additional work
+- Clear boundary
 
 **Cons**:
-- Unknown timeline
-- Customers blocked
+- Blocks air-gapped customers
+- AAPRFE-3069 gap remains
 
-**Effort**: None (collection scope)
+**Effort**: None
 
 ---
 
 ## Recommendation
 
-TBD — awaiting input on:
-- Customer priority for this capability
-- Security review of bundle credential handling
-- Alignment with upstream product direction
+Option A aligns with ADR-001 (automation-only). Bundle generation is just another playbook.
+
+Pending:
+- Security review of credential handling in bundles
+- Customer validation of two-phase workflow
 
 ---
 
 ## Related Artifacts
 
 - AAPRFE-3069: Parent RFE
-- ADR-001: CLI-First Approach
-- DR-002: Controller UI Integration (would include bundle generation)
+- ADR-001: Ansible Automation Only
 
 ---
 
@@ -118,6 +134,6 @@ TBD — awaiting input on:
 **Rationale**: 
 
 **Action Items**:
-- [ ] Gather customer input on priority
-- [ ] Security review of credential handling in bundles
-- [ ] Prototype implementation if approved
+- [ ] Security review of TLS key handling in bundles
+- [ ] Customer feedback on two-phase workflow acceptability
+- [ ] Prototype if approved
