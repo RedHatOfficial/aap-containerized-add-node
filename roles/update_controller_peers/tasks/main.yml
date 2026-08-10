@@ -10,6 +10,11 @@
   ansible.builtin.meta: end_host
   when: not (aap_add_node_enable_controller_peer | default(false) | bool)
 
+- name: Resolve receptor config directory
+  ansible.builtin.set_fact:
+    aap_add_node_receptor_config_dir: "{{ ansible_user_dir }}/aap/receptor/etc"
+  when: aap_add_node_receptor_config_dir | default('') | length == 0
+
 - name: Display disruption warning
   ansible.builtin.debug:
     msg: |
