@@ -3,6 +3,33 @@
 #
 # Topology: EN → HN2 → HN1 → Controller
 # Use case: Multi-tier network, DMZ traversal
+#
+# ┌─────────────────┐
+# │   Controller    │
+# │ controller.com  │◄─────────────────┐
+# │   [listener]    │                  │
+# └─────────────────┘                  │
+#                               outbound dial
+#                                      │
+#                               ┌──────┴────────┐
+#                               │    Hop 1      │
+#                               │  hop-01.com   │◄─────────────────┐
+#                               │   [listener]  │                  │
+#                               └───────────────┘                  │
+#                                                           outbound dial
+#                                                                  │
+#                                                           ┌──────┴────────┐
+#                                                           │    Hop 2      │
+#                                                           │  hop-02.com   │◄─────────────────┐
+#                                                           │   [listener]  │                  │
+#                                                           └───────────────┘                  │
+#                                                                                       outbound dial
+#                                                                                              │
+#                                                                                       ┌──────┴────────┐
+#                                                                                       │  Execution    │
+#                                                                                       │  exec-01.com  │
+#                                                                                       │  [dials out]  │
+#                                                                                       └───────────────┘
 
 all:
   children:
