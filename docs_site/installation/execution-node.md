@@ -49,11 +49,9 @@ ansible_user=aapuser
 ### Step 2: Run Node Addition
 
 ```bash
-cd mesh-node-addition
-
-ansible-playbook -i tests/inventory.aap27 \
-  lennysh.aap_add_node/playbooks/add_node.yml \
-  -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-2.7-1 \
+ansible-playbook -i inventory.yml \
+  collections/ansible_collections/redhat_official/aap_containerized_add_node/playbooks/add_node.yml \
+  -e aap_setup_dir=/path/to/ansible-automation-platform-containerized-setup-2.7-1 \
   -e aap_add_node_hostname=exec1.example.com \
   -e aap_add_node_type=execution \
   -e aap_add_node_peers='["controller.example.com"]' \
