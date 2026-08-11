@@ -11,6 +11,24 @@
 | Outbound dial | — |
 | Inbound dial (opt-in) | — |
 
+## Lab Infrastructure
+
+### Hosts
+
+| Host | OS | Role | Notes |
+|------|-----|------|-------|
+| carmaap1.lan | RHEL 9 | Controller (AIO) | AAP 2.6 containerized |
+| aap-exec1-rhel9 | RHEL 9 | EN | Permanent |
+| aap-exec1-rhel10 | RHEL 10 | EN | Permanent |
+| aap-flex1-rhel9 | RHEL 9 | HN or EN | Flexible — deprovision/reprovision between tests |
+| aap-flex1-rhel10 | RHEL 10 | HN or EN | Flexible — deprovision/reprovision between tests |
+
+### Test Strategy
+
+- Same-OS pairing: HN and EN share RHEL version (matches customer scenarios)
+- Flex hosts: deprovision and reprovision as HN or EN per test
+- E2E validation: Demo Template must run on EN (HN alone = no job execution)
+
 ## Test Matrix
 
 ### Platform Compatibility
@@ -25,13 +43,17 @@
 
 ### Topology Combinations
 
-| Topology | Node Types | Priority | Status |
-|----------|------------|----------|--------|
-| AIO + 1 EN | Execution | P1 | Tested |
-| AIO + 1 HN | Hop | P1 | Tested |
-| AIO + HN + EN via HN | Mixed | P1 | Tested |
-| Cluster + EN | Execution | P2 | Untested |
-| Cluster + HN | Hop | P2 | Untested |
+| Topology | flex-rhel9 | flex-rhel10 | exec-rhel9 | exec-rhel10 | Priority | Status |
+|----------|------------|-------------|------------|-------------|----------|--------|
+| Single EN (RHEL 9) | — | — | EN | — | P1 | Tested |
+| Single EN (RHEL 10) | — | — | — | EN | P1 | Tested |
+| Parallel 2 ENs | — | — | EN | EN | P1 | Tested |
+| Parallel 4 ENs | EN | EN | EN | EN | P2 | Untested |
+| RHEL 9 HN + EN | HN | — | EN behind | — | P1 | Untested |
+| RHEL 10 HN + EN | — | HN | — | EN behind | P1 | Untested |
+| Chain HN→HN→EN | HN | HN | EN behind | — | P2 | Untested |
+| Cluster + EN | — | — | EN | — | P2 | Untested |
+| Cluster + HN + EN | HN | — | EN behind | — | P2 | Untested |
 
 ### Feature Coverage
 
@@ -115,3 +137,4 @@ End-to-end lab validation:
 2. **No automated scenario runner** — Manual execution required
 3. **No molecule / ansible-test integration yet** — CI is lint/build/changelog
 4. **Dual IDs** — Lab matrix uses `T-*` in TEST.md; procedures use `S-*` — see [scenarios/README.md](scenarios/README.md#mapping-to-testmd)
+5. **Flex hosts required** — aap-flex1-rhel9 and aap-flex1-rhel10 must be provisioned for HN testing
