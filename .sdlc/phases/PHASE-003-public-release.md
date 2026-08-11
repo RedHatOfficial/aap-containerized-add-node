@@ -27,15 +27,42 @@ Open the repository to public access and establish support model.
 **IMPORTANT:** This collection is not part of the official AAP product.
 
 For customers to use this in a **fully supported** fashion:
-- Must have an approved **Red Hat Support Exception**
+- Must have an approved **Red Hat Support Exception (SE)**
 - Exception covers use of this collection alongside supported AAP installation
 - Without exception, collection is provided as-is (community support only)
 
+### Red Hat Support Exception Process
+
+1. **Customer requests SE** via their TAM or account team
+2. **SE references this collection** and specific use case (adding execution nodes without full installer re-run)
+3. **Red Hat Support reviews** and approves/denies based on customer environment
+4. **If approved**: Customer can open support cases referencing the SE number
+5. **If denied**: Customer can still use collection but without Red Hat Support coverage
+
+### SE Documentation Required
+
+- SE number must be referenced in any support cases
+- Customer must document which nodes were added via this collection
+- Customer must maintain inventory of collection-managed vs installer-managed nodes
+
+### Repository Documentation
+
 Documentation must clearly state:
-1. Collection is not officially supported by Red Hat
-2. Supported usage requires Red Hat Support Exception
-3. How to request a Support Exception
-4. What the exception covers/doesn't cover
+1. Collection is **not officially supported** by Red Hat
+2. Supported usage **requires Red Hat Support Exception**
+3. Link to SE request process (internal Red Hat portal or TAM contact)
+4. What the exception covers (collection usage) and doesn't cover (bugs in collection code)
+
+### README Banner (Required)
+
+Add prominent banner at top of README:
+
+```markdown
+> **Support Notice:** This collection is not part of the official AAP product.
+> For supported usage, customers must have an approved Red Hat Support Exception.
+> Contact your TAM or account team to request an SE.
+> Without an SE, this collection is provided as-is without Red Hat Support coverage.
+```
 
 ## Deliverables
 
@@ -76,8 +103,9 @@ These require public repo (free tier doesn't support on private):
 ## Success Criteria
 
 - [ ] Repository publicly accessible
-- [ ] Support model clearly documented
-- [ ] README includes support disclaimer
+- [ ] Support model clearly documented in SUPPORT.md
+- [ ] README includes SE banner at top
+- [ ] SE request process documented (TAM/account team contact)
 - [ ] Contribution process documented for external contributors
 - [ ] Branch protection enabled on main and devel
 - [ ] CodeQL code scanning enabled
