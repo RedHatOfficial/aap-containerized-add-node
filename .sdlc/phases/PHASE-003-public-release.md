@@ -64,6 +64,42 @@ Add prominent banner at top of README:
 > Without an SE, this collection is provided as-is without Red Hat Support coverage.
 ```
 
+## Distribution Model (DR Required)
+
+**Decision Required:** How do customers obtain and install this collection?
+
+### Options to Evaluate
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **GitHub Release tarball** | Simple, version-tagged, `ansible-galaxy collection install <url>` works | Manual download, no dependency resolution |
+| **Private Automation Hub** | Customers already have, integrates with EE builds | Requires customer to upload, no central hosting |
+| **Ansible Galaxy** | Standard discovery, `ansible-galaxy install` just works | Public visibility, version management overhead |
+| **Red Hat Container Catalog** | Aligns with AAP delivery model | Overkill for a collection, not standard pattern |
+
+### Recommended: GitHub Release + Private Automation Hub Docs
+
+1. **GitHub Releases** — Each version tag triggers `release.yml` to build and attach `redhat_official-aap_containerized_add_node-X.Y.Z.tar.gz`
+2. **Customer uploads to their PAH** — Documentation guides customer to download release and upload to their Private Automation Hub
+3. **EE integration docs** — Show how to include in execution environment builds
+
+This keeps distribution simple while integrating with customer's existing automation infrastructure.
+
+### Installation Methods to Document
+
+```bash
+# Option 1: Direct from GitHub Release
+ansible-galaxy collection install \
+  https://github.com/RedHatOfficial/aap-containerized-add-node/releases/download/v1.0.0/redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+
+# Option 2: Download then install
+curl -LO https://github.com/.../releases/download/v1.0.0/...tar.gz
+ansible-galaxy collection install ./redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+
+# Option 3: From Private Automation Hub (after customer upload)
+ansible-galaxy collection install redhat_official.aap_containerized_add_node --server=https://pah.customer.com
+```
+
 ## Deliverables
 
 | Artifact | Description |
@@ -71,7 +107,9 @@ Add prominent banner at top of README:
 | Public repo | Change visibility to public |
 | SUPPORT.md | Support model documentation |
 | README update | Add support disclaimer prominently |
-| GitHub Release tarball | Tag builds attach `.tar.gz` for manual handoff (`release.yml`) |
+| GitHub Release workflow | `release.yml` builds and attaches collection tarball on tag |
+| Installation docs | Multiple install methods documented |
+| PAH upload guide | How to upload to Private Automation Hub |
 | CONTRIBUTING.md update | External contributor guidelines |
 | Branch protection | Enable for main and devel branches |
 | CodeQL | Enable GitHub Advanced Security code scanning |
@@ -106,6 +144,9 @@ These require public repo (free tier doesn't support on private):
 - [ ] Support model clearly documented in SUPPORT.md
 - [ ] README includes SE banner at top
 - [ ] SE request process documented (TAM/account team contact)
+- [ ] Installation methods documented (GitHub Release, PAH upload)
+- [ ] GitHub Release tested (tag triggers tarball build)
+- [ ] PAH upload guide published
 - [ ] Contribution process documented for external contributors
 - [ ] Branch protection enabled on main and devel
 - [ ] CodeQL code scanning enabled
