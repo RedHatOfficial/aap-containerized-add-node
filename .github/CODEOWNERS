@@ -1,10 +1,14 @@
-# Default owners for everything
-* @pgriffit
+# CODEOWNERS - Define code review requirements
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Documentation
-docs/ @pgriffit
-*.md @pgriffit
+# Default owners for everything
+* @RedHatOfficial/aap-containerized-add-node-maintainers
+
+# Security-sensitive files require additional review
+.github/workflows/ @RedHatOfficial/aap-containerized-add-node-maintainers
+.pre-commit-config.yaml @RedHatOfficial/aap-containerized-add-node-maintainers
+SECURITY.md @RedHatOfficial/aap-containerized-add-node-maintainers
 
 # Playbooks and roles
-playbooks/ @pgriffit
-roles/ @pgriffit
+playbooks/ @RedHatOfficial/aap-containerized-add-node-maintainers
+roles/ @RedHatOfficial/aap-containerized-add-node-maintainers
