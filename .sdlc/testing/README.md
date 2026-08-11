@@ -75,3 +75,4 @@ examples/add_node.secrets.yml # Secrets template
 | Map `T-*` ↔ `S-*` | [scenarios/README.md](scenarios/README.md#mapping-to-testmd) |
 | Record a shared result | TEST.md Results log (+ scenario Results Log) |
 | Keep raw ansible logs | Local `.ignore/lab/runs/` only |
+| Clean nodes between tests | [checklists/cleanup.md](checklists/cleanup.md) |

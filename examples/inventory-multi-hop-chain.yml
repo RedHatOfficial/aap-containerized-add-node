@@ -1,0 +1,38 @@
+---
+# Deep hop chain with execution node at end
+#
+# Topology: EN → HN2 → HN1 → Controller
+# Use case: Multi-tier network, DMZ traversal
+
+all:
+  children:
+    automationcontroller:
+      hosts:
+        controller.example.com:
+
+    execution_nodes:
+      hosts:
+        # First hop peers to controller
+        hop-01.example.com:
+          receptor_type: hop
+          receptor_peers:
+            - controller.example.com
+          routable_hostname: hop-01.example.com
+
+        # Second hop peers to first hop
+        hop-02.example.com:
+          receptor_type: hop
+          receptor_peers:
+            - hop-01.example.com
+          routable_hostname: hop-02.example.com
+
+        # Execution node peers to second hop
+        exec-01.example.com:
+          receptor_type: execution
+          receptor_peers:
+            - hop-02.example.com
+          routable_hostname: exec-01.example.com
+
+  vars:
+    ansible_user: ansible
+    aap_setup_dir: /path/to/ansible-automation-platform-containerized-setup-2.x

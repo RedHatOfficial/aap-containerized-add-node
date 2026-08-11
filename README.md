@@ -112,6 +112,21 @@ Reusable scenario checklists, inventory sketches, and a results log: [TEST.md](T
 - [x] Remove the asserts and use arg spec
 - [x] Reduce the number of set facts and combine them if possible
 
+## Example Inventories
+
+Pre-built inventory examples for common topologies in `examples/`:
+
+| File | Topology |
+|------|----------|
+| `inventory-single-en.yml` | Single EN → Controller |
+| `inventory-single-hn.yml` | Single HN → Controller |
+| `inventory-en-via-hn.yml` | EN → HN → Controller |
+| `inventory-parallel-ens.yml` | Multiple ENs → Controller |
+| `inventory-fanout-behind-hop.yml` | Multiple ENs → HN → Controller |
+| `inventory-multi-hop-chain.yml` | EN → HN2 → HN1 → Controller |
+
+Copy and adapt to your environment. Key fields: `receptor_type`, `receptor_peers` (must be a list), `routable_hostname`.
+
 ## Quick start
 
 ```bash
@@ -124,6 +139,7 @@ ansible-galaxy collection install --force --no-deps .
 export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
 
 # 1) Add the new host to ${SETUP}/inventory under [execution_nodes]
+#    Or use an example inventory as a starting point
 # 2) Run — discovery targets only hosts not already in Controller
 ansible-playbook playbooks/add_node.yml \
   -i "${SETUP}/inventory" \
