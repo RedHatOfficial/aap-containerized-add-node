@@ -45,7 +45,8 @@ Which phase does this requirement belong to?
 | Phase | Name | Status |
 |-------|------|--------|
 | PHASE-001 | Initial Collection | Complete |
-| PHASE-002 | Offline Bundle | Planned |
+| PHASE-002 | Offline Bundle | Complete |
+| PHASE-003 | Upstream Migration | Future |
 
 Enter phase number (or "none"):
 ```

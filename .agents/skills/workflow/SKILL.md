@@ -77,9 +77,9 @@ Analyze state and return single best action:
 Output:
 ```
 **Recommended next action:**
-→ /dr-review DR-001
+→ Implement S-062 (image bundling)
 
-Reason: High priority DR blocking PHASE-002.
+Reason: Only remaining blocked test scenario.
 ```
 
 ### `/workflow blockers` — Quick Blockers Check
@@ -88,11 +88,11 @@ Show only blocking items:
 ```
 ## Current Blockers
 
-**Open DRs:** DR-001 (High)
-**Open REQs:** REQ-005
-**Phase Blockers:** PHASE-002 waiting on DR-001
+**Open DRs:** None
+**Blocked Tests:** S-062 (image bundling not implemented)
+**Phase Blockers:** None
 
-Quick fix: /dr-review DR-001
+Quick fix: Implement image bundling feature
 ```
 
 ### `/workflow start` — New Feature
