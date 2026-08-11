@@ -1,8 +1,5 @@
 # Mesh Topology Guide
 
-**Quick start:** [QUICKSTART.md](QUICKSTART.md) — decision tree to pick your topology.
-**Ready-to-use inventories:** [examples/README.md](../examples/README.md) — copy and adapt.
-
 ## Overview
 
 AAP mesh networking uses receptor to connect execution nodes to the controller.
@@ -323,12 +320,12 @@ exec2.example.com receptor_peers='["controller1.example.com", "controller3.examp
 ansible_user=aapuser
 ```
 
-### Example 6: Separate Control Host
+### Example 6: Separate Installer Host
 
 Running from a host that is not the controller.
 
 ```ini
-# inventory.ini - Running from separate control host
+# inventory.ini - Running from separate installer host
 
 [automationcontroller]
 # NOT local - SSH to controller required
@@ -343,68 +340,6 @@ exec2.example.com receptor_peers='["controller.example.com"]' ansible_user=aapus
 registry_username=your_rhn_username
 registry_password=your_rhn_password
 ```
-
-### Example 7: Hybrid Cloud (On-Prem ENs → Cloud Controller)
-
-Controller in cloud, ENs on-premises. Firewall allows outbound from on-prem to cloud only.
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        CLOUD (GCP/AWS/Azure)                        │
-│  ┌─────────────────┐                                                │
-│  │   Controller    │◄── tcp:27199 ──┐                               │
-│  │ (tcp-listener)  │                │                               │
-│  └─────────────────┘                │                               │
-└─────────────────────────────────────│───────────────────────────────┘
-                                      │ outbound dial
-              ════════════════════════│═══════════════════════════
-                     FIREWALL: on-prem → cloud ONLY
-              ════════════════════════│═══════════════════════════
-                                      │
-┌─────────────────────────────────────│───────────────────────────────┐
-│                          ON-PREMISES                                │
-│                               ┌─────┴───────┐                       │
-│                     ┌─────────│  Hop Node   │─────────┐             │
-│                     │         │ (tcp-peer)  │         │             │
-│                     │         └─────────────┘         │             │
-│                     │                                 │             │
-│              ┌──────┴──────┐                   ┌──────┴──────┐      │
-│              │     EN1     │                   │     EN2     │      │
-│              │ (tcp-peer)  │                   │ (tcp-peer)  │      │
-│              └─────────────┘                   └─────────────┘      │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-```ini
-# inventory.ini - Hybrid cloud topology
-
-[automationcontroller]
-aap-controller.cloud.example.com ansible_host=35.x.x.x
-
-[execution_nodes]
-# Hop node on-prem - can reach cloud, ENs peer to it
-hop1.onprem.example.com receptor_type=hop receptor_peers='["aap-controller.cloud.example.com"]'
-
-# ENs on-prem - peer to hop (or direct to cloud if allowed)
-exec1.onprem.example.com receptor_peers='["hop1.onprem.example.com"]'
-exec2.onprem.example.com receptor_peers='["hop1.onprem.example.com"]'
-
-[all:vars]
-ansible_user=aapuser
-```
-
-**Key points:**
-- Uses Pattern 1 (outbound dial) — on-prem nodes initiate to cloud
-- Controller listens on 27199, no outbound from cloud required
-- Hop node optional — ENs can peer direct to cloud controller if allowed
-- **Installation requires temporary SSH** from installer to all nodes
-- Works with any cloud (GCP, AWS, Azure) or on-prem datacenter
-
-**Firewall rules:**
-| Source | Destination | Port | Direction |
-|--------|-------------|------|-----------|
-| Hop/EN (on-prem) | Controller (cloud) | 27199/TCP | Outbound |
-| Installer | All nodes | 22/TCP | Outbound (install-time only) |
 
 ---
 

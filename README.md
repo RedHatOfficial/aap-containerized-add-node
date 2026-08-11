@@ -112,20 +112,22 @@ Reusable scenario checklists, inventory sketches, and a results log: [TEST.md](T
 - [x] Remove the asserts and use arg spec
 - [x] Reduce the number of set facts and combine them if possible
 
-## Example Inventories
+## Choose Your Topology
 
-Pre-built inventory examples for common topologies in `examples/`:
+Pick the topology that matches your network. See [docs/QUICKSTART.md](docs/QUICKSTART.md) for a decision tree.
 
-| File | Topology |
-|------|----------|
-| `inventory-single-en.yml` | Single EN → Controller |
-| `inventory-single-hn.yml` | Single HN → Controller |
-| `inventory-en-via-hn.yml` | EN → HN → Controller |
-| `inventory-parallel-ens.yml` | Multiple ENs → Controller |
-| `inventory-fanout-behind-hop.yml` | Multiple ENs → HN → Controller |
-| `inventory-multi-hop-chain.yml` | EN → HN2 → HN1 → Controller |
+| I need to... | Topology | Example |
+|--------------|----------|---------|
+| Add one EN that can reach controller | `EN → Controller` | [inventory-single-en.yml](examples/inventory-single-en.yml) |
+| Add multiple ENs directly | `EN1/EN2 → Controller` | [inventory-parallel-ens.yml](examples/inventory-parallel-ens.yml) |
+| Route EN through a hop node | `EN → HN → Controller` | [inventory-en-via-hn.yml](examples/inventory-en-via-hn.yml) |
+| Multiple ENs behind one hop | `EN1/EN2 → HN → Controller` | [inventory-fanout-behind-hop.yml](examples/inventory-fanout-behind-hop.yml) |
+| Traverse multiple network tiers | `EN → HN2 → HN1 → Controller` | [inventory-multi-hop-chain.yml](examples/inventory-multi-hop-chain.yml) |
+| On-prem ENs dialing to cloud controller | `On-Prem → Cloud` | [inventory-hybrid-cloud.yml](examples/inventory-hybrid-cloud.yml) |
 
-Copy and adapt to your environment. Key fields: `receptor_type`, `receptor_peers` (must be a list), `routable_hostname`.
+All examples use **outbound dial** (default, zero disruption). Full inventory index with diagrams: [examples/README.md](examples/README.md).
+
+Key fields: `receptor_type`, `receptor_peers` (must be a list), `routable_hostname`.
 
 ## Quick start
 

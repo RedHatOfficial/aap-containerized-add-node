@@ -15,6 +15,11 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | [S-040](S-040-failure-recovery.md) | T-26-AIO-RERUN | :white_check_mark: Tested (2.6) | Mid-join failure then re-run |
 | [S-041](S-041-deprovision-rejoin.md) | T-26-AIO-DEPROV-REJOIN | :white_check_mark: Tested (2.6) | Deprovision + rejoin |
 | [S-050](S-050-upgrade-after-join.md) | T-26-AIO-FULL-UPGRADE | :white_check_mark: Tested (2.6) | Full installer after additive join |
+| [S-060](S-060-offline-bundle-en.md) | — | :white_large_square: Untested | Offline bundle - single EN |
+| [S-061](S-061-offline-bundle-hn.md) | — | :white_large_square: Untested | Offline bundle - single HN |
+| [S-062](S-062-offline-bundle-with-images.md) | — | :white_large_square: Untested | Offline bundle with container images |
+| [S-063](S-063-offline-bundle-hn-en-chain.md) | — | :white_large_square: Untested | Offline bundle - HN + EN chain |
+| [S-064](S-064-offline-hybrid-cloud.md) | — | :white_large_square: Untested | Offline hybrid cloud simulation |
 | Cluster (planned) | T-*-CLU-* | :white_large_square: Untested | Multi-controller |
 
 ## Scenario index
@@ -30,6 +35,11 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | [S-040](S-040-failure-recovery.md) | Failure and Recovery | Any | P1 | :white_check_mark: Tested (2.6) | Yes |
 | [S-041](S-041-deprovision-rejoin.md) | Deprovision and Rejoin | Any | P1 | :white_check_mark: Tested (2.6) | Yes |
 | [S-050](S-050-upgrade-after-join.md) | Full Upgrade After Join | Any | P2 | :white_check_mark: Tested (2.6) | Yes |
+| [S-060](S-060-offline-bundle-en.md) | Offline Bundle - EN | AIO + EN offline | P1 | :white_large_square: Untested | Yes |
+| [S-061](S-061-offline-bundle-hn.md) | Offline Bundle - HN | AIO + HN offline | P1 | :white_large_square: Untested | Yes |
+| [S-062](S-062-offline-bundle-with-images.md) | Offline Bundle + Images | AIO + EN airgap | P2 | :white_large_square: Untested | Yes |
+| [S-063](S-063-offline-bundle-hn-en-chain.md) | Offline Bundle - HN+EN Chain | AIO + HN + EN offline | P1 | :white_large_square: Untested | Yes |
+| [S-064](S-064-offline-hybrid-cloud.md) | Offline Hybrid Cloud | Cloud + on-prem offline | P2 | :white_large_square: Untested | Yes |
 | — | Cluster topologies | Multi-controller | P2 | :white_large_square: Untested | No — see T-*-CLU-* |
 
 ## Creating or extending a scenario
