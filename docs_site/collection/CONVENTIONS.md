@@ -115,7 +115,7 @@ Match installer paths:
 ## Collection Structure
 
 ```
-lennysh.aap_add_node/
+redhat_official.aap_containerized_add_node/
 ├── galaxy.yml
 ├── playbooks/
 │   ├── add_node.yml          # Main entry point
