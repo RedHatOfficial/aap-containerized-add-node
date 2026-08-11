@@ -1,4 +1,7 @@
 ---
+# CodeQL requires GitHub Advanced Security (enterprise feature)
+# This workflow will fail on repos without GHAS enabled
+# To enable: Settings → Security → Code security and analysis → Enable
 name: CodeQL
 
 on:
@@ -13,6 +16,8 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-24.04
+    # Skip if Advanced Security not available
+    if: github.repository_owner == 'RedHatOfficial'
     permissions:
       actions: read
       contents: read
