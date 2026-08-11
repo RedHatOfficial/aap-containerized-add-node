@@ -1,5 +1,7 @@
 # Test Plan
 
+Test results: [results/RESULTS.md](results/RESULTS.md)
+
 ## Scope
 
 | In Scope | Out of Scope |
@@ -39,7 +41,7 @@
 | 2.7.x | RHEL 10 | RHEL 9 | P1 | Tested (T-27-AIO-EN-VIA-HN, 2026-08-10) |
 | 2.7.1 | (lab) | RHEL 10 EN | P1 | Tested (S-001) |
 | 2.7.x | RHEL 10 | RHEL 10 HN+EN | P1 | Tested (T-27-AIO-EN-VIA-HN, 2026-08-10) |
-| 2.6.x | RHEL 9 | RHEL 10 | P2 | Untested |
+| 2.6.x | RHEL 9 | RHEL 10 | P2 | Tested (2026-08-11) |
 
 ### Topology Combinations
 
@@ -49,8 +51,8 @@
 | Single EN (RHEL 10) | — | — | — | EN | P1 | Tested |
 | Parallel 2 ENs | — | — | EN | EN | P1 | Tested |
 | Parallel 4 ENs | EN | EN | EN | EN | P2 | Untested |
-| RHEL 9 HN + EN | HN | — | EN behind | — | P1 | Untested |
-| RHEL 10 HN + EN | — | HN | — | EN behind | P1 | Untested |
+| RHEL 9 HN + EN | HN | — | EN behind | — | P1 | Tested (2026-08-11) |
+| RHEL 10 HN + EN | — | HN | — | EN behind | P1 | Tested (2026-08-11) |
 | Chain HN→HN→EN | HN | HN | EN behind | — | P2 | Untested |
 | Cluster + EN | — | — | EN | — | P2 | Untested |
 | Cluster + HN + EN | HN | — | EN behind | — | P2 | Untested |
