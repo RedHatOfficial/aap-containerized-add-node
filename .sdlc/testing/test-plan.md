@@ -12,6 +12,7 @@ Test results: [results/RESULTS.md](results/RESULTS.md)
 | RHEL 9/10 nodes | Non-RHEL nodes |
 | Outbound dial | — |
 | Inbound dial (opt-in) | — |
+| Offline bundle | — |
 
 ## Lab Infrastructure
 
@@ -68,6 +69,20 @@ Test results: [results/RESULTS.md](results/RESULTS.md)
 | Re-run after failure | S-040 | P1 | Tested |
 | Deprovision/rejoin | S-041 | P1 | Tested |
 | Full upgrade after join | S-050 | P2 | Tested |
+| Offline bundle generation | S-060 | P1 | Untested |
+| Offline bundle install | S-061 | P1 | Untested |
+| Offline bundle with images | S-062 | P2 | Untested |
+| Offline hybrid cloud | S-063 | P2 | Untested |
+
+### Offline Bundle Test Matrix
+
+| Scenario | Target Type | Include Images | Transfer Method | Priority | Status |
+|----------|-------------|----------------|-----------------|----------|--------|
+| S-060: Single EN bundle | execution | No | Local | P1 | Untested |
+| S-061: Single HN bundle | hop | No | Local | P1 | Untested |
+| S-062: EN with images | execution | Yes | Local | P2 | Untested |
+| S-063: HN + EN chain | hop + execution | No | Local | P1 | Untested |
+| S-064: Hybrid cloud sim | execution | No | Simulated airgap | P2 | Untested |
 
 ## Test Levels
 

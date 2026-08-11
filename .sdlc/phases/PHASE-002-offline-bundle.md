@@ -2,11 +2,11 @@
 
 ## Status
 
-Ready
+In Progress
 
 ## Timeline
 
-- **Target Start**: TBD
+- **Started**: 2026-08-11
 - **Target Complete**: TBD
 
 ---
@@ -31,13 +31,14 @@ Constraints:
 - Self-contained — bundle includes everything needed
 - Fully documented — clear offline prerequisites
 
-## Proposed Deliverables
+## Deliverables
 
-| Artifact | Description |
-|----------|-------------|
-| `playbooks/generate_bundle.yml` | Bundle generation playbook |
-| `roles/generate_bundle/` | Bundle assembly role |
-| `docs/OFFLINE.md` | Air-gapped installation guide |
+| Artifact | Description | Status |
+|----------|-------------|--------|
+| `playbooks/generate_bundle.yml` | Bundle generation playbook | Done |
+| `roles/generate_bundle/` | Bundle assembly role | Done |
+| `docs/OFFLINE.md` | Air-gapped installation guide | Done |
+| Testing | Lab validation | TODO |
 
 ## Workflow
 
