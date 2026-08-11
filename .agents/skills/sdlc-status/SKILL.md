@@ -59,10 +59,10 @@ Scan SDLC directories, extract status from each artifact, and present a concise 
 | Phase | Title | Status | REQs |
 |-------|-------|--------|------|
 | PHASE-001 | Initial Collection | Complete | REQ-001, REQ-002, REQ-003, REQ-004 |
-| PHASE-002 | Offline Bundle | Planned | REQ-005 |
+| PHASE-002 | Offline Bundle | Complete | REQ-005, REQ-006, REQ-007 |
 | PHASE-003 | Upstream Migration | Future | — |
 
-Current Phase: PHASE-002 (Planned)
+Current Phase: PHASE-003 (Future)
 
 ## Requirements
 | REQ | Title | Status | Phase |
@@ -71,12 +71,12 @@ Current Phase: PHASE-002 (Planned)
 | REQ-002 | Hop and Execution Node Support | Implemented | PHASE-001 |
 | REQ-003 | Bidirectional Peering | Implemented | PHASE-001 |
 | REQ-004 | Platform Compatibility | Implemented | PHASE-001 |
-| REQ-005 | Offline Join Bundle | Open | PHASE-002 |
+| REQ-005 | Offline Join Bundle | Implemented | PHASE-002 |
+| REQ-006 | Hybrid Cloud Topology | Implemented | PHASE-002 |
+| REQ-007 | BYO TLS Certificates | Implemented | PHASE-002 |
 
 ## Open Decision Requests
-| Priority | DR | Question |
-|----------|-----|----------|
-| High | DR-001 | Offline Join Bundle implementation |
+No open decision requests.
 
 ## Architecture Decisions
 | ADR | Title | Status |
@@ -87,12 +87,21 @@ Current Phase: PHASE-002 (Planned)
 | ADR-004 | Installer Role Reuse | Accepted |
 | ADR-005 | Preflight as Opt-Out | Accepted |
 
+## Test Status
+| Scenario | Status |
+|----------|--------|
+| S-060: Single EN offline | PASS |
+| S-061: Single HN offline | PASS |
+| S-062: Image bundling | BLOCKED |
+| S-063: HN + EN chain | PASS |
+| S-070: TLS self-signed | PASS |
+
 ## Blockers & Warnings
-- DR-001 blocks PHASE-002 / REQ-005
+- S-062 (image bundling) not yet implemented
 
 ## Quick Actions
-- Resolve DR-001 to unblock PHASE-002
-- Lab-validate cluster topologies
+- Implement image bundling for fully air-gapped environments
+- Plan PHASE-003 upstream migration
 ```
 
 ### 4. Handle Empty States
