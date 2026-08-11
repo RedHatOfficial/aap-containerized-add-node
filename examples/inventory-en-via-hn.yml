@@ -3,6 +3,26 @@
 #
 # Topology: EN → HN → Controller
 # Use case: Remote site with hop relay
+#
+# ┌─────────────────┐
+# │   Controller    │
+# │ controller.com  │◄─────────────────┐
+# │   [listener]    │                  │
+# └─────────────────┘                  │
+#                               outbound dial
+#                                      │
+#                               ┌──────┴────────┐
+#                               │     Hop       │
+#                               │  hop-01.com   │◄─────────────────┐
+#                               │   [listener]  │                  │
+#                               └───────────────┘                  │
+#                                                           outbound dial
+#                                                                  │
+#                                                           ┌──────┴────────┐
+#                                                           │  Execution    │
+#                                                           │  exec-01.com  │
+#                                                           │  [dials out]  │
+#                                                           └───────────────┘
 
 all:
   children:

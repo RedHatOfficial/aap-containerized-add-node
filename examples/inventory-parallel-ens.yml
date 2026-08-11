@@ -4,6 +4,20 @@
 # Topology: EN1 → Controller
 #           EN2 → Controller
 # Use case: Scale out execution capacity
+#
+#                          ┌─────────────────┐
+#               ┌─────────►│   Controller    │◄─────────┐
+#               │          │ controller.com  │          │
+#               │          │   [listener]    │          │
+#               │          └────────▲────────┘          │
+#               │                   │                   │
+#        outbound dial       outbound dial       outbound dial
+#               │                   │                   │
+#        ┌──────┴──────┐     ┌──────┴──────┐     ┌──────┴──────┐
+#        │  Execution  │     │  Execution  │     │  Execution  │
+#        │ exec-01.com │     │ exec-02.com │     │ exec-03.com │
+#        │ [dials out] │     │ [dials out] │     │ [dials out] │
+#        └─────────────┘     └─────────────┘     └─────────────┘
 
 all:
   children:

@@ -3,6 +3,19 @@
 #
 # Topology: HN → Controller
 # Use case: Prepare for future ENs behind this hop
+#
+# ┌─────────────────┐
+# │   Controller    │
+# │ controller.com  │◄─────────────────┐
+# │   [listener]    │                  │
+# └─────────────────┘                  │
+#                               outbound dial
+#                                      │
+#                               ┌──────┴────────┐
+#                               │     Hop       │
+#                               │  hop-01.com   │
+#                               │  [dials out]  │
+#                               └───────────────┘
 
 all:
   children:

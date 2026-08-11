@@ -4,6 +4,27 @@
 # Topology: EN1 → HN → Controller
 #           EN2 → HN → Controller
 # Use case: Remote site with multiple workers
+#
+# ┌─────────────────┐
+# │   Controller    │
+# │ controller.com  │◄─────────────────┐
+# │   [listener]    │                  │
+# └─────────────────┘                  │
+#                               outbound dial
+#                                      │
+#                               ┌──────┴────────┐
+#               ┌──────────────►│     Hop       │◄──────────────┐
+#               │               │  hop-01.com   │               │
+#               │               │   [listener]  │               │
+#               │               └───────────────┘               │
+#               │                                               │
+#        outbound dial                                   outbound dial
+#               │                                               │
+#        ┌──────┴──────┐                                 ┌──────┴──────┐
+#        │  Execution  │                                 │  Execution  │
+#        │ exec-01.com │                                 │ exec-02.com │
+#        │ [dials out] │                                 │ [dials out] │
+#        └─────────────┘                                 └─────────────┘
 
 all:
   children:

@@ -3,6 +3,19 @@
 #
 # Topology: EN → Controller
 # Use case: Simple setup, single site
+#
+# ┌─────────────────┐
+# │   Controller    │
+# │ controller.com  │◄─────────────────┐
+# │   [listener]    │                  │
+# └─────────────────┘                  │
+#                               outbound dial
+#                                      │
+#                               ┌──────┴────────┐
+#                               │  Execution    │
+#                               │  exec-01.com  │
+#                               │  [dials out]  │
+#                               └───────────────┘
 
 all:
   children:
