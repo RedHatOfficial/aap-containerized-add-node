@@ -46,6 +46,23 @@ Documentation must clearly state:
 | README update | Add support disclaimer prominently |
 | GitHub Release tarball | Tag builds attach `.tar.gz` for manual handoff (`release.yml`) |
 | CONTRIBUTING.md update | External contributor guidelines |
+| Branch protection | Enable for main and devel branches |
+| CodeQL | Enable GitHub Advanced Security code scanning |
+
+### Post-Public Tasks
+
+These require public repo (free tier doesn't support on private):
+
+1. **Branch Protection** (Settings → Branches)
+   - Require PR reviews before merge
+   - Require status checks (gitleaks, lint, syntax-check, build, changelog)
+   - Block force pushes
+   - See `docs/BRANCH_PROTECTION.md` for full config
+
+2. **CodeQL / GHAS** (Settings → Security)
+   - Re-enable `.github/workflows/codeql.yml`
+   - Enable Dependabot alerts
+   - Enable secret scanning
 
 **Out of scope:** Ansible Galaxy and Automation Hub publish — this collection is distributed manually under the Support Exception model.
 
@@ -62,6 +79,9 @@ Documentation must clearly state:
 - [ ] Support model clearly documented
 - [ ] README includes support disclaimer
 - [ ] Contribution process documented for external contributors
+- [ ] Branch protection enabled on main and devel
+- [ ] CodeQL code scanning enabled
+- [ ] Dependabot alerts enabled
 
 ## Notes
 
