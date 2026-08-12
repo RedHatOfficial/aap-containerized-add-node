@@ -27,7 +27,9 @@
   vars:
     # Same stable target as assert_controller_container (inventory order [0]).
     _awx_manage_host: "{{ groups['automationcontroller'][0] }}"
+    _aap_add_node_delegate_connection: "{{ hostvars[_awx_manage_host].ansible_connection | default('ssh') }}"
   delegate_to: "{{ _awx_manage_host }}"
+  connection: "{{ _aap_add_node_delegate_connection }}"
   become: false
   register: _list_instances_ctr
   changed_when: false

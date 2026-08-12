@@ -7,15 +7,15 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | Scenario | TEST.md IDs (typical) | Status | Notes |
 |----------|------------------------|--------|-------|
 | [S-001](S-001-single-en.md) | T-26-AIO-EN, T-27-AIO-EN | :white_check_mark: Tested | EN → controller |
-| [S-002](S-002-single-hop.md) | T-26-AIO-HN, T-27-AIO-HN | :white_check_mark: Tested | HN → controller (also covered by EN-VIA-HN; RHEL 9 + 10) |
-| [S-003](S-003-multi-hop.md) | T-26-AIO-EN-VIA-HN, T-27-AIO-EN-VIA-HN | :white_check_mark: Tested | HN + EN via hop; RHEL 9 + RHEL 10 pairs on 2.7 |
+| [S-002](S-002-single-hop.md) | T-26-AIO-HN, T-27-AIO-HN, T-27-CLU-HN | :white_check_mark: Tested | HN → controller (AIO + HA cluster; RHEL 9 + 10) |
+| [S-003](S-003-multi-hop.md) | T-26-AIO-EN-VIA-HN, T-27-AIO-EN-VIA-HN, T-27-CLU-EN-VIA-HN | :white_check_mark: Tested | HN + EN via hop; AIO + 2.7 HA cluster (RHEL 10) |
 | S-010 (planned) | — | :white_large_square: Untested | Inbound dial / controller peers to node |
 | S-020 | — | :white_check_mark: Tested (with joins) | Covered by [checklists/preflight.md](../checklists/preflight.md) |
 | S-030 | Parallel column in TEST.md | :white_check_mark: Tested (implicit in S-003) | Multi-node serial registration |
 | [S-040](S-040-failure-recovery.md) | T-26-AIO-RERUN | :white_check_mark: Tested (2.6) | Mid-join failure then re-run |
 | [S-041](S-041-deprovision-rejoin.md) | T-26-AIO-DEPROV-REJOIN | :white_check_mark: Tested (2.6) | Deprovision + rejoin |
 | [S-050](S-050-upgrade-after-join.md) | T-26-AIO-FULL-UPGRADE | :white_check_mark: Tested (2.6) | Full installer after additive join |
-| Cluster (planned) | T-*-CLU-* | :white_large_square: Untested | Multi-controller |
+| Cluster (planned) | T-27-CLU-EN-VIA-HN, T-27-CLU-HN | :white_check_mark: Tested (2.7) | Multi-controller; RHEL 10 lab 2026-08-12 |
 
 ## Scenario index
 
@@ -30,7 +30,7 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | [S-040](S-040-failure-recovery.md) | Failure and Recovery | Any | P1 | :white_check_mark: Tested (2.6) | Yes |
 | [S-041](S-041-deprovision-rejoin.md) | Deprovision and Rejoin | Any | P1 | :white_check_mark: Tested (2.6) | Yes |
 | [S-050](S-050-upgrade-after-join.md) | Full Upgrade After Join | Any | P2 | :white_check_mark: Tested (2.6) | Yes |
-| — | Cluster topologies | Multi-controller | P2 | :white_large_square: Untested | No — see T-*-CLU-* |
+| — | Cluster topologies | Multi-controller | P2 | :white_check_mark: Tested (2.7 RHEL 10) | EN-VIA-HN — see T-27-CLU-* |
 
 ## Creating or extending a scenario
 

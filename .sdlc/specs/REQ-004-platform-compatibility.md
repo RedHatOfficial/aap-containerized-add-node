@@ -62,7 +62,8 @@ Collection must work across this matrix.
 | 2.6.x | RHEL 9.x | RHEL 9.x | Tested (aap26) |
 | 2.7.x | RHEL 10.x | RHEL 9.x | Tested (aap27 EN-VIA-HN, 2026-08-10) |
 | 2.7.1 | (lab) | RHEL 10.x EN | Tested (S-001 single EN) |
-| 2.7.x | RHEL 10.x | RHEL 10.x HN+EN | Tested (aap27 EN-VIA-HN, hn-02/en-02, 2026-08-10) |
+| 2.7.x | RHEL 10.x | RHEL 10.x HN+EN | Tested (aap27 AIO EN-VIA-HN, hn-02/en-02, 2026-08-10) |
+| 2.7.x | RHEL 10.x HA (2× controller) | RHEL 10.x HN+EN | Tested (aap27 cluster EN-VIA-HN, hn01/en03, 2026-08-12) |
 
 ## Verification
 

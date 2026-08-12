@@ -1,13 +1,14 @@
 ---
 # Per-execution-node preflight checks
 # _target_host is set by loop in main.yml
-# Note: connection: ssh is required because play uses connection: local
+# Plays use connection: local on the control host; remote delegates need explicit SSH
+# (or inventory ansible_connection=local when the target is the same machine).
 
 # P2/P3: SSH authentication and host key
 - name: "Test SSH to {{ _target_host }}"
   ansible.builtin.ping:
   delegate_to: "{{ _target_host }}"
-  connection: ssh
+  connection: "{{ hostvars[_target_host].ansible_connection | default('ssh') }}"
   become: false
   register: _en_ssh
   ignore_errors: true
@@ -35,7 +36,7 @@
     timeout: "{{ aap_add_node_preflight_timeout }}"
     state: started
   delegate_to: "{{ _target_host }}"
-  connection: ssh
+  connection: "{{ hostvars[_target_host].ansible_connection | default('ssh') }}"
   become: false
   register: _en_connectivity
   ignore_errors: true
@@ -57,7 +58,7 @@
   ansible.builtin.command:
     cmd: "getent hosts {{ _controller_host }}"
   delegate_to: "{{ _target_host }}"
-  connection: ssh
+  connection: "{{ hostvars[_target_host].ansible_connection | default('ssh') }}"
   become: false
   register: _en_dns
   changed_when: false
@@ -77,7 +78,7 @@
   ansible.builtin.slurp:
     src: /etc/machine-id
   delegate_to: "{{ _target_host }}"
-  connection: ssh
+  connection: "{{ hostvars[_target_host].ansible_connection | default('ssh') }}"
   become: false
   register: _en_machine_id
 
@@ -85,4 +86,5 @@
   ansible.builtin.set_fact:
     _preflight_machine_ids: "{{ _preflight_machine_ids | default({}) | combine({_target_host: (_en_machine_id.content | b64decode | trim)}) }}"
   delegate_to: localhost
+  connection: local
   delegate_facts: true

@@ -153,6 +153,20 @@ Guidelines for `argument_specs.yml`:
 - Always test with `--check --diff` before full runs
 - Run `playbooks/preflight.yml` before add_node.yml in change windows
 
+## Control host and `delegate_to`
+
+Plays that run on `localhost` with `connection: local` execute on the machine where you invoke `ansible-playbook`. That machine may be a gateway, controller, or external host.
+
+**Rule:** Any task with `delegate_to: <inventory_host>` must set:
+
+```yaml
+connection: "{{ hostvars[<inventory_host>].ansible_connection | default('ssh') }}"
+```
+
+Use `connection: local` only for `delegate_to: localhost` tasks that must touch files on the control host (for example mesh material under `bundles/_mesh_material/`).
+
+Reference: `vars/aap_add_node_delegate.yml` in this collection.
+
 ## Peer Topology
 
 See [TOPOLOGY.md](TOPOLOGY.md) for detailed peer direction documentation.

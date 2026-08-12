@@ -88,6 +88,19 @@ export ANSIBLE_COLLECTIONS_PATH="${aap_setup_dir}/collections:${ANSIBLE_COLLECTI
 
 Tasks use `groups['automationcontroller'][0]`. Any controller is fine because `awx-manage` updates the **shared Controller DB**; `[0]` is only a stable SSH/`podman exec` target. Mesh CA is expected under each controller install-user home (`~/aap/tls/…`).
 
+## Control host
+
+The **control host** is wherever you run `ansible-playbook` — not necessarily a controller. Supported patterns:
+
+| Control host | Typical inventory | Notes |
+|--------------|-------------------|--------|
+| Laptop / bastion | Full cluster inventory; SSH to all targets | Default mental model |
+| Gateway (`automationgateway`) | Often `ansible_connection=local` on the gateway host | Plays use `connection: local`; delegated tasks must SSH to controllers and new nodes |
+| Controller (AIO or HA) | Controller may have `ansible_connection=local` | Delegation to self uses local connection from inventory |
+| Execution / hop node | Same as laptop if SSH keys reach peers | No requirement to run from a controller |
+
+Early plays use `hosts: localhost` + `connection: local` on the control machine. Remote work (`awx-manage`, mesh CA fetch, EN/HN preflight) uses `delegate_to` with `connection: "{{ hostvars[target].ansible_connection | default('ssh') }}"`. See [CONVENTIONS.md](CONVENTIONS.md).
+
 ## Zero / near-zero downtime
 
 Prefer **outbound peer dial**: new node → existing hop/controller listener (`receptor_peers`). Existing `receptor.conf` files stay untouched.
@@ -118,5 +131,5 @@ See [COLLECTION_MAP.md](COLLECTION_MAP.md) for mermaid diagrams of the playbook 
 
 ## Known gaps
 
-- Cluster (multi-controller) topologies not yet lab-validated (AIO validated on containerized AAP 2.6 and 2.7).
+- Cluster (multi-controller) topologies lab-validated on containerized AAP 2.7 (RHEL 10 HA, 2026-08-12). 2.6 cluster still open.
 - No automated integration tests against a live AAP cluster (CI covers lint/build/changelog).

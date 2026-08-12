@@ -19,6 +19,8 @@ See [TEST.md](../../../TEST.md) for scenario definitions and [test-plan.md](../t
 | 2026-08-10 | T-27-AIO-EN-VIA-HN | 2.7 | RHEL 10 | RHEL 10 | EN→HN→Controller | Pass | RHEL 10 HN+EN |
 | 2026-08-11 | T-26-AIO-EN-VIA-HN | 2.6 | RHEL 9 | RHEL 9 | EN→HN→Controller | Pass | carmaap1 lab |
 | 2026-08-11 | T-26-AIO-EN-VIA-HN | 2.6 | RHEL 9 | RHEL 10 | EN→HN→Controller | Pass | carmaap1 lab |
+| 2026-08-12 | T-27-CLU-EN-VIA-HN | 2.7 | RHEL 10 | RHEL 10 | EN→HN→Controller (HA) | Pass | 11-node cluster; gateway control host |
+| 2026-08-12 | T-27-CLU-HN | 2.7 | RHEL 10 | RHEL 10 | HN→Controller (HA) | Pass | Same run as CLU EN-VIA-HN |
 
 ## Coverage Summary
 
@@ -28,7 +30,8 @@ See [TEST.md](../../../TEST.md) for scenario definitions and [test-plan.md](../t
 | Single HN → Controller | ✅ | ✅ |
 | EN → HN → Controller | ✅ | ✅ |
 | Parallel ENs | ✅ | Untested |
-| HA Cluster + EN | Untested | Untested |
+| HA Cluster + EN via HN | Untested | ✅ |
+| HA Cluster + HN only | Untested | ✅ (via EN-VIA-HN join) |
 
 ## Lab Environments
 
@@ -36,6 +39,7 @@ See [TEST.md](../../../TEST.md) for scenario definitions and [test-plan.md](../t
 |-----|------------|-------------|-------|
 | carmaap1.lan | RHEL 9 AIO | 2.6 | Primary test lab |
 | aap27 (lennysh) | RHEL 10 AIO | 2.7 | Secondary lab |
+| aap27 cluster (lennysh) | RHEL 10 HA (2× controller) | 2.7 | 11-node; gateway control host |
 
 ## Node Inventory
 

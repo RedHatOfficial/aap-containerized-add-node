@@ -38,7 +38,7 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 - Requires SSH access from control host to controller and new nodes
 - Controller task container must be running
 - Air-gapped bundle generation not yet implemented (see [DR-001](.sdlc/decisions/open/DR-001-offline-join-bundle.md))
-- Cluster topologies not yet lab-validated (2.6 / 2.7 AIO tested)
+- Cluster topologies lab-validated on 2.7 HA (RHEL 10); 2.6 cluster still untested
 
 ## SDLC
 
@@ -46,7 +46,7 @@ Architecture decisions, requirements, and development phases: [.sdlc/](.sdlc/REA
 
 ## Prerequisites
 
-- **Control host** runs `ansible-playbook` with this collection and can reach the cluster over SSH.
+- **Control host** runs `ansible-playbook` with this collection. It may be **any** machine with SSH to the cluster: a laptop, a gateway node, a controller, an execution/hop node, or a bastion. It does not need to be an `automationcontroller` host.
 - **SSH user on `automationcontroller`:** the same **non-root install user** used for the containerized install (home has `~/aap/…`). Used for `podman exec … awx-manage` and mesh CA fetch. **No sudo** for those steps (`become: false`).
 - **SSH user on new EN/HN:** same non-root install-user pattern (collection rejects root).
 - **Optional sudo:** controller `firewalld` when enabling a receptor `tcp-listener` (`enable_controller_listener`).
@@ -89,7 +89,7 @@ The maintenance window comes from running the **full** installer against every p
 
 ## Status
 
-End-to-end roles are implemented and driven by `aap_setup_dir` for version alignment (registry/image defaults + `ansible.containerized_installer.receptor`). Lab-validated on containerized AAP **2.6** and **2.7** AIO (execution and hop; EN via hop). Cluster topologies still need validation before production use.
+End-to-end roles are implemented and driven by `aap_setup_dir` for version alignment (registry/image defaults + `ansible.containerized_installer.receptor`). Lab-validated on containerized AAP **2.6** and **2.7** AIO and **2.7** HA cluster (execution and hop; EN via hop). 2.6 cluster still needs validation before production use.
 
 Each role has a `roles/<name>/README.md`. Flow overview: [docs/COLLECTION_MAP.md](docs/COLLECTION_MAP.md).
 
@@ -105,7 +105,7 @@ Reusable scenario checklists, inventory sketches, and a results log: [TEST.md](T
 |--------|-----------|-----|----------|------------------------|
 | Containerized AAP 2.6, AIO | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: Tested | :white_check_mark: **Tested** (see T-26-AIO-FULL-UPGRADE in [TEST.md](TEST.md)) |
 | Containerized AAP 2.7, AIO | :white_check_mark: **Tested** (RHEL 9 + RHEL 10; see S-001 / T-27) | :white_check_mark: **Tested** (RHEL 9 + RHEL 10 hop) | :white_check_mark: **Tested** (T-27-AIO-EN-VIA-HN) | :white_large_square: Untested |
-| Containerized AAP 2.6/2.7, cluster | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested | :white_large_square: Untested |
+| Containerized AAP 2.6/2.7, cluster | :white_large_square: Untested | :white_check_mark: **Tested** (2.7 RHEL 10; T-27-CLU) | :white_check_mark: **Tested** (T-27-CLU-EN-VIA-HN) | :white_large_square: Untested |
 
 ## To Do
 

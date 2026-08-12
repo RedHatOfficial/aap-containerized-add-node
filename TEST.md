@@ -87,7 +87,9 @@ Then remove or update the host line in inventory before abandoning a join; keep 
 | T-27-AIO-EN | Execution peers controller | Containerized 2.7 AIO | :white_check_mark: Tested (S-001; RHEL 9 + RHEL 10) |
 | T-27-AIO-HN | Hop peers controller | Containerized 2.7 AIO | :white_check_mark: Tested (covered by EN-VIA-HN; RHEL 9 + RHEL 10) |
 | T-27-AIO-EN-VIA-HN | Hop + EN via hop | Containerized 2.7 AIO | :white_check_mark: Tested (RHEL 9 + RHEL 10 EN/HN; controller RHEL 10) |
-| T-27-CLU-* | Cluster variants (EN / HN / via hop) | Containerized 2.7 cluster | :white_large_square: Untested |
+| T-27-CLU-EN | Execution on multi-controller cluster | Containerized 2.7 cluster | :white_large_square: Untested |
+| T-27-CLU-HN | Hop on multi-controller cluster | Containerized 2.7 cluster | :white_check_mark: Tested (covered by CLU EN-VIA-HN; RHEL 10) |
+| T-27-CLU-EN-VIA-HN | Hop + EN via hop on cluster | Containerized 2.7 cluster | :white_check_mark: Tested (RHEL 10; gateway control host) |
 | T-SKIP-IMG | Forced `aap_add_node_skip_image_load=true` with images already present | Any tested target | :white_large_square: Optional / partial (default `*_if_present` used in lab) |
 | T-LISTENER | AIO `local-only` → `tcp-listener` on first mesh join | AIO (any version) | :white_large_square: Untested as isolated case (often already listening after first hop) |
 
@@ -259,7 +261,7 @@ Use the same Pre-flight / Run / Pass criteria as the matching 2.6 AIO scenario; 
 | T-27-AIO-RERUN / DEPROV-REJOIN / FULL-UPGRADE | Same intents as T-26 analogs on 2.7 |
 | T-*-CLU-* | ≥2 controllers in `[automationcontroller]`; confirm `groups['automationcontroller'][0]` is fine for `awx-manage`; peers as designed for HA mesh |
 
-**Last result:** T-27-AIO-EN-VIA-HN — 2026-08-10 on `aap27` with RHEL 9 and RHEL 10 HN+EN pairs (see results log).
+**Last result:** T-27-CLU-EN-VIA-HN — 2026-08-12 on `aap27` 11-node cluster (RHEL 10.2; control host `aap27-gw01`; see results log).
 
 ---
 
@@ -274,6 +276,7 @@ Use the same Pre-flight / Run / Pass criteria as the matching 2.6 AIO scenario; 
 | Bare `receptor_peers=hostname` or INI `receptor_peers=['hostname']` | Use `receptor_peers='["hostname"]'` (INI) or a YAML list; confirm with `ansible-inventory --host` |
 | Image load every lab re-run | Use `aap_add_node_skip_image_load=true` only when images already loaded; default `*_if_present` skips when refs exist |
 | Host key verification failed on new nodes | From the control host / controller install user: `ssh-keyscan <fqdn> >> ~/.ssh/known_hosts` |
+| `podman inspect` fails on gateway control host | Delegate tasks must SSH to `automationcontroller[0]`; see [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) control-host section |
 
 ---
 
@@ -292,3 +295,5 @@ Use the same Pre-flight / Run / Pass criteria as the matching 2.6 AIO scenario; 
 | 2026-08-10 | T-27-AIO-HN | aap27 AIO | (same run as EN-VIA-HN) | Pass | Hop→`aap27.lennysh.net` in combined join |
 | 2026-08-10 | T-27-AIO-EN-VIA-HN | aap27 AIO | ccbcf67 | Pass | RHEL 10.2 HN+EN (`aap27-hn-02` / `aap27-en-02`); EN capacity 136 after ~2 min settle; log `.ignore/lab/runs/aap27-T-27-AIO-EN-VIA-HN-RHEL10-2026-08-10T222041Z.log` |
 | 2026-08-10 | T-27-AIO-HN | aap27 AIO | (same RHEL 10 run) | Pass | RHEL 10.2 hop→`aap27.lennysh.net` |
+| 2026-08-12 | T-27-CLU-EN-VIA-HN | aap27 cluster (11-node) | devel + delegate-connection fix | Pass | RHEL 10.2 HN+EN (`aap27-hn01`/`en03`); control host `aap27-gw01`; existing mesh stayed green; log `.ignore/lab/runs/aap27-cluster-T-27-CLU-EN-VIA-HN-*.log` |
+| 2026-08-12 | T-27-CLU-HN | aap27 cluster | (same run as CLU EN-VIA-HN) | Pass | Hop peers `cn01`+`cn02`; RHEL 10.2 |

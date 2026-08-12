@@ -8,7 +8,9 @@ Used by `list_instances` and `register_instance` before `podman exec`.
 
 - Inventory group `automationcontroller` (same as the containerized installer inventory).
 - SSH from the control host to `groups['automationcontroller'][0]` as the install user.
-- Podman and a running controller task container on that host.
+- Podman and a running controller task container on that host (not on gateway-only nodes).
+
+When the control host is a gateway or external machine, delegated tasks SSH to the controller; `podman exec` runs on the controller host, not on the gateway.
 
 ## Role Variables
 

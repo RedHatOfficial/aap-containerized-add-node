@@ -1,0 +1,13 @@
+---
+# Reference vars for delegated tasks (not auto-loaded — copy the expression into task vars).
+#
+# Plays use hosts: localhost + connection: local on the control host. That does NOT
+# imply SSH when delegate_to targets a remote inventory host. Use:
+#
+#   connection: "{{ hostvars[_remote_host].ansible_connection | default('ssh') }}"
+#
+# on every task that delegate_to's a remote host. For delegate_to: localhost, use:
+#
+#   connection: local
+#
+# Honor inventory ansible_connection=local when the control host IS the controller (AIO).
