@@ -4,7 +4,7 @@
 
 - **Priority**: P2
 - **Topology**: Controller-initiated connection
-- **Status**: Untested
+- **Status**: Tested (2026-08-12)
 - **Phase**: PHASE-002
 
 ## Description
