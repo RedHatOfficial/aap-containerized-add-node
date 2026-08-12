@@ -4,7 +4,7 @@
 
 - **Priority**: P2
 - **Topology**: Split network with jumpbox
-- **Status**: Part A Passed (2026-08-12)
+- **Status**: Part A + Part B Passed (2026-08-12)
 - **Phase**: PHASE-002
 
 ## Description
@@ -172,6 +172,7 @@ ssh -J ansible@jumpbox.example.com ansible@controller.example.com \
 | Date | Method | Result | Notes |
 |------|--------|--------|-------|
 | 2026-08-12 | Part A: Online ProxyJump | PASS | All preflight/discovery via jumpbox; EN already registered |
+| 2026-08-12 | Part B: Offline Bundle | PASS | Bundle generated on controller, transferred to EN, local install succeeded |
 
 ### 2026-08-12 Test Details
 
