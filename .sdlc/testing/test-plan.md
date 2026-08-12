@@ -64,26 +64,26 @@ Test results: [results/RESULTS.md](results/RESULTS.md)
 | Feature | Scenario | Priority | Status |
 |---------|----------|----------|--------|
 | Outbound dial | S-001, S-002, S-003 | P1 | Tested |
-| Inbound dial | S-010 | P2 | Untested |
+| Inbound dial | S-010 | P2 | Tested (2026-08-12) |
 | Preflight checks | S-020 | P1 | Tested |
 | Serial registration | S-030 | P1 | Tested |
 | Re-run after failure | S-040 | P1 | Tested |
 | Deprovision/rejoin | S-041 | P1 | Tested |
 | Full upgrade after join | S-050 | P2 | Tested |
-| Offline bundle generation | S-060 | P1 | Untested |
-| Offline bundle install | S-061 | P1 | Untested |
-| Offline bundle with images | S-062 | P2 | Untested |
-| Offline hybrid cloud | S-063 | P2 | Untested |
+| Offline bundle generation | S-060 | P1 | Tested (2026-08-12) |
+| Offline bundle install | S-061 | P1 | Tested (2026-08-12) |
+| Offline bundle with images | S-062 | P2 | BLOCKED (group_vars path) |
+| Offline hybrid cloud | S-064 | P2 | Tested (2026-08-12) |
 
 ### Offline Bundle Test Matrix
 
 | Scenario | Target Type | Include Images | Transfer Method | Priority | Status |
 |----------|-------------|----------------|-----------------|----------|--------|
-| S-060: Single EN bundle | execution | No | Local | P1 | Untested |
-| S-061: Single HN bundle | hop | No | Local | P1 | Untested |
-| S-062: EN with images | execution | Yes | Local | P2 | Untested |
-| S-063: HN + EN chain | hop + execution | No | Local | P1 | Untested |
-| S-064: Hybrid cloud sim | execution | No | Simulated airgap | P2 | Untested |
+| S-060: Single EN bundle | execution | No | Local | P1 | Tested (S-080B) |
+| S-061: Single HN bundle | hop | No | Local | P1 | Tested (S-064) |
+| S-062: EN with images | execution | Yes | Local | P2 | BLOCKED |
+| S-063: HN + EN chain | hop + execution | No | Local | P1 | Tested (S-064) |
+| S-064: Hybrid cloud sim | execution | No | Simulated airgap | P2 | Tested |
 
 ## Test Levels
 
