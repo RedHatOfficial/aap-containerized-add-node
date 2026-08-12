@@ -227,6 +227,50 @@ Cloud Controller ◄── outbound dial ── On-Prem Hop ◄── On-Prem EN
                                           └───── On-Prem EN2
 ```
 
+## Split Network with Jumpbox
+
+When control host cannot directly SSH to both controller and execution node (different network segments, each behind a jumpbox):
+
+```
+Control Host ──► Jumpbox A ──► Controller (Network A)
+             ──► Jumpbox B ──► Execution Node (Network B)
+```
+
+### Option 1: ProxyJump Inventory
+
+If control host can reach both jumpboxes:
+
+```ini
+[automationcontroller]
+controller.networkA.com ansible_ssh_common_args='-o ProxyJump=jumpboxA'
+
+[execution_nodes]
+exec1.networkB.com ansible_ssh_common_args='-o ProxyJump=jumpboxB' receptor_peers='["controller.networkA.com"]'
+```
+
+### Option 2: Offline Bundle (Recommended)
+
+Better for strict network separation:
+
+1. **Generate bundle** via JumpboxA to controller:
+   ```bash
+   ansible-playbook playbooks/generate_bundle.yml \
+     -i inventory.yml \
+     -e aap_setup_dir=/path/to/setup \
+     -e aap_add_node_target_hostname=exec1.networkB.com \
+     -e aap_add_node_receptor_peers='["controller.networkA.com"]'
+   ```
+
+2. **Transfer bundle** through approved channel to EN
+
+3. **Install locally** on EN (no SSH needed):
+   ```bash
+   tar -xzf offline-bundle-*.tar.gz && cd offline-bundle-*
+   sudo ansible-playbook -c local install.yml
+   ```
+
+**Note:** Receptor mesh connectivity (TCP 27199) must still work between EN and controller at runtime.
+
 ## Troubleshooting
 
 ### Bundle generation fails
@@ -293,5 +337,6 @@ firewall-cmd --list-ports | grep 27199
 
 ## Related Documentation
 
-- [Topology Patterns](../examples/topologies.md) — Topology patterns and firewall requirements
-- [Troubleshooting](../collection/TROUBLESHOOTING.md) — Debugging receptor issues
+- [TOPOLOGY.md](TOPOLOGY.md) — Topology patterns and firewall requirements
+- [REQ-005](../.sdlc/specs/REQ-005-offline-bundle.md) — Requirement specification
+- [REQ-006](../.sdlc/specs/REQ-006-hybrid-cloud-topology.md) — Hybrid cloud topology
