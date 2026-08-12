@@ -155,3 +155,9 @@ End-to-end lab validation:
 3. **No molecule / ansible-test integration yet** — CI is lint/build/changelog
 4. **Dual IDs** — Lab matrix uses `T-*` in TEST.md; procedures use `S-*` — see [scenarios/README.md](scenarios/README.md#mapping-to-testmd)
 5. **Flex hosts required** — aap-flex1-rhel9 and aap-flex1-rhel10 must be provisioned for HN testing
+
+## Known Issues (Upstream)
+
+1. **Chain topology: IP vs hostname in receptor.conf** — When nodes peer to other NEW nodes (not controller), upstream installer resolves peer hostname to IP for receptor.conf tcp-peer address. But certificates only have hostname SANs, causing TLS verification failure. **Workaround**: Edit receptor.conf to use hostname instead of IP, then restart receptor.
+
+2. **Port conflict on re-run** — If previous receptor process still holds port 27199, new receptor fails to start. **Fix**: `fuser -k 27199/tcp` then `systemctl --user restart receptor`
