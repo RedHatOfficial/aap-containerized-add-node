@@ -1,0 +1,32 @@
+---
+# S-080: ProxyJump Split Network Test Inventory
+#
+# Tested: 2026-08-12 Part A PASSED
+# Control: macOS (localhost)
+# Jumpbox: RHEL9
+# Controller: AAP 2.7 containerized
+# EN: RHEL9
+#
+# Result: Preflight and discovery completed via jumpbox.
+#         EN was already registered; no-op as expected.
+
+all:
+  vars:
+    ansible_user: "{{ lookup('env', 'ANSIBLE_USER') | default('ansible', true) }}"
+    registry_username: "{{ lookup('env', 'REGISTRY_USERNAME') }}"
+    registry_password: "{{ lookup('env', 'REGISTRY_PASSWORD') }}"
+
+  children:
+    automationcontroller:
+      hosts:
+        controller.example.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@jumpbox.example.com'
+          ansible_python_interpreter: /usr/bin/python3
+
+    execution_nodes:
+      hosts:
+        exec1.example.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@jumpbox.example.com'
+          receptor_peers:
+            - controller.example.com
+          routable_hostname: exec1.example.com

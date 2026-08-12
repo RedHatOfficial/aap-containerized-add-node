@@ -18,7 +18,7 @@
 - name: Publish discovery result
   ansible.builtin.set_fact:
     aap_add_node_new_inventory_hosts: "{{ _hosts }}"
-    aap_add_node_has_work: "{{ _hosts | length > 0 }}"
+    aap_add_node_has_work: "{{ (_hosts | default([], true) | length) > 0 }}"
   vars:
     _hosts_yaml: |
       {% for h in groups[aap_add_node_inventory_group] %}
@@ -27,7 +27,8 @@
       - {{ h | to_json }}
       {% endif %}
       {% endfor %}
-    _hosts: "{{ (_hosts_yaml | trim | length > 0) | ternary(_hosts_yaml | from_yaml, []) }}"
+    # from_yaml returns None for empty input; coerce to []
+    _hosts: "{{ ((_hosts_yaml | trim | length > 0) | ternary(_hosts_yaml | from_yaml, [])) | default([], true) }}"
 
 - name: Report discovery result
   ansible.builtin.debug:
