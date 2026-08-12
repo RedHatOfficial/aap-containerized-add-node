@@ -72,7 +72,7 @@ Test results: [results/RESULTS.md](results/RESULTS.md)
 | Full upgrade after join | S-050 | P2 | Tested |
 | Offline bundle generation | S-060 | P1 | Tested (2026-08-12) |
 | Offline bundle install | S-061 | P1 | Tested (2026-08-12) |
-| Offline bundle with images | S-062 | P2 | BLOCKED (group_vars path) |
+| Offline bundle with images | S-062 | P2 | Tested (2026-08-12) |
 | Offline hybrid cloud | S-064 | P2 | Tested (2026-08-12) |
 
 ### Offline Bundle Test Matrix
@@ -81,7 +81,7 @@ Test results: [results/RESULTS.md](results/RESULTS.md)
 |----------|-------------|----------------|-----------------|----------|--------|
 | S-060: Single EN bundle | execution | No | Local | P1 | Tested (S-080B) |
 | S-061: Single HN bundle | hop | No | Local | P1 | Tested (S-064) |
-| S-062: EN with images | execution | Yes | Local | P2 | BLOCKED |
+| S-062: EN with images | execution | Yes | Local | P2 | Tested |
 | S-063: HN + EN chain | hop + execution | No | Local | P1 | Tested (S-064) |
 | S-064: Hybrid cloud sim | execution | No | Simulated airgap | P2 | Tested |
 

@@ -278,6 +278,78 @@
         dest: "{{ _bundle_work_dir }}/README.md"
         mode: '0644'
 
+    - name: Include container images (optional)
+      when: aap_add_node_bundle_include_images | default(false) | bool
+      block:
+        - name: Create images directory in bundle
+          ansible.builtin.file:
+            path: "{{ _bundle_work_dir }}/images"
+            state: directory
+            mode: '0750'
+
+        - name: Set receptor image reference
+          ansible.builtin.set_fact:
+            _receptor_image: >-
+              {{
+                aap_add_node_receptor_image
+                | default(
+                  'registry.redhat.io/' ~
+                  hostvars['aap_add_node_control'].aap_add_node_default_registry_ns_aap ~
+                  '/' ~
+                  hostvars['aap_add_node_control'].aap_add_node_default_receptor_image
+                )
+              }}
+
+        - name: Show receptor image to bundle
+          ansible.builtin.debug:
+            msg: "Bundling receptor image: {{ _receptor_image }}"
+
+        - name: Fail if receptor image not determined
+          ansible.builtin.assert:
+            that:
+              - _receptor_image | length > 0
+              - "'registry.redhat.io' in _receptor_image or 'localhost' in _receptor_image"
+            fail_msg: |
+              Cannot determine receptor image for bundling.
+              Got: {{ _receptor_image }}
+
+        - name: Check if receptor image exists locally
+          ansible.builtin.command:
+            cmd: "podman image exists {{ _receptor_image }}"
+          register: _image_exists
+          failed_when: false
+          changed_when: false
+
+        - name: Pull receptor image if not local
+          when: _image_exists.rc != 0
+          ansible.builtin.command:
+            cmd: "podman pull {{ _receptor_image }}"
+          register: _pull_image
+          changed_when: true
+
+        - name: Save receptor image to bundle
+          ansible.builtin.command:
+            cmd: "podman save {{ _receptor_image }} -o {{ _bundle_work_dir }}/images/receptor.tar"
+          register: _save_image
+          changed_when: true
+
+        - name: Compress receptor image
+          ansible.builtin.command:
+            cmd: "gzip {{ _bundle_work_dir }}/images/receptor.tar"
+          changed_when: true
+
+        - name: Record image metadata
+          ansible.builtin.copy:
+            content: |
+              # Container images included in this bundle
+              receptor_image: {{ _receptor_image }}
+
+              # To load images on target node:
+              # gunzip images/receptor.tar.gz
+              # podman load -i images/receptor.tar
+            dest: "{{ _bundle_work_dir }}/images/README.txt"
+            mode: '0644'
+
     - name: Ensure output directory exists
       ansible.builtin.file:
         path: "{{ _bundle_final_dir }}"

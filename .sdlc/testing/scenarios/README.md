@@ -17,7 +17,7 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | [S-050](S-050-upgrade-after-join.md) | T-26-AIO-FULL-UPGRADE | :white_check_mark: Tested (2.6) | Full installer after additive join |
 | [S-060](S-060-offline-bundle-en.md) | — | :white_check_mark: Tested (S-080B) | Offline bundle - single EN |
 | [S-061](S-061-offline-bundle-hn.md) | — | :white_check_mark: Tested (S-064) | Offline bundle - single HN |
-| [S-062](S-062-offline-bundle-with-images.md) | — | :warning: BLOCKED | Offline bundle with images (group_vars path bug) |
+| [S-062](S-062-offline-bundle-with-images.md) | — | :white_check_mark: Tested (2026-08-12) | Offline bundle with images |
 | [S-063](S-063-offline-bundle-hn-en-chain.md) | — | :white_check_mark: Tested (S-064) | Offline bundle - HN + EN chain |
 | [S-064](S-064-offline-hybrid-cloud.md) | — | :white_check_mark: Tested (2026-08-12) | Offline hybrid cloud simulation |
 | Cluster (planned) | T-*-CLU-* | :white_large_square: Untested | Multi-controller |
@@ -37,7 +37,7 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | [S-050](S-050-upgrade-after-join.md) | Full Upgrade After Join | Any | P2 | :white_check_mark: Tested (2.6) | Yes |
 | [S-060](S-060-offline-bundle-en.md) | Offline Bundle - EN | AIO + EN offline | P1 | :white_check_mark: Tested (S-080B) | Yes |
 | [S-061](S-061-offline-bundle-hn.md) | Offline Bundle - HN | AIO + HN offline | P1 | :white_check_mark: Tested (S-064) | Yes |
-| [S-062](S-062-offline-bundle-with-images.md) | Offline Bundle + Images | AIO + EN airgap | P2 | :warning: BLOCKED | Yes |
+| [S-062](S-062-offline-bundle-with-images.md) | Offline Bundle + Images | AIO + EN airgap | P2 | :white_check_mark: Tested | Yes |
 | [S-063](S-063-offline-bundle-hn-en-chain.md) | Offline Bundle - HN+EN Chain | AIO + HN + EN offline | P1 | :white_check_mark: Tested (S-064) | Yes |
 | [S-064](S-064-offline-hybrid-cloud.md) | Offline Hybrid Cloud | Cloud + on-prem offline | P2 | :white_check_mark: Tested | Yes |
 | — | Cluster topologies | Multi-controller | P2 | :white_large_square: Untested | No — see T-*-CLU-* |
