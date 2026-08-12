@@ -8,15 +8,34 @@
     state: directory
     mode: '0750'
 
-- name: Get receptor image reference from setup dir
-  ansible.builtin.slurp:
-    src: "{{ aap_add_node_setup_dir }}/group_vars/all"
-  register: _group_vars_content
-  delegate_to: localhost
-
-- name: Parse receptor image from group_vars
+- name: Set receptor image reference
   ansible.builtin.set_fact:
-    _receptor_image: "{{ (_group_vars_content.content | b64decode | from_yaml).receptor_image | default('') }}"
+    _receptor_image: >-
+      {{
+        aap_add_node_receptor_image
+        | default(
+          'registry.redhat.io/' ~
+          hostvars['aap_add_node_control'].aap_add_node_default_registry_ns_aap ~
+          '/' ~
+          hostvars['aap_add_node_control'].aap_add_node_default_receptor_image
+        )
+      }}
+
+- name: Show receptor image to bundle
+  ansible.builtin.debug:
+    msg: "Bundling receptor image: {{ _receptor_image }}"
+
+- name: Fail if receptor image not determined
+  ansible.builtin.assert:
+    that:
+      - _receptor_image | length > 0
+      - "'registry.redhat.io' in _receptor_image or 'localhost' in _receptor_image"
+    fail_msg: |
+      Cannot determine receptor image for bundling.
+      Got: {{ _receptor_image }}
+      Either:
+      1. Pass -e aap_add_node_receptor_image=registry.redhat.io/.../receptor-rhel9:latest
+      2. Ensure validate_setup_dir ran and extracted registry namespace
 
 - name: Check if receptor image exists locally
   ansible.builtin.command:

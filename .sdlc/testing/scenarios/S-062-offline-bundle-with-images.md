@@ -4,7 +4,7 @@
 
 - **Priority**: P2
 - **Topology**: AIO + EN (fully air-gapped)
-- **Status**: BLOCKED (image bundling not implemented)
+- **Status**: Tested (2026-08-12)
 - **Phase**: PHASE-002
 
 ## Description
@@ -98,4 +98,21 @@ podman image exists registry.redhat.io/ansible-automation-platform/receptor-rhel
 
 | Date | AAP Version | Target OS | Bundle Size | Result | Notes |
 |------|-------------|-----------|-------------|--------|-------|
-| | | | | | |
+| 2026-08-12 | 2.7.3 | (bundle only) | 80MB | PASS | Bundle generation with images working |
+
+### 2026-08-12 Test Details
+
+**Bug Fixed:** Playbook had inline tasks but didn't include image bundling. Role's include_images.yml never ran.
+
+**Fix:** Added image bundling block to `playbooks/generate_bundle.yml`:
+1. Create images directory
+2. Build full image path from `registry_ns_aap` + image name
+3. Check if image exists locally, pull if needed
+4. `podman save` to tar, gzip, include in bundle
+
+**Image path fix:** Installer defaults only store short name (`receptor-rhel9:latest`). Now compose full path: `registry.redhat.io/{registry_ns_aap}/{receptor_image}`
+
+**Bundle contents verified:**
+- 80MB bundle (vs 9KB without images)
+- `images/receptor.tar.gz` present
+- `images/README.txt` with load instructions
