@@ -45,10 +45,11 @@
   ansible.builtin.blockinfile:
     path: "{{ aap_add_node_receptor_config_dir }}/receptor.conf"
     marker: "# {mark} ANSIBLE MANAGED - peer {{ item }}"
-    insertafter: "^- tcp-listener:"
+    insertbefore: "^- work-command:"
     block: |
       - tcp-peer:
           address: {{ hostvars[item].routable_hostname | default(item) }}:{{ hostvars[item].receptor_port | default(aap_add_node_listener_port) }}
+          tls: tls_client
   loop: "{{ groups['aap_add_node_targets'] | default([]) }}"
   register: _receptor_conf_changed
   notify: restart receptor

@@ -132,7 +132,7 @@ ssh aap-flex1-rhel9.lan "systemctl --user stop receptor"
 
 | Date | Result | Notes |
 |------|--------|-------|
-| 2026-08-12 | PARTIAL | Logic works through registration; blocked at installer registry login (creds not available) |
+| 2026-08-12 | PASS (with manual fix) | Bug found in update_controller_peers role; manual receptor.conf fix required |
 
 ### 2026-08-12 Test Details
 
@@ -140,20 +140,39 @@ ssh aap-flex1-rhel9.lan "systemctl --user stop receptor"
 - Controller: carmaap1.lan (AAP 2.7.3 containerized)
 - Execution Node: aap-flex1-rhel9
 
-**Partial Test Results:**
-1. Preflight: PASS (when enabled with creds)
-2. Discovery: PASS (found flex node not registered)
-3. Registration: PASS (provision_instance succeeded)
-4. Host prep: BLOCKED at `ansible.containerized_installer.common` registry login
+**Test Results:**
+1. Preflight: PASS
+2. Discovery: PASS
+3. Registration: PASS
+4. Host prep: PASS
+5. update_controller_peers: **BUG FOUND**
+6. EN heartbeat: PASS (after manual fix)
 
-**Root Cause:** Installer collection requires `registry_username`/`registry_password` even when podman already logged in. Lab creds not in fetchable location.
+**Bug Found:** `update_controller_peers` role uses `blockinfile` which inserts `tcp-peer` block incorrectly inside the `tcp-listener:` entry, breaking receptor.conf syntax.
 
-**Fix Options:**
-1. Store registry creds in vault on controller
-2. Use offline bundle (no registry needed)
-3. Manual cred injection for test
+Before (broken):
+```yaml
+- tcp-listener:
+# BEGIN ANSIBLE MANAGED - peer aap-flex1-rhel9
+- tcp-peer:
+    address: aap-flex1-rhel9:27199
+# END ANSIBLE MANAGED - peer aap-flex1-rhel9
+    port: 27199
+```
 
-**Inbound Dial Logic Verified:**
-- `aap_add_node_enable_controller_peer=true` correctly parsed
-- Role `update_controller_peers` would execute after host_prep
-- Discovery correctly identified flex node as new
+After (fixed manually):
+```yaml
+- tcp-listener:
+    port: 27199
+    tls: tls_server
+# BEGIN ANSIBLE MANAGED - peer aap-flex1-rhel9
+- tcp-peer:
+    address: aap-flex1-rhel9:27199
+    tls: tls_client
+# END ANSIBLE MANAGED - peer aap-flex1-rhel9
+```
+
+**Inbound Dial Verified:**
+- EN has `tcp-listener` (correct)
+- Controller has `tcp-peer` to EN (correct after fix)
+- EN heartbeat present: capacity=16, node_type=execution
