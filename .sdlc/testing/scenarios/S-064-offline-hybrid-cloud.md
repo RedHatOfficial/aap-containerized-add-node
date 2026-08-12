@@ -139,3 +139,33 @@ This scenario validates:
 | Date | AAP Version | Result | Notes |
 |------|-------------|--------|-------|
 | | | | |
+
+## Results Log Update
+
+| Date | AAP Version | Result | Notes |
+|------|-------------|--------|-------|
+| 2026-08-12 | 2.7.3 | PASS | HN + EN chain via offline bundles |
+
+### 2026-08-12 Test Details
+
+**Environment:**
+- Controller: carmaap1.lan (AAP 2.7.3) — "cloud"
+- HN: aap-flex1-rhel9 as `hop-onprem` — "on-prem"
+- EN: aap-exec1-rhel9 as `exec-onprem` — "on-prem"
+
+**Topology:**
+```
+Controller (cloud) ◄── hop-onprem ◄── exec-onprem
+```
+
+**Test Results:**
+1. Bundle generation: PASS (HN + EN bundles created)
+2. Transfer: PASS (simulated via SCP)
+3. HN install: PASS (heartbeat confirmed)
+4. EN install: PASS (heartbeat confirmed via HN relay)
+5. Mesh connectivity: PASS (exec-onprem → hop-onprem → carmaap1.lan)
+
+**Notes:**
+- `bundle_include_images=true` didn't work (group_vars/all missing) — images pre-pulled instead
+- EN needed `/etc/hosts` entry for `hop-onprem` — real deployment needs DNS or IP
+- HN and EN both need receptor image pre-pulled as root (install.yml runs with become)
