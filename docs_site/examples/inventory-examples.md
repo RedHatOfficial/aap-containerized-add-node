@@ -12,6 +12,7 @@ Pick a topology that matches your network. All examples use **outbound dial** (r
 | [Parallel ENs](#parallel-ens-controller) | Scale execution |
 | [Fan-out behind Hop](#fan-out-behind-hop) | Multiple ENs at remote site |
 | [Multi-hop Chain](#multi-hop-chain) | DMZ traversal |
+| [ProxyJump / Bastion](#proxyjump-bastion) | SSH via jumpbox |
 
 ---
 
@@ -329,6 +330,59 @@ all:
   vars:
     ansible_user: ansible
     aap_setup_dir: /path/to/ansible-automation-platform-containerized-setup-2.x
+```
+
+---
+
+## ProxyJump / Bastion
+
+```
+┌─────────────────┐
+│  Control Host   │
+│  (laptop/Mac)   │
+└────────┬────────┘
+         │ SSH
+         ▼
+┌─────────────────┐
+│    Jumpbox      │
+│ bastion.example │
+└────────┬────────┘
+         │ SSH (to both)
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+┌────────┐  ┌────────┐
+│ Ctrl   │◄─│   EN   │
+│listener│  │dials   │
+└────────┘  └────────┘
+     27199 (direct)
+```
+
+**When to use:** Corporate policy requires bastion, control host outside network, VPN unavailable.
+
+**Note:** SSH goes through jumpbox; receptor mesh (27199) is direct between EN and controller.
+
+```yaml
+all:
+  vars:
+    ansible_user: ansible
+    registry_username: "{{ lookup('env', 'REGISTRY_USERNAME') }}"
+    registry_password: "{{ lookup('env', 'REGISTRY_PASSWORD') }}"
+
+  children:
+    automationcontroller:
+      hosts:
+        controller.example.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@bastion.example.com'
+          ansible_python_interpreter: /usr/bin/python3
+
+    execution_nodes:
+      hosts:
+        exec-01.example.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@bastion.example.com'
+          receptor_peers:
+            - controller.example.com
+          routable_hostname: exec-01.example.com
 ```
 
 ---
