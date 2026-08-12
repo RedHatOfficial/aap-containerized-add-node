@@ -32,6 +32,8 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | [S-010](S-010-inbound-dial.md) | Inbound Dial | AIO + inbound | P2 | :white_check_mark: Tested | Yes |
 | S-020 | Preflight Validation | Any | P1 | :white_check_mark: Tested (with joins) | Checklist only |
 | S-030 | Parallel / serial multi-node | AIO + 2+ nodes | P1 | :white_check_mark: Tested (via S-003) | Implicit in S-003 |
+| [S-031](S-031-parallel-4-ens.md) | Parallel 4 ENs | AIO + 4 ENs | P2 | :white_check_mark: Tested | Yes |
+| [S-032](S-032-chain-hn-hn-en.md) | Chain HN→HN→EN | AIO + HN + HN + EN | P2 | :white_check_mark: Tested (workaround) | Yes |
 | [S-040](S-040-failure-recovery.md) | Failure and Recovery | Any | P1 | :white_check_mark: Tested (2.6) | Yes |
 | [S-041](S-041-deprovision-rejoin.md) | Deprovision and Rejoin | Any | P1 | :white_check_mark: Tested (2.6) | Yes |
 | [S-050](S-050-upgrade-after-join.md) | Full Upgrade After Join | Any | P2 | :white_check_mark: Tested (2.6) | Yes |

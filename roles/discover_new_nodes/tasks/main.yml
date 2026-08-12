@@ -105,4 +105,4 @@
   loop: "{{ aap_add_node_new_inventory_hosts }}"
   when: aap_add_node_has_work | bool
   vars:
-    _raw_type: "{{ hostvars[item].node_type | default(hostvars[item].receptor_type | default('execution')) }}"
+    _raw_type: "{{ hostvars[item].aap_add_node_type | default(hostvars[item].node_type | default(hostvars[item].receptor_type | default('execution'))) }}"
