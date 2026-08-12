@@ -52,10 +52,10 @@ Test results: [results/RESULTS.md](results/RESULTS.md)
 | Single EN (RHEL 9) | — | — | EN | — | P1 | Tested |
 | Single EN (RHEL 10) | — | — | — | EN | P1 | Tested |
 | Parallel 2 ENs | — | — | EN | EN | P1 | Tested |
-| Parallel 4 ENs | EN | EN | EN | EN | P2 | Untested |
+| Parallel 4 ENs | EN | EN | EN | EN | P2 | Tested (2026-08-12) |
 | RHEL 9 HN + EN | HN | — | EN behind | — | P1 | Tested (2026-08-11) |
 | RHEL 10 HN + EN | — | HN | — | EN behind | P1 | Tested (2026-08-11) |
-| Chain HN→HN→EN | HN | HN | EN behind | — | P2 | Untested |
+| Chain HN→HN→EN | HN | HN | EN behind | — | P2 | Tested (2026-08-12) - workaround |
 | Cluster + EN | — | — | EN | — | P2 | Untested |
 | Cluster + HN + EN | HN | — | EN behind | — | P2 | Tested (T-27-CLU-EN-VIA-HN, 2026-08-12) |
 
