@@ -13,6 +13,7 @@ Pick a topology that matches your network. All examples use **outbound dial** (r
 | Fan-out behind Hop | [inventory-fanout-behind-hop.yml](inventory-fanout-behind-hop.yml) | Multiple ENs at remote site |
 | Multi-hop Chain | [inventory-multi-hop-chain.yml](inventory-multi-hop-chain.yml) | DMZ traversal |
 | Hybrid Cloud | [inventory-hybrid-cloud.yml](inventory-hybrid-cloud.yml) | On-prem ENs → cloud controller |
+| **ProxyJump** | [inventory-proxyjump.yml](inventory-proxyjump.yml) | SSH via bastion/jumpbox |
 
 ---
 
@@ -211,6 +212,38 @@ Pick a topology that matches your network. All examples use **outbound dial** (r
 **File:** [inventory-hybrid-cloud.yml](inventory-hybrid-cloud.yml)
 
 **When to use:** Controller in cloud (GCP/AWS/Azure), ENs on-premises, firewall only allows outbound from on-prem to cloud.
+
+---
+
+## ProxyJump / Bastion
+
+```
+┌─────────────────┐
+│  Control Host   │
+│  (laptop/Mac)   │
+└────────┬────────┘
+         │ SSH
+         ▼
+┌─────────────────┐
+│    Jumpbox      │
+│ bastion.example │
+└────────┬────────┘
+         │ SSH (to both)
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+┌────────┐  ┌────────┐
+│ Ctrl   │◄─│   EN   │
+│listener│  │dials   │
+└────────┘  └────────┘
+     27199 (direct)
+```
+
+**File:** [inventory-proxyjump.yml](inventory-proxyjump.yml)
+
+**When to use:** Corporate policy requires bastion, control host outside network, VPN unavailable.
+
+**Note:** SSH goes through jumpbox; receptor mesh (27199) is direct between EN and controller.
 
 ---
 

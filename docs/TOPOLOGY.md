@@ -406,6 +406,68 @@ ansible_user=aapuser
 | Hop/EN (on-prem) | Controller (cloud) | 27199/TCP | Outbound |
 | Installer | All nodes | 22/TCP | Outbound (install-time only) |
 
+### Example 8: ProxyJump / Bastion Topology
+
+Control host cannot directly SSH to controller or ENs. All SSH routes through a jumpbox.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         CONTROL HOST                                 │
+│                      (laptop/workstation)                            │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ SSH
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                           JUMPBOX                                    │
+│                    (bastion.example.com)                             │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ SSH (to both)
+              ┌────────────────┴────────────────┐
+              ▼                                 ▼
+┌─────────────────────────┐       ┌─────────────────────────┐
+│      Controller         │◄──────│    Execution Node       │
+│  (controller.example)   │ 27199 │   (exec1.example)       │
+│     tcp-listener        │       │      tcp-peer           │
+└─────────────────────────┘       └─────────────────────────┘
+```
+
+```yaml
+# inventory-proxyjump.yml - SSH via jumpbox
+all:
+  vars:
+    ansible_user: ansible
+    registry_username: "{{ lookup('env', 'REGISTRY_USERNAME') }}"
+    registry_password: "{{ lookup('env', 'REGISTRY_PASSWORD') }}"
+
+  children:
+    automationcontroller:
+      hosts:
+        controller.example.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@bastion.example.com'
+          ansible_python_interpreter: /usr/bin/python3
+
+    execution_nodes:
+      hosts:
+        exec1.example.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@bastion.example.com'
+          receptor_peers:
+            - controller.example.com
+```
+
+**Key points:**
+- `ansible_ssh_common_args` with `-o ProxyJump=` routes SSH through jumpbox
+- Receptor mesh (27199) is **direct** between EN and controller — not via jumpbox
+- SSH is install-time only; runtime uses receptor mesh
+- Works with macOS control host (tested 2026-08-12)
+- May need `ansible_python_interpreter` if remote Python path differs
+
+**When to use:**
+- Corporate policy requires bastion host for all SSH
+- Control host is outside the network (VPN not available)
+- Defense-in-depth: no direct SSH from workstations to servers
+
+**See also:** [examples/inventory-proxyjump.yml](../examples/inventory-proxyjump.yml)
+
 ---
 
 ## routable_hostname vs ansible_host
