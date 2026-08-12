@@ -5,7 +5,6 @@ Two installation methods available. Pick based on network access:
 | Method | Use When | Control Host Needs |
 |--------|----------|-------------------|
 | **[Online](#method-1-online-installation)** | SSH access from control host to target nodes | SSH to controller + SSH to ENs |
-| **[Online + ProxyJump](#proxyjump-bastion)** | SSH via bastion/jumpbox | SSH to jumpbox (routes to targets) |
 | **[Offline](#method-2-offline-installation)** | No SSH to target nodes (air-gap, policy, hybrid cloud) | SSH to controller only |
 
 ---
@@ -36,131 +35,22 @@ Can your EN reach the Controller directly?
          └─ Multiple hops (DMZ layers) → Multi-hop Chain
 ```
 
----
+Pick your topology and copy the inventory from [Inventory Examples](../examples/inventory-examples.md):
 
-### Single EN → Controller
+| Topology | Example |
+|----------|---------|
+| Single EN → Controller | [inventory-examples.md#single-en-controller](../examples/inventory-examples.md#single-en-controller) |
+| Single HN → Controller | [inventory-examples.md#single-hn-controller](../examples/inventory-examples.md#single-hn-controller) |
+| EN via Hop → Controller | [inventory-examples.md#en-via-hop-controller](../examples/inventory-examples.md#en-via-hop-controller) |
+| Parallel ENs → Controller | [inventory-examples.md#parallel-ens-controller](../examples/inventory-examples.md#parallel-ens-controller) |
+| Fan-out behind Hop | [inventory-examples.md#fan-out-behind-hop](../examples/inventory-examples.md#fan-out-behind-hop) |
+| Multi-hop Chain | [inventory-examples.md#multi-hop-chain](../examples/inventory-examples.md#multi-hop-chain) |
+| ProxyJump / Bastion | [inventory-examples.md#proxyjump-bastion](../examples/inventory-examples.md#proxyjump-bastion) |
 
-**Scenario:** Simple setup, EN can reach controller directly.
-
+**Run:**
+```bash
+ansible-playbook playbooks/add_node.yml -i inventory.yml -e aap_setup_dir=/path/to/setup
 ```
-Controller ◄── outbound dial ── Execution Node
-```
-
-**Steps:**
-
-1. Copy [inventory-single-en.yml](../examples/inventory-examples.md#single-en-controller)
-2. Replace `controller.example.com` with your controller FQDN
-3. Replace `exec-01.example.com` with your EN FQDN
-4. Run:
-   ```bash
-   ansible-playbook playbooks/add_node.yml -i your-inventory.yml -e aap_setup_dir=/path/to/setup
-   ```
-
----
-
-### Parallel ENs → Controller
-
-**Scenario:** Multiple ENs, all can reach controller directly.
-
-```
-Controller ◄── outbound dial ── EN1
-           ◄── outbound dial ── EN2
-           ◄── outbound dial ── EN3
-```
-
-**Steps:**
-
-1. Copy [inventory-parallel-ens.yml](../examples/inventory-examples.md#parallel-ens-controller)
-2. Add/remove EN entries as needed
-3. All ENs set `receptor_peers: ["controller.example.com"]`
-4. Run playbook
-
----
-
-### EN via Hop → Controller
-
-**Scenario:** EN cannot reach controller directly. Hop relays traffic.
-
-```
-Controller ◄── outbound dial ── Hop ◄── outbound dial ── EN
-```
-
-**Steps:**
-
-1. Copy [inventory-en-via-hn.yml](../examples/inventory-examples.md#en-via-hop-controller)
-2. Hop sets `receptor_peers: ["controller.example.com"]`
-3. EN sets `receptor_peers: ["hop.example.com"]` (not controller!)
-4. Run playbook — adds both in one run
-
----
-
-### Fan-out behind Hop
-
-**Scenario:** Multiple ENs at remote site, all behind single hop.
-
-```
-Controller ◄── Hop ◄── EN1
-               ▲
-               └───── EN2
-```
-
-**Steps:**
-
-1. Copy [inventory-fanout-behind-hop.yml](../examples/inventory-examples.md#fan-out-behind-hop)
-2. All ENs peer to hop: `receptor_peers: ["hop.example.com"]`
-3. Hop peers to controller
-4. Run playbook
-
----
-
-### Multi-hop Chain
-
-**Scenario:** DMZ traversal, multiple network tiers.
-
-```
-Controller ◄── Hop1 ◄── Hop2 ◄── EN
-```
-
-**Steps:**
-
-1. Copy [inventory-multi-hop-chain.yml](../examples/inventory-examples.md#multi-hop-chain)
-2. Each node peers to its upstream neighbor
-3. Run playbook
-
----
-
-### ProxyJump / Bastion
-
-**Scenario:** Control host cannot SSH directly to targets — routes through jumpbox.
-
-```
-Control Host ──SSH──► Jumpbox ──SSH──► Controller
-                            ──SSH──► Execution Node
-```
-
-**Steps:**
-
-1. Add `ansible_ssh_common_args` to inventory:
-   ```yaml
-   all:
-     children:
-       automationcontroller:
-         hosts:
-           controller.example.com:
-             ansible_ssh_common_args: '-o ProxyJump=ansible@jumpbox.example.com'
-       execution_nodes:
-         hosts:
-           exec1.example.com:
-             ansible_ssh_common_args: '-o ProxyJump=ansible@jumpbox.example.com'
-             receptor_peers:
-               - controller.example.com
-   ```
-
-2. Run playbook as normal
-
-**Note:** SSH routes via jumpbox; receptor mesh (27199) is direct between EN and controller.
-
-See [inventory-proxyjump.yml](../examples/inventory-examples.md#proxyjump-bastion) for complete example.
 
 ---
 
@@ -220,21 +110,6 @@ What type of node are you adding?
 
 **Scenario:** Add one execution node, can reach controller directly.
 
-```
-Control Host ──SSH──► Controller
-                          │
-                    [Generate Bundle]
-                          ▼
-              offline-bundle-exec1.tar.gz
-                          │
-                   [Transfer to EN]
-                          ▼
-                 Execution Node (local install)
-                          │
-                          ▼
-              EN ──outbound dial──► Controller
-```
-
 **Steps:**
 
 1. **Generate:**
@@ -261,21 +136,6 @@ Control Host ──SSH──► Controller
 
 **Scenario:** Add hop node to relay future EN traffic.
 
-```
-Control Host ──SSH──► Controller
-                          │
-                    [Generate Bundle]
-                          ▼
-              offline-bundle-hop1.tar.gz
-                          │
-                   [Transfer to HN]
-                          ▼
-                  Hop Node (local install)
-                          │
-                          ▼
-              HN ──outbound dial──► Controller
-```
-
 **Steps:**
 
 1. **Generate:**
@@ -295,24 +155,6 @@ Control Host ──SSH──► Controller
 ### HN + EN Chain Bundle
 
 **Scenario:** Remote site needs hop relay plus execution capacity.
-
-```
-Control Host ──SSH──► Controller
-                          │
-               [Generate HN Bundle first]
-                          │
-               [Generate EN Bundle second]
-                          ▼
-              offline-bundle-hop1.tar.gz
-              offline-bundle-exec1.tar.gz
-                          │
-            [Transfer BOTH to remote site]
-                          ▼
-         Install HN first, then EN (order matters!)
-                          │
-                          ▼
-              EN ──► HN ──► Controller
-```
 
 **Steps:**
 
@@ -390,6 +232,45 @@ ansible-playbook playbooks/generate_bundle.yml \
 
 ---
 
+### Offline via ProxyJump
+
+**Scenario:** Generate bundle on controller accessed via jumpbox, transfer via jumpbox chain.
+
+**Step 1: Generate bundle (controller via jumpbox)**
+
+```bash
+ansible-playbook playbooks/generate_bundle.yml \
+  -i inventory-proxyjump.yml \
+  -e aap_setup_dir=/path/to/setup \
+  -e aap_add_node_target_hostname=exec1.example.com \
+  -e aap_add_node_receptor_peers='["controller.example.com"]'
+```
+
+**Step 2: Transfer via jumpbox**
+
+```bash
+# Copy bundle to jumpbox
+scp offline-bundles/offline-bundle-exec1.example.com-*.tar.gz \
+  ansible@jumpbox.example.com:/tmp/
+
+# From jumpbox, copy to EN
+ssh ansible@jumpbox.example.com \
+  "scp /tmp/offline-bundle-*.tar.gz ansible@exec1.example.com:/tmp/"
+```
+
+**Step 3: Install on EN**
+
+```bash
+ssh -J ansible@jumpbox.example.com ansible@exec1.example.com
+
+cd /tmp
+tar -xzf offline-bundle-exec1.example.com-*.tar.gz
+cd offline-bundle-exec1.example.com-*
+sudo ansible-playbook -c local install.yml
+```
+
+---
+
 ### Target Prerequisites
 
 - RHEL 9 or 10 with valid subscription
@@ -400,12 +281,7 @@ ansible-playbook playbooks/generate_bundle.yml \
   podman pull registry.redhat.io/ansible-automation-platform-26/receptor-rhel9:latest
   ```
 
-See [Offline Installation](OFFLINE.md) for complete documentation including:
-
-- ProxyJump/bastion topology
-- BYO TLS certificates
-- Preflight checks
-- Troubleshooting
+See [Offline Installation](OFFLINE.md) for complete documentation.
 
 ---
 
@@ -424,4 +300,4 @@ See [Offline Installation](OFFLINE.md) for complete documentation including:
 - **Connection refused:** Verify firewall allows 27199/TCP
 - **Certificate error:** Check `routable_hostname` matches certificate SAN
 
-See [Topology Patterns](../examples/topologies.md) for detailed configuration and [Troubleshooting](../collection/TROUBLESHOOTING.md) for common issues.
+See [Inventory Examples](../examples/inventory-examples.md) for complete topologies and [Troubleshooting](../collection/TROUBLESHOOTING.md) for common issues.
