@@ -10,10 +10,10 @@
     fail_msg: Inventory must include group automationcontroller (same as the AAP installer inventory).
 
 # HA: any controller works — awx-manage writes to the shared Controller DB.
-# We always pick inventory order [0] for a stable, simple target (SSH + podman exec).
+# Use override if set, otherwise default to first controller.
 - name: Preflight SSH and controller task container
   vars:
-    _awx_manage_host: "{{ groups['automationcontroller'][0] }}"
+    _awx_manage_host: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
     # Play-level connection: local (gateway, laptop, etc.) does not SSH to delegate_to.
     # Honor inventory ansible_connection=local when control host is the controller (AIO).
     _aap_add_node_delegate_connection: "{{ hostvars[_awx_manage_host].ansible_connection | default('ssh') }}"

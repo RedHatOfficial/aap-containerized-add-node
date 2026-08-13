@@ -1,0 +1,7 @@
+---
+bugfixes:
+  - "preflight/machine_id_check - Compare new node machine-ids against existing instance UUIDs to catch cloned VM collisions (issue #12)."
+  - "preflight/inventory_checks - Use same from_yaml parsing as discovery to catch invalid INI receptor_peers formats (issue #14)."
+  - "update_controller_peers - Use aap_add_node_hostname for consistent address resolution with registration (issue #17)."
+minor_changes:
+  - "Add aap_add_node_controller_target variable to override controller[0] for HA failover (issue #15)."

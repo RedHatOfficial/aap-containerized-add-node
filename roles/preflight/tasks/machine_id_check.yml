@@ -3,7 +3,32 @@
 # Cloned VMs often have duplicate /etc/machine-id which causes UUID collision
 # when registering multiple nodes - second node overwrites first in DB
 
-- name: Check for duplicate machine-ids
+- name: Fetch existing instance UUIDs from controller
+  ansible.builtin.command:
+    argv:
+      - podman
+      - exec
+      - "{{ aap_add_node_controller_container | default('automation-controller-task') }}"
+      - awx-manage
+      - list_instances
+      - --format=json
+  delegate_to: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
+  become: false
+  register: _existing_instances_raw
+  changed_when: false
+  failed_when: false
+
+- name: Parse existing instance UUIDs
+  ansible.builtin.set_fact:
+    _existing_uuids: >-
+      {{
+        (_existing_instances_raw.stdout | default('[]') | from_json)
+        | map(attribute='uuid')
+        | list
+      }}
+  when: _existing_instances_raw.rc == 0
+
+- name: Check for duplicate machine-ids among new nodes
   ansible.builtin.set_fact:
     _duplicate_machine_ids: >-
       {%- set seen = {} -%}
@@ -17,7 +42,19 @@
       {%- endfor -%}
       {{ duplicates }}
 
-- name: Assert no duplicate machine-ids
+- name: Check for machine-ids colliding with existing instances
+  ansible.builtin.set_fact:
+    _collision_with_existing: >-
+      {%- set collisions = [] -%}
+      {%- for host, mid in (_preflight_machine_ids | default({})).items() -%}
+        {%- if mid in (_existing_uuids | default([])) -%}
+          {%- set _ = collisions.append({'host': host, 'machine_id': mid}) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ collisions }}
+  when: _existing_uuids is defined
+
+- name: Assert no duplicate machine-ids among new nodes
   ansible.builtin.assert:
     that:
       - _duplicate_machine_ids | length == 0
@@ -35,3 +72,24 @@
       Then reboot or restart dbus:
         sudo systemctl restart dbus
   when: (_preflight_machine_ids | default({})) | length > 1
+
+- name: Assert no machine-id collision with existing instances
+  ansible.builtin.assert:
+    that:
+      - (_collision_with_existing | default([])) | length == 0
+    fail_msg: |
+      MACHINE-ID COLLISION WITH EXISTING INSTANCE!
+
+      The following new nodes have machine-ids matching already-registered instances:
+      {% for col in _collision_with_existing | default([]) %}
+        - {{ col.host }} (machine-id: {{ col.machine_id }})
+      {% endfor %}
+
+      This will overwrite the existing instance in the Controller database!
+
+      Fix by regenerating unique machine-id on each colliding node:
+        sudo rm /etc/machine-id && sudo systemd-machine-id-setup
+
+      Then reboot or restart dbus:
+        sudo systemctl restart dbus
+  when: _collision_with_existing is defined
