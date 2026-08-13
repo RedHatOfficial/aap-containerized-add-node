@@ -73,9 +73,14 @@
   when: item in hostvars
   loop: "{{ aap_add_node_peers | default([]) }}"
   vars:
+    # Installer: routable_hostname | default(ansible_host) on the peer host
+    # (roles/receptor/tasks/facts.yml). Bracket access avoids undefined-attribute
+    # errors when reading peer hostvars from a delegating host; default(item) is
+    # the inventory name when implicit ansible_host is not yet in hostvars.
     _dial: >-
-      {{ hostvars[item].routable_hostname
-         | default(hostvars[item].ansible_host) }}
+      {{ hostvars[item]['routable_hostname']
+         | default(hostvars[item]['ansible_host'])
+         | default(item) }}
 
 - name: Install receptor container via setup-tree installer role
   ansible.builtin.include_role:
