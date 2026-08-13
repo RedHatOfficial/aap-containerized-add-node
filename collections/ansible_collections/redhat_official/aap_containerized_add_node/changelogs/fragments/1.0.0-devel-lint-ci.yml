@@ -1,4 +1,0 @@
----
-minor_changes:
-  - Bump collection version to ``1.0.0-devel``.
-  - Disable ansible-lint offline mode so dependency collections and FQCN roles resolve in CI.

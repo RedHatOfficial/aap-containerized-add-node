@@ -1,5 +1,0 @@
----
-# Entry vars validated by meta/argument_specs.yml (aap_add_node_bundle_dir required).
-
-- name: Install receptor (containerized installer role from aap_setup_dir)
-  ansible.builtin.include_tasks: containerized.yml

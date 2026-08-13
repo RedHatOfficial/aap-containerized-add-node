@@ -1,9 +1,0 @@
----
-argument_specs:
-  main:
-    short_description: Verify new instances appear in awx-manage list_instances.
-    options:
-      aap_add_node_target_group:
-        description: Dynamic group of hosts that were targeted for join.
-        type: str
-        default: aap_add_node_targets

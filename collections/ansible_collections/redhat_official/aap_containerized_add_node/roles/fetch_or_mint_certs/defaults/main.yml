@@ -1,6 +1,0 @@
----
-# aap_add_node_hostname, aap_add_node_mesh_ca_cert, and aap_add_node_mesh_ca_key
-# are required (see meta/argument_specs.yml); no empty defaults.
-aap_add_node_bundle_root: '{{ playbook_dir }}/../../bundles'
-aap_add_node_tls_bits: 4096
-aap_add_node_work_public_key: ''

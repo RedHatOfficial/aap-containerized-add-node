@@ -1,9 +1,0 @@
----
-argument_specs:
-  main:
-    short_description: Run awx-manage list_instances via podman exec on the controller.
-    options:
-      aap_add_node_controller_container:
-        description: Podman name of the controller task container.
-        type: str
-        default: automation-controller-task

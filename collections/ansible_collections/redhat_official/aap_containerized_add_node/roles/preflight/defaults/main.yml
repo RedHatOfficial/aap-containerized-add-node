@@ -1,6 +1,0 @@
----
-# Preflight check defaults
-aap_add_node_preflight_enabled: true
-aap_add_node_preflight_timeout: 30
-aap_add_node_inventory_group: execution_nodes
-aap_add_node_listener_port: 27199

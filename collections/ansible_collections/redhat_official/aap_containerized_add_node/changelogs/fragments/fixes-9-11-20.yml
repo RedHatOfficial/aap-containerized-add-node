@@ -1,6 +1,0 @@
----
-bugfixes:
-  - "instance_groups_api - Fetch existing IG members and merge before update to prevent wiping existing nodes (issue #9)."
-minor_changes:
-  - "validate_mesh.yml - Move to examples/validation/ as lab-only utility with warning comments (issue #11)."
-  - "host_prep - Default aap_add_node_check_version_skew to false since check only prints warning (issue #20)."
