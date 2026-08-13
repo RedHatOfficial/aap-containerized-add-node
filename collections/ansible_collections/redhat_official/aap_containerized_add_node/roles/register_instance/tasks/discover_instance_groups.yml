@@ -17,9 +17,7 @@
   ansible.builtin.set_fact:
     aap_add_node_instance_groups: >-
       {{
-        (aap_add_node_instance_groups | default([]))
-        + (_discovered_instance_groups | default([]))
-        | unique
+        ((aap_add_node_instance_groups | default([])) + (_discovered_instance_groups | default([]))) | unique
       }}
 
 - name: Report discovered instance groups

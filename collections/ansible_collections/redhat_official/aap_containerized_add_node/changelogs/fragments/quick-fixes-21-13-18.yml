@@ -1,0 +1,6 @@
+---
+bugfixes:
+  - "discover_instance_groups - Fix Jinja operator precedence so unique filter applies to merged list (issue #13)."
+  - "update_controller_peers - Add listener_port fallback to match discovery port resolution (issue #18)."
+minor_changes:
+  - "requirements.yml - Add ansible.controller collection for API-based instance group registration (issue #21)."

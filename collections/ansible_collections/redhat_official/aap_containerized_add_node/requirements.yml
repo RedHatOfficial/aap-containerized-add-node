@@ -3,3 +3,4 @@ collections:
   - name: community.crypto
   - name: ansible.posix
   - name: community.general
+  - name: ansible.controller  # Required for API-based instance group registration
