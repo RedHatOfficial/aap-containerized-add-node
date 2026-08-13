@@ -60,10 +60,8 @@
       io.containers.autoupdate: registry
       io.containers.autoupdate.authfile: "{{ ansible_user_dir }}/.config/containers/auth.json"
 
-# receptor.conf.j2 uses peer hostvars[_receptor_hostname] as the TCP dial
-# address (not the mesh node id). Match installer receptor facts: prefer
-# routable_hostname / inventory name so TLS SANs align. Use IP only as last
-# resort (receptor_address override, or when no FQDN is available).
+# receptor.conf.j2 dials hostvars[peer]._receptor_hostname. Match installer
+# roles/receptor/tasks/facts.yml on each peer host.
 - name: Seed receptor dial facts on peer inventory hosts
   ansible.builtin.set_fact:
     _receptor_hostname: "{{ _dial }}"
@@ -76,11 +74,8 @@
   loop: "{{ aap_add_node_peers | default([]) }}"
   vars:
     _dial: >-
-      {{ hostvars[item].receptor_address
-         | default(hostvars[item].routable_hostname
-         | default(item
-         | default(hostvars[item].ansible_host
-         | default(hostvars[item].ansible_default_ipv4.address)))) }}
+      {{ hostvars[item].routable_hostname
+         | default(hostvars[item].ansible_host) }}
 
 - name: Install receptor container via setup-tree installer role
   ansible.builtin.include_role:
