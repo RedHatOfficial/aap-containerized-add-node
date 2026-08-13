@@ -1,7 +1,12 @@
 # Lab test scenarios
 
-Reusable checklist for validating `redhat_official.aap_containerized_add_node` against containerized AAP.
+Reusable checklist for validating join scenarios against containerized AAP using either:
+
+- **Collection:** `redhat_official.aap_containerized_add_node` (`playbooks/add_node.yml`)
+- **Installer:** `ansible.containerized_installer` with `add_execution_nodes` ([installer/](installer/))
+
 Update the **Status** column and the per-scenario **Last result** notes when you re-run.
+Record which playbook you used in the **Results log** (`Playbook` column).
 
 Scope: **containerized AAP 2.6+ only** (RPM / OpenShift out of scope).
 
@@ -10,18 +15,18 @@ Scope: **containerized AAP 2.6+ only** (RPM / OpenShift out of scope).
 1. Pick a scenario ID below (or matching `S-*` in [.sdlc/testing/scenarios/](.sdlc/testing/scenarios/)).
 2. Confirm **Lab prerequisites**.
 3. Follow **Pre-flight**, **Run**, and **Pass criteria**.
-4. Record date, cluster FQDN, collection commit/version, node OS, and pass/fail in **Last result** / **Results log**.
+4. Record date, cluster FQDN, playbook type (`collection` or `installer`), ref/commit, node OS, and pass/fail in **Last result** / **Results log**.
 5. On failure, note the failing play/task and whether a re-run or `deprovision_instance` was needed (see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)).
 
 Shared-tester workflow (secrets, what to commit vs keep local): [.sdlc/testing/README.md](.sdlc/testing/README.md).
 `T-*` ↔ `S-*` mapping: [.sdlc/testing/scenarios/README.md](.sdlc/testing/scenarios/README.md#mapping-to-testmd).
 
-### Installer command pattern
+### Collection command pattern
 
 ```bash
 SETUP=/path/to/ansible-automation-platform-containerized-setup-2.x   # or lab bundle path
 COL=/path/to/redhat_official.aap_containerized_add_node
-export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
+export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${COL}:${ANSIBLE_COLLECTIONS_PATH}"
 
 # 1) Edit ${SETUP}/inventory (or inventory-growth): add hosts under [execution_nodes]
 # 2) Run from control host that can SSH to controller + new nodes as the install user
@@ -35,6 +40,49 @@ ansible-playbook "${COL}/playbooks/add_node.yml" \
 Lab secrets (gitignored under `.ignore/lab/`) are per cluster, e.g.
 `.ignore/lab/secrets.aap26.yml` / `.ignore/lab/secrets.aap27.yml`.
 Copy them to the control host or pass with `-e @…` as needed.
+
+### Installer command pattern
+
+Deploy the vendored installer tree into the setup tree (once per refresh), then run by
+collection FQCN — same as upstream `ansible.containerized_installer.install`:
+
+```bash
+SETUP=/path/to/ansible-automation-platform-containerized-setup-2.7
+REPO=/path/to/aap-containerized-add-node
+BRANCH=stable-2.7   # or stable-2.6 for 2.6 labs
+
+# Overlay add_execution_nodes onto the setup tree's containerized_installer collection
+rsync -a --delete \
+  --exclude='collections/' \
+  "${REPO}/installer/${BRANCH}/" \
+  "${SETUP}/collections/ansible_collections/ansible/containerized_installer/"
+
+export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
+
+# Same inventory as collection tests; bundle_dir/registry_* live in inventory [all:vars]
+ansible-playbook -i "${SETUP}/inventory-growth" \
+  ansible.containerized_installer.add_execution_nodes \
+  -e add_execution_nodes_skip_image_load_if_present=true \
+  | tee "/tmp/add-execution-nodes-$(date -u +%Y%m%dT%H%MZ).log"
+```
+
+**Local dev** (without rsync into `${SETUP}`): from `installer/${BRANCH}/`, run
+`ansible-galaxy collection install -r requirements.yml -p ./collections` and
+`ansible-galaxy collection install . -p ./collections`, then set
+`ANSIBLE_COLLECTIONS_PATH` to that `collections/` directory.
+
+Do **not** run `playbooks/add_execution_nodes.yml` by file path — roles are resolved via the
+installed collection (same as upstream `install.yml`).
+
+| Collection extra var | Installer extra var |
+|----------------------|---------------------|
+| `aap_setup_dir` | Not used — `bundle_dir` in inventory |
+| `aap_add_node_skip_image_load_if_present` | `add_execution_nodes_skip_image_load_if_present` (default `true`) |
+| `aap_add_node_preflight_enabled=false` | `add_execution_nodes_preflight_enabled=false` |
+| `aap_add_node_enable_controller_peer` | `add_execution_nodes_enable_controller_peer` |
+
+Secrets files that only set `aap_add_node_*` keys are ignored by the installer playbook.
+Variable reference: [installer/CHANGES.md](installer/CHANGES.md).
 
 ### Pass criteria (all join scenarios)
 
@@ -65,9 +113,9 @@ Then remove or update the host line in inventory before abandoning a join; keep 
 | Controller | Containerized AAP; task container `automation-controller-task` running |
 | SSH | Control host → controller and new nodes as **non-root install user** (passwordless) |
 | Disk on new EN/HN | Prefer **≥32 GB** usable on `/` (lab: **64 GB** after ENOSPC on ~9 GB roots while loading `ee-supported`) |
-| Images | Bundle install: `bundle/images` present under `aap_setup_dir` |
+| Images | Bundle install: `bundle/images` under setup `bundle_dir` (collection: via `aap_setup_dir`) |
 | Inventory | Same installer inventory the cluster used; new hosts only in `[execution_nodes]` |
-| Peers | Prefer outbound dial; INI `receptor_peers='["hop.or.controller"]'` (real list). Do not set `aap_add_node_enable_controller_peer` unless you need inbound dial. |
+| Peers | Prefer outbound dial; INI `receptor_peers='["hop.or.controller"]'` (real list). Opt in to inbound dial only when needed (`aap_add_node_enable_controller_peer` or `add_execution_nodes_enable_controller_peer`) |
 
 ---
 
@@ -274,7 +322,7 @@ Use the same Pre-flight / Run / Pass criteria as the matching 2.6 AIO scenario; 
 | EN red / `ansible-runner-???` right after success | Wait a few minutes; re-check `list_instances` |
 | Stale inventory IPs after rebuild | Update `ansible_host` before playbook |
 | Bare `receptor_peers=hostname` or INI `receptor_peers=['hostname']` | Use `receptor_peers='["hostname"]'` (INI) or a YAML list; confirm with `ansible-inventory --host` |
-| Image load every lab re-run | Use `aap_add_node_skip_image_load=true` only when images already loaded; default `*_if_present` skips when refs exist |
+| Image load every lab re-run | Collection: `aap_add_node_skip_image_load=true`. Installer: `add_execution_nodes_skip_image_load=true`. Default `*_if_present` skips when refs exist |
 | Host key verification failed on new nodes | From the control host / controller install user: `ssh-keyscan <fqdn> >> ~/.ssh/known_hosts` |
 | `podman inspect` fails on gateway control host | Delegate tasks must SSH to `automationcontroller[0]`; see [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) control-host section |
 
@@ -282,18 +330,18 @@ Use the same Pre-flight / Run / Pass criteria as the matching 2.6 AIO scenario; 
 
 ## Results log (append)
 
-| Date | Scenario ID | Cluster | Collection ref | Result | Notes |
-|------|-------------|---------|----------------|--------|-------|
-| 2026-08 | T-26-AIO-EN | aap26 AIO | lab branch | Pass | EN→controller |
-| 2026-08 | T-26-AIO-HN | aap26 AIO | lab branch | Pass | HN→controller |
-| 2026-08 | T-26-AIO-EN-VIA-HN | aap26 AIO | lab branch | Pass | Combined mesh |
-| 2026-08-07 | T-26-AIO-RERUN | aap26 AIO | lab branch | Pass | After 64G resize |
-| 2026-08-07 | T-26-AIO-DEPROV-REJOIN | aap26 AIO | lab branch | Pass | New VMs, same names, new IPs |
-| 2026-08-07 | T-26-AIO-FULL-UPGRADE | aap26 AIO | lab (post-join mesh) | Pass | Full install via aap26-11.1_bundle; list-form receptor_peers; HN+EN healthy after |
-| 2026-08 | T-27-AIO-EN | 2.7.1 AIO | S-001 results log | Pass | RHEL 9 and RHEL 10 EN (see [.sdlc/testing/scenarios/S-001-single-en.md](.sdlc/testing/scenarios/S-001-single-en.md)) |
-| 2026-08-10 | T-27-AIO-EN-VIA-HN | aap27 AIO | small-fixes-and-initial-alignment | Pass | Controller RHEL 10.2; HN+EN RHEL 9.8; both green after settle; log `.ignore/lab/runs/aap27-add-node-2026-08-10.log` |
-| 2026-08-10 | T-27-AIO-HN | aap27 AIO | (same run as EN-VIA-HN) | Pass | Hop→`aap27.lennysh.net` in combined join |
-| 2026-08-10 | T-27-AIO-EN-VIA-HN | aap27 AIO | ccbcf67 | Pass | RHEL 10.2 HN+EN (`aap27-hn-02` / `aap27-en-02`); EN capacity 136 after ~2 min settle; log `.ignore/lab/runs/aap27-T-27-AIO-EN-VIA-HN-RHEL10-2026-08-10T222041Z.log` |
-| 2026-08-10 | T-27-AIO-HN | aap27 AIO | (same RHEL 10 run) | Pass | RHEL 10.2 hop→`aap27.lennysh.net` |
-| 2026-08-12 | T-27-CLU-EN-VIA-HN | aap27 cluster (11-node) | devel + delegate-connection fix | Pass | RHEL 10.2 HN+EN (`aap27-hn01`/`en03`); control host `aap27-gw01`; existing mesh stayed green; log `.ignore/lab/runs/aap27-cluster-T-27-CLU-EN-VIA-HN-*.log` |
-| 2026-08-12 | T-27-CLU-HN | aap27 cluster | (same run as CLU EN-VIA-HN) | Pass | Hop peers `cn01`+`cn02`; RHEL 10.2 |
+| Date | Scenario ID | Cluster | Playbook | Ref | Result | Notes |
+|------|-------------|---------|----------|-----|--------|-------|
+| 2026-08 | T-26-AIO-EN | aap26 AIO | collection | lab branch | Pass | EN→controller |
+| 2026-08 | T-26-AIO-HN | aap26 AIO | collection | lab branch | Pass | HN→controller |
+| 2026-08 | T-26-AIO-EN-VIA-HN | aap26 AIO | collection | lab branch | Pass | Combined mesh |
+| 2026-08-07 | T-26-AIO-RERUN | aap26 AIO | collection | lab branch | Pass | After 64G resize |
+| 2026-08-07 | T-26-AIO-DEPROV-REJOIN | aap26 AIO | collection | lab branch | Pass | New VMs, same names, new IPs |
+| 2026-08-07 | T-26-AIO-FULL-UPGRADE | aap26 AIO | collection | lab (post-join mesh) | Pass | Full install via aap26-11.1_bundle; list-form receptor_peers; HN+EN healthy after |
+| 2026-08 | T-27-AIO-EN | 2.7.1 AIO | collection | S-001 results log | Pass | RHEL 9 and RHEL 10 EN (see [.sdlc/testing/scenarios/S-001-single-en.md](.sdlc/testing/scenarios/S-001-single-en.md)) |
+| 2026-08-10 | T-27-AIO-EN-VIA-HN | aap27 AIO | collection | small-fixes-and-initial-alignment | Pass | Controller RHEL 10.2; HN+EN RHEL 9.8; both green after settle; log `.ignore/lab/runs/aap27-add-node-2026-08-10.log` |
+| 2026-08-10 | T-27-AIO-HN | aap27 AIO | collection | (same run as EN-VIA-HN) | Pass | Hop→`aap27.lennysh.net` in combined join |
+| 2026-08-10 | T-27-AIO-EN-VIA-HN | aap27 AIO | collection | ccbcf67 | Pass | RHEL 10.2 HN+EN (`aap27-hn-02` / `aap27-en-02`); EN capacity 136 after ~2 min settle; log `.ignore/lab/runs/aap27-T-27-AIO-EN-VIA-HN-RHEL10-2026-08-10T222041Z.log` |
+| 2026-08-10 | T-27-AIO-HN | aap27 AIO | collection | (same RHEL 10 run) | Pass | RHEL 10.2 hop→`aap27.lennysh.net` |
+| 2026-08-12 | T-27-CLU-EN-VIA-HN | aap27 cluster (11-node) | collection | devel + delegate-connection fix | Pass | RHEL 10.2 HN+EN (`aap27-hn01`/`en03`); control host `aap27-gw01`; existing mesh stayed green; log `.ignore/lab/runs/aap27-cluster-T-27-CLU-EN-VIA-HN-*.log` |
+| 2026-08-12 | T-27-CLU-HN | aap27 cluster | collection | (same run as CLU EN-VIA-HN) | Pass | Hop peers `cn01`+`cn02`; RHEL 10.2 |

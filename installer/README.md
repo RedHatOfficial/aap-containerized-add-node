@@ -13,15 +13,50 @@ Each `stable-2.6/` and `stable-2.7/` directory is a **complete, runnable**
 
 ## Run
 
-From the collection root (same as upstream installer development):
+Use the collection FQCN (same pattern as `ansible.containerized_installer.install`).
+Running `playbooks/add_execution_nodes.yml` by file path does **not** resolve roles unless the
+collection is installed on `ANSIBLE_COLLECTIONS_PATH`.
+
+### Lab (recommended)
+
+Overlay this tree into your containerized setup, then run from any control host that can SSH
+to the controller and new nodes:
+
+```bash
+SETUP=/path/to/ansible-automation-platform-containerized-setup-2.7
+REPO=/path/to/aap-containerized-add-node
+
+rsync -a --delete \
+  --exclude='collections/' \
+  "${REPO}/installer/stable-2.7/" \
+  "${SETUP}/collections/ansible_collections/ansible/containerized_installer/"
+
+export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
+
+ansible-playbook -i "${SETUP}/inventory-growth" \
+  ansible.containerized_installer.add_execution_nodes \
+  -e add_execution_nodes_skip_image_load_if_present=true
+```
+
+Use `installer/stable-2.6/` and a 2.6 setup tree for 2.6 labs.
+
+### Local development
 
 ```bash
 cd installer/stable-2.7
-ansible-playbook -i /path/to/inventory playbooks/add_execution_nodes.yml
+ansible-galaxy collection install -r requirements.yml -p ./collections
+ansible-galaxy collection install . -p ./collections
+export ANSIBLE_COLLECTIONS_PATH="$(pwd)/collections:${ANSIBLE_COLLECTIONS_PATH}"
+
+ansible-playbook -i /path/to/inventory-growth \
+  ansible.containerized_installer.add_execution_nodes
 ```
 
-Use the same inventory as greenfield `install` (`inventory` or `inventory-growth` from your
-containerized setup tree).
+### Inventory
+
+Same file as greenfield `install` (`inventory` or `inventory-growth` from your setup tree).
+`bundle_dir`, `registry_*`, and `receptor_*` vars come from inventory — there is no
+`aap_setup_dir` equivalent.
 
 ```ini
 [execution_nodes]
@@ -32,9 +67,12 @@ en-01.example.com receptor_type=execution \
 Opt-in inbound dial (causes controller mesh disruption):
 
 ```bash
-ansible-playbook -i /path/to/inventory playbooks/add_execution_nodes.yml \
+ansible-playbook -i /path/to/inventory-growth \
+  ansible.containerized_installer.add_execution_nodes \
   -e add_execution_nodes_enable_controller_peer=true
 ```
+
+Lab test matrix and variable mapping: [TEST.md](../TEST.md) and [CHANGES.md](CHANGES.md).
 
 ## Refresh from upstream
 
