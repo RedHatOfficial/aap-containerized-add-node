@@ -1,0 +1,16 @@
+---
+# Match containerized_installer common/facts.yml
+
+- name: Resolve instance UUID from system product UUID / machine-id
+  ansible.builtin.set_fact:
+    aap_add_node_instance_uuid: >-
+      {{
+        (ansible_product_uuid | default('NA') == 'NA')
+        | ternary(ansible_machine_id | to_uuid, ansible_product_uuid)
+      }}
+
+- name: Require UUID
+  ansible.builtin.assert:
+    that:
+      - aap_add_node_instance_uuid | default('') | length > 0
+    fail_msg: Could not determine instance UUID for provision_instance

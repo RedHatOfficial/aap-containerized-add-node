@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - Add per-role ``meta/argument_specs.yml`` for entry-variable validation and
+    remove redundant input asserts (runtime checks such as SSH, podman, and
+    inventory groups remain).

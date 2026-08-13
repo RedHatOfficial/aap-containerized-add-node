@@ -1,0 +1,28 @@
+---
+argument_specs:
+  main:
+    short_description: >-
+      Run preflight checks before adding execution or hop nodes
+      (installer, controller, inventory, connectivity, machine-id).
+    options:
+      aap_add_node_preflight_enabled:
+        description: When false, skip all preflight checks (opt-out).
+        type: bool
+        default: true
+      aap_add_node_preflight_timeout:
+        description: Timeout in seconds for TCP connectivity probes.
+        type: int
+        default: 30
+      aap_add_node_inventory_group:
+        description: Inventory group holding execution/hop node candidates.
+        type: str
+        default: execution_nodes
+      aap_add_node_listener_port:
+        description: Receptor listener port used for connectivity checks.
+        type: int
+        default: 27199
+      aap_add_node_bundle_install:
+        description: >-
+          When true, skip online registry credential checks (offline/bundle mode).
+        type: bool
+        default: false

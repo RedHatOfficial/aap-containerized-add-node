@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  role_name: add_execution_nodes
+  description: >-
+    Overlay helper for additive EN/HN join (discover, AIO listener, verify).
+    Not a standalone Galaxy role — ships inside ansible.containerized_installer via installer-overlay.
+  license: GPL-3.0-or-later
+  min_ansible_version: "2.14"
+dependencies: []

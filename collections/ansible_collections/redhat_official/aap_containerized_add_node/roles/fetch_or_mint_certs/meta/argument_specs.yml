@@ -1,0 +1,36 @@
+---
+argument_specs:
+  main:
+    short_description: Mint per-host receptor TLS using the cluster mesh CA.
+    options:
+      aap_add_node_hostname:
+        description: Common name / SAN hostname for the minted receptor certificate.
+        type: str
+        required: true
+      aap_add_node_mesh_ca_cert:
+        description: Path to the cluster mesh CA certificate (ownca).
+        type: path
+        required: true
+      aap_add_node_mesh_ca_key:
+        description: Path to the cluster mesh CA private key (ownca).
+        type: path
+        required: true
+      aap_add_node_work_public_key:
+        description: Optional path to work signing public key (execution nodes).
+        type: path
+        default: ''
+      aap_add_node_bundle_root:
+        description: Directory under which per-host cert bundles are written.
+        type: path
+        default: '{{ playbook_dir }}/../../bundles'
+      aap_add_node_tls_bits:
+        description: RSA key size for minted receptor keys.
+        type: int
+        default: 4096
+      aap_add_node_type:
+        description: Node type (affects whether work signing material is copied).
+        type: str
+        choices:
+          - execution
+          - hop
+        default: execution

@@ -1,0 +1,50 @@
+---
+# Mint TLS certificates for target node using mesh CA
+
+- name: Generate node private key
+  community.crypto.openssl_privatekey:
+    path: "{{ _bundle_work_dir }}/receptor/tls/receptor.key"
+    size: "{{ aap_add_node_tls_bits | int }}"
+    type: RSA
+    mode: '0400'
+
+- name: Generate node CSR with receptor node-id SAN OID
+  community.crypto.openssl_csr:
+    path: "{{ _bundle_work_dir }}/receptor/tls/receptor.csr"
+    privatekey_path: "{{ _bundle_work_dir }}/receptor/tls/receptor.key"
+    common_name: "{{ aap_add_node_target_hostname }}"
+    subject_alt_name: "{{ _sans }}"
+    subject_alt_name_critical: false
+  vars:
+    _sans:
+      - "DNS:{{ aap_add_node_target_hostname }}"
+      - "otherName:1.3.6.1.4.1.2312.19.1;UTF8:{{ aap_add_node_target_hostname }}"
+
+- name: Sign node certificate with mesh CA
+  community.crypto.x509_certificate:
+    path: "{{ _bundle_work_dir }}/receptor/tls/receptor.crt"
+    csr_path: "{{ _bundle_work_dir }}/receptor/tls/receptor.csr"
+    ownca_path: "{{ aap_add_node_mesh_ca_cert }}"
+    ownca_privatekey_path: "{{ aap_add_node_mesh_ca_key }}"
+    provider: ownca
+    mode: '0640'
+
+- name: Copy mesh CA certificate into bundle
+  ansible.builtin.copy:
+    src: "{{ aap_add_node_mesh_ca_cert }}"
+    dest: "{{ _bundle_work_dir }}/receptor/tls/ca/mesh-CA.crt"
+    mode: '0640'
+
+- name: Copy work signing public key into bundle
+  ansible.builtin.copy:
+    src: "{{ aap_add_node_work_public_key }}"
+    dest: "{{ _bundle_work_dir }}/receptor/work_public_key.pem"
+    mode: '0640'
+  when:
+    - aap_add_node_work_public_key | default('') | length > 0
+    - aap_add_node_target_type | default('execution') == 'execution'
+
+- name: Remove CSR (not needed in bundle)
+  ansible.builtin.file:
+    path: "{{ _bundle_work_dir }}/receptor/tls/receptor.csr"
+    state: absent

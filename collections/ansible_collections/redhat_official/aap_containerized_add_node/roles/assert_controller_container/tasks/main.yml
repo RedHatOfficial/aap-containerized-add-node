@@ -1,0 +1,64 @@
+---
+# Fail early with a clear message if SSH to the controller fails or the task
+# container is missing/stopped. Used by list_instances and register_instance
+# before podman exec awx-manage.
+
+- name: Require automationcontroller inventory group
+  ansible.builtin.assert:
+    that:
+      - groups['automationcontroller'] | default([]) | length > 0
+    fail_msg: Inventory must include group automationcontroller (same as the AAP installer inventory).
+
+# HA: any controller works — awx-manage writes to the shared Controller DB.
+# We always pick inventory order [0] for a stable, simple target (SSH + podman exec).
+- name: Preflight SSH and controller task container
+  vars:
+    _awx_manage_host: "{{ groups['automationcontroller'][0] }}"
+  block:
+    - name: Verify SSH access to controller
+      ansible.builtin.ping:
+      delegate_to: "{{ _awx_manage_host }}"
+      connection: ssh
+      become: false
+      register: _aap_add_node_ctrl_ping
+      ignore_errors: true
+      ignore_unreachable: true
+
+    - name: Assert SSH to controller succeeded
+      ansible.builtin.assert:
+        that:
+          - not (_aap_add_node_ctrl_ping.unreachable | default(false) | bool)
+          - _aap_add_node_ctrl_ping is succeeded
+        fail_msg: >-
+          Cannot SSH to automationcontroller host '{{ _awx_manage_host }}' from the
+          control host. This collection needs SSH to run awx-manage (podman exec) and to
+          fetch mesh CA material. Check ansible_host, SSH keys, and ProxyJump, then retry.
+          ping result: {{ _aap_add_node_ctrl_ping.msg | default(_aap_add_node_ctrl_ping) }}
+
+    - name: Inspect controller task container state
+      ansible.builtin.command:
+        argv:
+          - podman
+          - inspect
+          - --format
+          - "{{ '{{.State.Status}}' }}"
+          - "{{ aap_add_node_controller_container }}"
+      delegate_to: "{{ _awx_manage_host }}"
+      connection: ssh
+      become: false
+      register: _aap_add_node_ctr_inspect
+      changed_when: false
+      failed_when: false
+
+    - name: Assert controller task container is running
+      ansible.builtin.assert:
+        that:
+          - _aap_add_node_ctr_inspect.rc == 0
+          - (_aap_add_node_ctr_inspect.stdout | trim) == 'running'
+        fail_msg: >-
+          Container '{{ aap_add_node_controller_container }}' is not running on
+          {{ _awx_manage_host }}
+          (podman inspect rc={{ _aap_add_node_ctr_inspect.rc }},
+          status={{ _aap_add_node_ctr_inspect.stdout | default('(missing)') | trim }}).
+          Start the controller stack (e.g. systemctl --user status automation-controller-task)
+          or set aap_add_node_controller_container to the correct name.

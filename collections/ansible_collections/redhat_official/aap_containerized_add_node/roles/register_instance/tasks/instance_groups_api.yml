@@ -1,0 +1,48 @@
+---
+# Register instance to custom instance groups via Controller API
+# Uses ansible.controller.instance_group module with basic auth
+#
+# Required vars:
+#   aap_add_node_controller_host: "https://controller.example.com"
+#   aap_add_node_controller_username: "admin"
+#   aap_add_node_controller_password: "password"
+#
+# Note: Gateway tokens (ansible.platform.token) do NOT work with controller API.
+# Controller API requires either basic auth or controller-specific OAuth tokens.
+#
+# Alternative to instance_groups.yml (awx-manage approach)
+# Use when API access is available and preferred over podman exec
+
+- name: Create/update instance groups via API
+  when: aap_add_node_instance_groups | default([]) | length > 0
+  block:
+    - name: Validate API credentials provided
+      ansible.builtin.assert:
+        that:
+          - aap_add_node_controller_host is defined
+          - aap_add_node_controller_username is defined
+          - aap_add_node_controller_password is defined
+        fail_msg: >
+          API mode requires controller credentials:
+            - aap_add_node_controller_host: URL to AAP (e.g., https://controller.example.com)
+            - aap_add_node_controller_username: Admin username
+            - aap_add_node_controller_password: Admin password
+          Or use instance_groups.yml (awx-manage mode) instead.
+
+    - name: Create/update instance groups with node
+      ansible.controller.instance_group:
+        name: "{{ item }}"
+        instances: "{{ [aap_add_node_hostname] }}"
+        state: present
+        controller_host: "{{ aap_add_node_controller_host }}"
+        controller_username: "{{ aap_add_node_controller_username }}"
+        controller_password: "{{ aap_add_node_controller_password }}"
+        validate_certs: "{{ aap_add_node_validate_certs | default(true) }}"
+      loop: "{{ aap_add_node_instance_groups }}"
+      delegate_to: localhost
+      no_log: "{{ aap_add_node_no_log | default(true) }}"
+      register: _ig_results
+
+    - name: Report instance groups registered via API
+      ansible.builtin.debug:
+        msg: "Node {{ aap_add_node_hostname }} added to instance groups via API: {{ aap_add_node_instance_groups | join(', ') }}"
