@@ -10,4 +10,4 @@ minor_changes:
   - >-
     Document ``aap_add_node_controller_target`` for HA controller selection in
     README and CONVENTIONS.
-  - Add ``generate_bundle`` role ``meta/argument_specs.yml``.
+  - Add ``generate_bundle`` role ``meta/argument_specs.yml`` and ``README.md``.
