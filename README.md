@@ -154,6 +154,8 @@ ansible-playbook playbooks/add_node.yml ... -e aap_add_node_skip_image_load=true
 
 By default (`aap_add_node_skip_image_load_if_present=true`) host_prep also auto-skips that path when the receptor + EE images are already present on the node.
 
+**HA clusters:** when `automationcontroller[0]` is unreachable, set `-e aap_add_node_controller_target=<healthy-controller>` so `awx-manage` and mesh fetch use a different controller (see [docs/CONVENTIONS.md](docs/CONVENTIONS.md)).
+
 ### Playbook flow
 
 1. `validate_setup_dir` — require containerized `aap_setup_dir`

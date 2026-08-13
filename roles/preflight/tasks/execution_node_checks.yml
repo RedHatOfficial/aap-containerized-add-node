@@ -27,7 +27,7 @@
 # P7: Network connectivity to controller port 27199
 - name: Get controller hostname
   ansible.builtin.set_fact:
-    _controller_host: "{{ groups['automationcontroller'][0] }}"
+    _controller_host: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
 
 - name: "Test TCP connectivity from {{ _target_host }} to controller:{{ aap_add_node_listener_port }}"
   ansible.builtin.wait_for:

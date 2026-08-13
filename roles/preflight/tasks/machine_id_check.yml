@@ -12,7 +12,11 @@
       - awx-manage
       - list_instances
       - --format=json
-  delegate_to: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
+  vars:
+    _awx_manage_host: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
+    _delegate_connection: "{{ hostvars[_awx_manage_host].ansible_connection | default('ssh') }}"
+  delegate_to: "{{ _awx_manage_host }}"
+  connection: "{{ _delegate_connection }}"
   become: false
   register: _existing_instances_raw
   changed_when: false

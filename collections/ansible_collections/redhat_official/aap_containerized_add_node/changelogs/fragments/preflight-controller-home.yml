@@ -1,5 +1,0 @@
----
-bugfixes:
-  - >-
-    Fix preflight controller ``receptor.conf`` check when ``gather_facts`` is
-    false (gather delegated controller user facts for ``ansible_user_dir``).

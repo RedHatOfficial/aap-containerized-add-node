@@ -1,0 +1,60 @@
+---
+argument_specs:
+  main:
+    short_description: Generate a self-contained offline join bundle for air-gapped EN/HN provisioning.
+    options:
+      aap_add_node_target_hostname:
+        description: FQDN of the target execution or hop node the bundle will provision.
+        type: str
+        required: true
+      aap_add_node_receptor_peers:
+        description: List of receptor peer hostnames for the bundle target (outbound dial).
+        type: list
+        elements: str
+        required: true
+      aap_add_node_target_type:
+        description: Node type for bundle pre-registration and receptor config.
+        type: str
+        default: execution
+        choices:
+          - execution
+          - hop
+      aap_add_node_bundle_include_images:
+        description: Include receptor container image in the bundle archive.
+        type: bool
+        default: false
+      aap_add_node_bundle_format:
+        description: Bundle archive format.
+        type: str
+        default: tar.gz
+        choices:
+          - tar.gz
+          - zip
+      aap_add_node_receptor_port:
+        description: Receptor listener port for the bundle target.
+        type: int
+        default: 27199
+      aap_add_node_tls_bits:
+        description: TLS key size when minting certificates for the bundle.
+        type: int
+        default: 4096
+      aap_add_node_controller_container:
+        description: Podman name of the controller task container for bundle pre-registration.
+        type: str
+        default: automation-controller-task
+      aap_add_node_controller_target:
+        description: Override controller host for awx-manage pre-registration (default automationcontroller[0]).
+        type: str
+        default: ''
+      aap_add_node_mesh_ca_cert:
+        description: Local path to mesh CA certificate (required; usually fetched before this role runs).
+        type: path
+        default: ''
+      aap_add_node_mesh_ca_key:
+        description: Local path to mesh CA private key (required for cert minting).
+        type: path
+        default: ''
+      aap_add_node_work_public_key:
+        description: Local path to work signing public key (execution nodes).
+        type: path
+        default: ''

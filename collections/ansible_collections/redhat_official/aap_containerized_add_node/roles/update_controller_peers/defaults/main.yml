@@ -1,8 +1,0 @@
----
-# Inbound dial: controller peers to execution nodes
-# WARNING: This causes mesh disruption (5-10 seconds per node)
-aap_add_node_enable_controller_peer: false
-aap_add_node_listener_port: 27199
-# Empty = resolve to {{ ansible_user_dir }}/aap/receptor/etc in tasks (needs facts).
-# Keep empty here so role arg-spec validation does not template ansible_user_dir.
-aap_add_node_receptor_config_dir: ''

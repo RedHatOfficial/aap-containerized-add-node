@@ -1,5 +1,0 @@
----
-minor_changes:
-  - Harden CI/release workflows for manual tarball distribution (SHA-pinned actions, ubuntu-24.04).
-  - Require antsibull changelog fragments on pull requests that modify roles or playbooks.
-  - Point CHANGELOG.md at CHANGELOG.rst; fragments are the source of truth for release notes.

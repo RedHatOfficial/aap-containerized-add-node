@@ -11,7 +11,7 @@
 # controller so ansible_user_dir is defined for the delegated slurp.
 - name: Gather controller user facts for receptor path
   vars:
-    _ctrl_host: "{{ groups['automationcontroller'][0] }}"
+    _ctrl_host: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
     _ctrl_connection: "{{ hostvars[_ctrl_host].ansible_connection | default('ssh') }}"
   ansible.builtin.setup:
     gather_subset:
@@ -22,7 +22,7 @@
 
 - name: Get controller receptor.conf
   vars:
-    _ctrl_host: "{{ groups['automationcontroller'][0] }}"
+    _ctrl_host: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
     _ctrl_connection: "{{ hostvars[_ctrl_host].ansible_connection | default('ssh') }}"
   ansible.builtin.slurp:
     src: "{{ hostvars[_ctrl_host].ansible_user_dir }}/aap/receptor/etc/receptor.conf"

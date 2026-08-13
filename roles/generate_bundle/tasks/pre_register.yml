@@ -16,7 +16,8 @@
 
 - name: Pre-register instance via awx-manage
   vars:
-    _awx_manage_host: "{{ groups['automationcontroller'][0] }}"
+    _awx_manage_host: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
+    _delegate_connection: "{{ hostvars[_awx_manage_host].ansible_connection | default('ssh') }}"
     _node_type: "{{ aap_add_node_target_type | default('execution') }}"
   block:
     - name: Provision instance
@@ -31,6 +32,7 @@
           - "--uuid={{ _bundle_instance_uuid }}"
           - "--node_type={{ _node_type }}"
       delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
       become: false
       register: _provision_instance
       changed_when: "'(changed: True)' in _provision_instance.stdout"
@@ -48,6 +50,7 @@
           - "--port={{ aap_add_node_receptor_port }}"
           - --canonical
       delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
       become: false
       register: _add_receptor_address
       changed_when: "'(changed: True)' in _add_receptor_address.stdout"
@@ -56,6 +59,7 @@
       ansible.builtin.command:
         argv: "{{ ['podman', 'exec', aap_add_node_controller_container, 'awx-manage', 'register_peers', aap_add_node_target_hostname, '--exact'] + (aap_add_node_receptor_peers | list) }}"
       delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
       become: false
       register: _register_peers
       changed_when: not (_register_peers.stdout | regex_search('^0 peer links added'))
@@ -72,6 +76,7 @@
           - --queuename=default
           - "--hostname={{ aap_add_node_target_hostname }}"
       delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
       become: false
       register: _register_default
       changed_when: "'(changed: True)' in _register_default.stdout"
@@ -88,6 +93,7 @@
           - --queuename=executionplane
           - "--hostname={{ aap_add_node_target_hostname }}"
       delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
       become: false
       register: _register_executionplane
       changed_when: "'(changed: True)' in _register_executionplane.stdout"

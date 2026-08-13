@@ -1,6 +1,0 @@
----
-minor_changes:
-  - >-
-    Rename internal scratch host ``aap_add_node_operator`` to
-    ``aap_add_node_control`` and use "control host" (not operator/installer host)
-    for the machine running ``ansible-playbook``.

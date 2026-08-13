@@ -1,9 +1,0 @@
----
-# Scaffold: post-join list_instances check (see redhat_official.aap_containerized_add_node.verify_mesh).
-
-- name: Verify helper is not implemented yet
-  ansible.builtin.fail:
-    msg: >-
-      installer-overlay scaffold: implement roles/add_execution_nodes/tasks/verify.yml
-      (reference: redhat_official.aap_containerized_add_node roles/verify_mesh).
-      Assert each host in '{{ add_execution_nodes_target_group }}' appears in list_instances.
