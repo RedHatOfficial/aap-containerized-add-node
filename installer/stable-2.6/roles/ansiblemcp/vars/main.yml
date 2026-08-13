@@ -1,0 +1,7 @@
+---
+archive_extension: '{{ use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}'
+mcp_archive_extension: '{{ mcp_use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}'
+
+### telemetry
+mcp_internal_email_domains: 'redhat.com,ibm.com,ansible.com'
+...

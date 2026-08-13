@@ -1,0 +1,22 @@
+---
+- name: Import postgresql TLS certificate and key
+  when:
+    - gateway_pg_tls_cert is defined
+    - gateway_pg_tls_key is defined
+  block:
+    - name: Copy postgresql TLS certificate
+      ansible.builtin.copy:
+        src: '{{ gateway_pg_tls_cert }}'
+        dest: '{{ gateway_conf_dir }}/postgresql.cert'
+        mode: '0640'
+        remote_src: '{{ gateway_tls_remote | default(false) }}'
+      notify: Restart automation gateway
+
+    - name: Copy postgresql TLS key
+      ansible.builtin.copy:
+        src: '{{ gateway_pg_tls_key }}'
+        dest: '{{ gateway_conf_dir }}/postgresql.key'
+        mode: '0400'
+        remote_src: '{{ gateway_tls_remote | default(false) }}'
+      notify: Restart automation gateway
+...

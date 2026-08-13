@@ -1,0 +1,120 @@
+---
+# Preflight checks for add_execution_nodes.
+
+- name: Skip preflight when disabled
+  ansible.builtin.meta: end_host
+  when: not (add_execution_nodes_preflight_enabled | bool)
+
+- name: Require execution_nodes inventory group
+  ansible.builtin.assert:
+    that:
+      - add_execution_nodes_inventory_group in groups
+      - groups[add_execution_nodes_inventory_group] | length > 0
+    fail_msg: >
+      Inventory group '{{ add_execution_nodes_inventory_group }}' must exist with at least one host.
+
+- name: Check ansible.containerized_installer is importable
+  ansible.builtin.command:
+    cmd: ansible-doc -t module ansible.containerized_installer.common --json
+  changed_when: false
+  failed_when: false
+  register: _add_en_installer_check
+
+- name: Assert ansible.containerized_installer is available
+  ansible.builtin.assert:
+    that:
+      - _add_en_installer_check.rc == 0
+    fail_msg: >-
+      ansible.containerized_installer was not found on ANSIBLE_COLLECTIONS_PATH.
+      Run from the containerized setup tree or set collections path to its collections/ directory.
+
+- name: Check registry credentials when online install
+  ansible.builtin.assert:
+    that:
+      - (registry_username | default('')) | length > 0
+      - (registry_password | default('')) | length > 0
+    fail_msg: >-
+      Registry credentials required for online install.
+      Set registry_username and registry_password in inventory [all:vars].
+  when: not (bundle_install | default(false) | bool)
+
+- name: Validate controller access and container state
+  ansible.builtin.import_tasks: assert_controller.yml
+
+- name: Gather controller user facts for receptor path
+  vars:
+    _ctrl_host: "{{ groups['automationcontroller'][0] }}"
+    _ctrl_connection: "{{ hostvars[_ctrl_host].ansible_connection | default('ssh') }}"
+  ansible.builtin.setup:
+    gather_subset:
+      - user
+  delegate_to: "{{ _ctrl_host }}"
+  connection: "{{ _ctrl_connection }}"
+  delegate_facts: true
+
+- name: Get controller receptor.conf
+  vars:
+    _ctrl_host: "{{ groups['automationcontroller'][0] }}"
+    _ctrl_connection: "{{ hostvars[_ctrl_host].ansible_connection | default('ssh') }}"
+  ansible.builtin.slurp:
+    src: "{{ hostvars[_ctrl_host].ansible_user_dir }}/aap/receptor/etc/receptor.conf"
+  delegate_to: "{{ _ctrl_host }}"
+  connection: "{{ _ctrl_connection }}"
+  become: false
+  register: _add_en_receptor_conf_raw
+  ignore_errors: true
+
+- name: Parse receptor.conf for local-only
+  ansible.builtin.set_fact:
+    _add_en_controller_is_local_only: "{{ 'local-only' in (_add_en_receptor_conf_raw.content | b64decode) }}"
+  when: _add_en_receptor_conf_raw is succeeded
+
+- name: Warn about AIO disruption if local-only
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+               AIO DISRUPTION WARNING
+      ========================================
+      Controller is configured with 'local-only' receptor.
+      Adding execution nodes will enable tcp-listener and restart
+      controller receptor (~5-10s disruption on controller only).
+      ========================================
+  when:
+    - _add_en_controller_is_local_only | default(false) | bool
+
+- name: Run execution node checks
+  ansible.builtin.include_tasks: execution_node_checks.yml
+  loop: "{{ groups[add_execution_nodes_inventory_group] | default([]) }}"
+  loop_control:
+    loop_var: _target_host
+
+- name: Validate receptor_peers format for all execution nodes
+  ansible.builtin.assert:
+    that:
+      - _parsed is sequence
+      - _parsed is not string
+      - not (_bare_hostname_string | bool)
+    fail_msg: >-
+      Host '{{ item }}': receptor_peers must be a real list.
+      INI: receptor_peers='["peer.example.com"]'.
+      Got: {{ _peers_raw | to_json }}
+  loop: "{{ groups[add_execution_nodes_inventory_group] | default([]) }}"
+  vars:
+    _peers_raw: "{{ hostvars[item].receptor_peers | default([]) }}"
+    _as_yaml: "{{ _peers_raw | string | regex_replace(\"'\", '\"') }}"
+    _parsed: "{{ _as_yaml | from_yaml if (_peers_raw is string) else _peers_raw }}"
+    _bare_hostname_string: "{{ (_peers_raw is string) and ((_peers_raw | length) > 0) and ((_parsed | default([]) | length) == 0) }}"
+
+- name: Validate machine-id uniqueness across execution nodes
+  ansible.builtin.assert:
+    that:
+      - _preflight_machine_ids | default({}) | length == (_preflight_machine_ids | default({}) | dict2items | map(attribute='value') | unique | list | length)
+    fail_msg: >-
+      Duplicate /etc/machine-id detected across execution nodes (cloned VMs).
+      Regenerate machine-id on duplicates before joining.
+
+- name: Preflight summary
+  ansible.builtin.debug:
+    msg: >-
+      Preflight checks passed for
+      {{ groups[add_execution_nodes_inventory_group] | default([]) | length }} execution node(s).

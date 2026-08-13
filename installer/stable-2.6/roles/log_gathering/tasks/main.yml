@@ -1,0 +1,4 @@
+---
+- name: Run sos report
+  ansible.builtin.include_tasks: sos_report.yml
+...

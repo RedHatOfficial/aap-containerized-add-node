@@ -1,0 +1,102 @@
+---
+- name: Create the automation hub api container
+  containers.podman.podman_container:
+    name: automation-hub-api
+    image: '{{ _hub_image }}'
+    command: 'pulpcore-api --name pulp-api {{ __bind }} {{ __timeout }} {{ __workers }} {{ __grace }} --access-logfile - --error-logfile /dev/stdout'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      requires: '{{ __systemd_requires }}'
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _api_volumes }}'
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  vars:
+    __bind: '--bind 127.0.0.1:{{ hub_api_port }}'
+    __timeout: '--timeout {{ hub_gunicorn_timeout }}'
+    __grace: '--graceful-timeout {{ hub_gunicorn_timeout_grace_period }}'
+    __workers: '--workers {{ hub_api_workers }}'
+  notify: Restart hub api
+
+- name: Create the automation hub content container
+  containers.podman.podman_container:
+    name: automation-hub-content
+    image: '{{ _hub_image }}'
+    command: 'pulpcore-content --name pulp-content {{ __bind }} {{ __timeout }} {{ __workers }} {{ __grace }} --access-logfile - --error-logfile /dev/stdout'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      requires: '{{ __systemd_requires }}'
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _content_volumes }}'
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  vars:
+    __bind: '--bind 127.0.0.1:{{ hub_content_port }}'
+    __timeout: '--timeout {{ hub_gunicorn_timeout }}'
+    __grace: '--graceful-timeout {{ hub_gunicorn_timeout_grace_period }}'
+    __workers: '--workers {{ hub_content_workers }}'
+  notify: Restart hub content
+
+- name: Create the automation hub web container
+  containers.podman.podman_container:
+    name: automation-hub-web
+    image: '{{ _hub_web_image }}'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/run/nginx,U=true'
+    volume: '{{ _web_volumes }}'
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  notify: Restart hub web
+
+- name: Create the automation hub worker container
+  containers.podman.podman_container:
+    name: 'automation-hub-worker-{{ item }}'
+    hostname: 'automation-hub-worker-{{ item }}'
+    etc_hosts: '{{ {"automation-hub-worker-" ~ item: "::1"} }}'
+    image: '{{ _hub_image }}'
+    command: pulpcore-worker
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      requires: '{{ __systemd_requires }}'
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _worker_secrets }}'
+    volume: '{{ _worker_volumes }}'
+    workdir: /var/lib/pulp
+    label: '{{ _autoupdate_label }}'
+    env:
+      DJANGO_SETTINGS_MODULE: pulpcore.app.settings
+      HOME: /var/lib/pulp
+      PULP_SETTINGS: /etc/pulp/settings.py
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  notify: Restart hub workers
+  loop: '{{ hub_workers_range }}'
+...

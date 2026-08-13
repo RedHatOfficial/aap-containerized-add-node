@@ -14,7 +14,7 @@ Upstream-oriented design note. This collection (`redhat_official.aap_containeriz
 
 This collection is a stopgap for **2.6/2.7** labs until the upstream additive playbook lands; do not plan 2.5 support.
 
-**Working tree in this repo:** [installer-overlay/](installer-overlay/) mirrors `ansible.containerized_installer` paths so you can `rsync` into an extracted setup tree and run `ansible.containerized_installer.add_execution_nodes`. The Galaxy collection at the repo root remains the standalone reference. See [installer-overlay/README.md](installer-overlay/README.md).
+**Working tree in this repo:** [installer/](installer/) contains **full** vendored `ansible.containerized_installer` trees per stable branch (`stable-2.6/`, `stable-2.7/`) with `add_execution_nodes` integrated. See [installer/CHANGES.md](installer/CHANGES.md) for what the new playbook adds.
 
 Related: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/FINDINGS.md](docs/FINDINGS.md), [docs/COLLECTION_MAP.md](docs/COLLECTION_MAP.md), [TEST.md](TEST.md).
 
@@ -100,7 +100,7 @@ Same invocation style as greenfield install. Suggested collection playbook (name
 | `playbooks/add_execution_nodes.yml` in `ansible.containerized_installer` | Additive join only |
 | Admin command | `ansible-playbook -i inventory ansible.containerized_installer.add_execution_nodes` |
 
-Scaffold of these paths (for local drop-in / upstream drafting) lives in [installer-overlay/](installer-overlay/).
+Full vendored installer trees live in [installer/](installer/) (`stable-2.6/` and `stable-2.7/`).
 
 Greenfield (unchanged):
 

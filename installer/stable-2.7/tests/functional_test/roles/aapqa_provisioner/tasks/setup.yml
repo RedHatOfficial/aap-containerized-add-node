@@ -1,0 +1,30 @@
+---
+- name: Make sure src is present
+  ansible.builtin.file:
+    path: /tmp/aapqa-provisioner
+    mode: '0770'
+    state: directory
+
+- name: Get the recent devel aapqa-provisioner
+  ansible.builtin.git:
+    repo: "https://gitlab.cee.redhat.com/aap-ci/aapqa-provisioner.git"
+    version: "devel"
+    dest: "/tmp/aapqa-provisioner"
+    depth: 1
+
+- name: Remove ansible.platform from requirements
+  ansible.builtin.command:
+    chdir: "/tmp/aapqa-provisioner"
+    cmd: "sed -i -e '/ansible.platform/,+2d' requirements_github.yml"
+  changed_when: false # noqa: command-instead-of-module
+
+- name: Install galaxy requirements
+  ansible.builtin.command:
+    chdir: "/tmp/aapqa-provisioner"
+    cmd: "ansible-galaxy install -r requirements_github.yml"
+  changed_when: false
+
+- name: Install provisioner dependencies
+  ansible.builtin.pip:
+    requirements: /tmp/aapqa-provisioner/requirements.txt
+...

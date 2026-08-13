@@ -1,0 +1,6 @@
+---
+- name: Manage the PCP archives volume
+  containers.podman.podman_volume:
+    name: pcp_archives
+    state: '{{ __volume_state }}'
+...

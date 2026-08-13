@@ -1,0 +1,59 @@
+---
+- name: Set automation metrics facts
+  ansible.builtin.include_tasks: facts.yml
+
+- name: Configure postgresql
+  ansible.builtin.include_tasks: postgresql.yml
+  args:
+    apply:
+      run_once: true
+  when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+- name: Create automation metrics configuration directory
+  ansible.builtin.file:
+    path: '{{ automationmetrics_config_path }}'
+    state: directory
+    mode: '0770'
+
+- name: Configure TLS
+  ansible.builtin.include_tasks: tls.yml
+  when: not automationmetrics_nginx_disable_https | bool
+
+- name: Configure nginx
+  ansible.builtin.include_tasks: nginx.yml
+
+- name: Configure Podman secrets
+  ansible.builtin.include_tasks: secrets.yml
+
+- name: Configure automation metrics
+  ansible.builtin.include_tasks: config.yml
+
+- name: Configure TLS for postgresql
+  ansible.builtin.include_tasks: tls_postgresql.yml
+  when: automationmetrics_pg_cert_auth | bool or automationmetrics_controller_read_pg_cert_auth | bool
+
+- name: Remove legacy automation metrics service container
+  ansible.builtin.include_tasks: remove_legacy_container.yml
+
+- name: Handle container image update
+  ansible.builtin.include_tasks: update.yml
+
+- name: Configure containers
+  ansible.builtin.include_tasks: containers.yml
+  vars:
+    __containers_recreate: '{{ __metrics_recreate | default(false) }}'
+
+- name: Initialize automation metrics database
+  ansible.builtin.include_tasks: init.yml
+
+- name: Ensure automation metrics containers are enabled and started
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_enabled: true
+    __systemd_state: started
+
+- name: Add firewalld rules
+  ansible.builtin.include_tasks: firewalld.yml
+  vars:
+    __firewalld_state: enabled
+...

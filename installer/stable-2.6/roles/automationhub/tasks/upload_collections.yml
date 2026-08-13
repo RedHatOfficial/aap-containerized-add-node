@@ -1,0 +1,123 @@
+---
+- name: Upload ansible collections to Automation Hub
+  run_once: true
+  block:
+    - name: Ensure automation hub is ready
+      ansible.builtin.uri:
+        url: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}/pulp/api/v3/status/'
+        validate_certs: true
+        ca_path: '{{ _ca_tls_dir }}/extracted/pem/tls-ca-bundle.pem'
+      register: _hub_ready
+      until: _hub_ready.status == 200
+      retries: 5
+      delay: 60
+
+    - name: Create temporary directory for collection tarballs
+      ansible.builtin.tempfile:
+        path: '{{ collections_tmp_dir | default(omit) }}'
+        state: directory
+        suffix: collections
+      register: collections_tmp
+
+    - name: Copy bundled ansible collections
+      block:
+        - name: Copy bundled ansible collections
+          ansible.posix.synchronize:
+            src: '{{ bundle_dir }}/collections/'
+            dest: '{{ collections_tmp.path }}'
+      rescue:
+        - name: Copy bundled ansible collections (legacy)
+          ansible.builtin.copy:
+            src: '{{ bundle_dir }}/collections/'
+            dest: '{{ collections_tmp.path }}'
+            mode: '0644'
+
+    - name: Get all collection tarballs
+      ansible.builtin.find:
+        paths:
+          - '{{ collections_tmp.path }}'
+        patterns:
+          - '^[a-z_0-9]+-[a-z_0-9]+-.*.tar.gz$'
+        file_type: file
+        use_regex: true
+        recurse: true
+      register: _p
+
+    - name: Create collection namespaces on Automation Hub
+      infra.ah_configuration.ah_namespace:
+        ah_host: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+        ah_username: '{{ gateway_admin_user | default("admin") }}'
+        ah_password: '{{ gateway_admin_password }}'
+        name: '{{ item }}'
+        validate_certs: true
+        request_timeout: 60
+      environment:
+        SSL_CERT_FILE: '{{ _ca_tls_dir }}/extracted/pem/tls-ca-bundle.pem'
+      loop: '{{ _p.files | map(attribute="path") | map("basename") | map("split", "-") | map("first") | unique | sort }}'
+
+    - name: Check if collections already exists on Automation Hub
+      ansible.builtin.uri:
+        url: '{{ _url }}/?fields=count&namespace={{ _namespace }}&name={{ _collection_name }}&version={{ _version }}'
+        method: GET
+        headers:
+          Authorization: "Basic {{ _auth | b64encode }}"
+        validate_certs: true
+        timeout: 60
+        ca_path: '{{ _ca_tls_dir }}/extracted/pem/tls-ca-bundle.pem'
+      vars:
+        _auth: '{{ gateway_admin_user | default("admin") }}:{{ gateway_admin_password }}'
+        _url: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}/api/galaxy/pulp/api/v3/content/ansible/collection_versions'
+        _namespace: '{{ (item | basename).split("-")[0] }}'
+        _collection_name: '{{ (item | basename).split("-")[1] }}'
+        _version: '{{ (item | basename).split("-")[2].replace(".tar.gz", "") }}'
+      loop: '{{ _p.files | map(attribute="path") | sort }}'
+      register: _collections
+
+    - name: Upload collections to Automation Hub
+      infra.ah_configuration.ah_collection:
+        ah_host: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+        ah_username: '{{ gateway_admin_user | default("admin") }}'
+        ah_password: '{{ gateway_admin_password }}'
+        namespace: '{{ _namespace }}'
+        name: '{{ _collection_name }}'
+        version: '{{ _version }}'
+        path: '{{ item }}'
+        auto_approve: true
+        validate_certs: true
+        request_timeout: 60
+      environment:
+        SSL_CERT_FILE: '{{ _ca_tls_dir }}/extracted/pem/tls-ca-bundle.pem'
+      vars:
+        _namespace: '{{ (item | basename).split("-")[0] }}'
+        _collection_name: '{{ (item | basename).split("-")[1] }}'
+        _version: '{{ (item | basename).split("-")[2].replace(".tar.gz", "") }}'
+      loop: '{{ _p.files | map(attribute="path") | sort }}'
+      when: _collections.results | selectattr('item', 'equalto', item) | map(attribute='json') | selectattr('count', 'equalto', 0)
+
+    - name: Move collection to repository
+      ansible.builtin.uri:
+        url: '{{ _host }}/api/galaxy/v3/collections/{{ _namespace }}/{{ _collection_name }}/versions/{{ _version }}/move/published/{{ _repository }}/'
+        method: POST
+        headers:
+          Authorization: "Basic {{ _auth | b64encode }}"
+        status_code: 202
+        validate_certs: true
+        timeout: 60
+        ca_path: '{{ _ca_tls_dir }}/extracted/pem/tls-ca-bundle.pem'
+      vars:
+        _auth: '{{ gateway_admin_user | default("admin") }}:{{ gateway_admin_password }}'
+        _host: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+        _namespace: '{{ (item | basename).split("-")[0] }}'
+        _collection_name: '{{ (item | basename).split("-")[1] }}'
+        _version: '{{ (item | basename).split("-")[2].replace(".tar.gz", "") }}'
+        _repository: '{{ item | dirname | basename | replace("certified", "rh-certified") }}'
+      loop: '{{ _p.files | map(attribute="path") | sort }}'
+      when: _collections.results | selectattr('item', 'equalto', item) | map(attribute='json') | selectattr('count', 'equalto', 0)
+
+  always:
+    - name: Remove temporary directory
+      ansible.builtin.file:
+        path: "{{ collections_tmp.path }}"
+        state: absent
+      when: collections_tmp.path is defined
+...

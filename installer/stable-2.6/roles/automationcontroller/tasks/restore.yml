@@ -1,0 +1,145 @@
+---
+- name: Set automation controller facts
+  ansible.builtin.include_tasks: facts.yml
+
+- name: Stop automation controller systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+
+- name: Invalid redis cache
+  ansible.builtin.include_role:
+    name: redis
+    tasks_from: flush.yml
+  vars:
+    __redis_databases:
+      - '{{ controller_redis_broker_db }}'
+      - '{{ controller_redis_cache_db }}'
+
+- name: Unarchive the automation controller data
+  ansible.builtin.unarchive:
+    src: '{{ hostvars["localhost"]["_backup_dir"] }}/controller_{{ inventory_hostname }}.{{ controller_archive_extension }}'
+    dest: '{{ ansible_user_dir }}'
+    exclude:
+      - 'aap/tls'
+      - '.local/share/containers/storage/secrets/'
+      - 'aap/controller/nginx/etc/redirect-page.html'
+      - 'aap/controller/etc/tower.key'
+      - 'aap/controller/etc/tower.cert'
+      - 'aap/controller/etc/settings.py'
+      - 'aap/controller/etc/conf.d/cluster_host_id.py'
+      - 'aap/controller/etc/conf.d/execution_environments.py'
+
+- name: Set automation controller secret facts
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: restore_secrets.yml
+  vars:
+    backup_file: '{{ hostvars["localhost"]["_backup_dir"] }}/controller_{{ inventory_hostname }}.{{ controller_archive_extension }}'
+
+- name: Update the relevant controller secrets
+  containers.podman.podman_secret:
+    name: "{{ item }}"
+    data: "{{ lookup('ansible.builtin.vars', '__old_' + item) | b64decode }}"
+  loop:
+    - controller_channels
+    - controller_secret_key
+    - controller_resource_server
+
+- name: Reconfigure containers
+  ansible.builtin.include_tasks: containers.yml
+  vars:
+    __containers_recreate: true
+
+- name: Find the automation controller postgresql database
+  ansible.builtin.find:
+    path: '{{ ansible_user_dir }}/aap/backups'
+    patterns:
+      - '{{ controller_pg_database }}.{{ db_compressed_extension }}'
+      - '{{ controller_pg_database }}.{{ db_decompressed_extension }}'
+  register: _controller_db_file
+  run_once: true
+
+- name: Fail if the database backup file is missing and controller_postgresql_skip_data not enabled
+  ansible.builtin.assert:
+    that:
+      - controller_postgresql_skip_data | bool
+    fail_msg: "controller_postgresql_skip_data needs to be set to true when the database dump does not exist"
+  run_once: true
+  when:
+    - groups.get('database', []) | length == 0
+    - _controller_db_file.matched == 0
+
+- name: Restore the PostgreSQL database
+  when: not controller_postgresql_skip_data | bool or groups.get('database', []) | length == 1
+  block:
+    - name: Create postgresql CLI aliases
+      ansible.builtin.include_role:
+        name: postgresql
+        tasks_from: cli.yml
+      vars:
+        _postgresql_socket: '{{ controller_pg_socket | default("") }}'
+        _postgresql_cert_auth: '{{ controller_pg_cert_auth }}'
+        _postgresql_src_dir: '{{ controller_conf_dir }}'
+        _postgresql_dest_dir: /etc/tower
+        _postgresql_db_file: '{{ _controller_db_file.files[0].path }}'
+
+    - name: Add postgresql TLS environment variable for certificate authentication
+      ansible.builtin.set_fact:
+        _common_pg_env: '{{ _common_pg_env | combine(_controller_pg_ssl) }}'
+      vars:
+        _controller_pg_ssl:
+          PGSSLCERT: /etc/tower/postgresql.cert
+          PGSSLKEY: /etc/tower/postgresql.key
+          PGSSLROOTCERT: '{{ ca_trust_bundle }}'
+      when: controller_pg_cert_auth | bool
+
+    - name: Grant createdb role to the automation controller postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ controller_pg_username }}'
+        role_attr_flags: CREATEDB
+        login_host: '{{ controller_pg_host }}'
+        login_port: '{{ controller_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ controller_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+    - name: Restore the automation controller postgresql database
+      community.postgresql.postgresql_db:
+        name: template1
+        login_host: '{{ controller_pg_host }}'
+        login_port: '{{ controller_pg_port }}'
+        login_user: '{{ controller_pg_username }}'
+        login_password: '{{ controller_pg_password | default(omit) }}'
+        login_unix_socket: '{{ controller_pg_socket | default(omit) }}'
+        ssl_mode: '{{ controller_pg_sslmode }}'
+        target: '{{ _controller_db_file.files[0].path }}'
+        target_opts: '{{ (_controller_db_file.files[0].path | split(".") | last == "pgc") | ternary("--create --clean --if-exists", omit) }}'
+        state: restore
+      environment: '{{ _common_pg_env }}'
+      run_once: true
+
+    - name: Revoke createdb role to the automation controller postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ controller_pg_username }}'
+        role_attr_flags: NOCREATEDB
+        login_host: '{{ controller_pg_host }}'
+        login_port: '{{ controller_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ controller_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+- name: Initialize data
+  ansible.builtin.include_tasks: init.yml
+
+- name: Start automation controller systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: started
+...

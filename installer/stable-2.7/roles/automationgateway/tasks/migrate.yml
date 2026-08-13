@@ -1,0 +1,51 @@
+---
+- name: Ensure automation gateway proxy is ready
+  ansible.builtin.uri:
+    url: '{{ _gateway_proxy_url }}'
+    validate_certs: true
+    ca_path: '{{ _ca_tls_dir }}/extracted/pem/tls-ca-bundle.pem'
+  register: _gateway_proxy_ready
+  until: _gateway_proxy_ready.status == 200
+  retries: 30
+  delay: 10
+
+- name: Display merge progress monitoring instructions
+  ansible.builtin.debug:
+    msg: >-
+      We are going to perform the migration process, this can take several
+      hours for large databases. If you would like to monitor the process
+      please run: podman logs -f automation-gateway-init
+  when: >
+    groups.get('automationcontroller', []) | length > 0 or
+    groups.get('automationeda', []) | length > 0 or
+    groups.get('automationhub', []) | length > 0
+
+- name: Merge organization
+  containers.podman.podman_container:
+    name: automation-gateway-init
+    image: '{{ _gateway_image }}'
+    command: >-
+      aap-gateway-manage migrate_service_data
+      --username={{ gateway_admin_user }}
+      --log-file /dev/stdout
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/var/cache/ansible-automation-platform/gateway,U=true'
+    secrets: '{{ _django_secrets }}'
+    volume: '{{ _web_volumes }}'
+    env: '{{ _common_env }}'
+  register: _migrate_data
+  changed_when: "'Items remaining: 1' in _migrate_data.stdout"
+  retries: 5
+  delay: 60
+  until: _migrate_data is not failed
+  when: >
+    groups.get('automationcontroller', []) | length > 0 or
+    groups.get('automationeda', []) | length > 0 or
+    groups.get('automationhub', []) | length > 0
+...

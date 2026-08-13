@@ -1,0 +1,115 @@
+---
+- name: Set automation metrics facts
+  ansible.builtin.set_fact:
+    _automationmetrics_hostname: '{{ routable_hostname | default(ansible_host) }}'
+
+- name: Set automation metrics network facts
+  ansible.builtin.set_fact:
+    _automationmetrics_port: >-
+      {{ (automationmetrics_nginx_disable_https | bool) |
+      ternary(automationmetrics_nginx_http_port, automationmetrics_nginx_https_port) }}
+    _automationmetrics_ports: ['{{ automationmetrics_nginx_http_port }}']
+    _automationmetrics_protocol: '{{ (automationmetrics_nginx_disable_https | bool) | ternary("http", "https") }}'
+
+- name: Add HTTPS port to automation metrics ports
+  ansible.builtin.set_fact:
+    _automationmetrics_ports: '{{ _automationmetrics_ports | union([automationmetrics_nginx_https_port]) }}'
+  when: not automationmetrics_nginx_disable_https | bool
+
+- name: Set automation metrics environment facts
+  ansible.builtin.set_fact:
+    _automationmetrics_env:
+      METRICS_SERVICE_MODE: production
+      REQUESTS_CA_BUNDLE: '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'
+      SSL_CERT_FILE: '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'
+
+- name: Set automation metrics secrets facts
+  ansible.builtin.set_fact:
+    _automationmetrics_secrets:
+      - 'automationmetrics_secret_key,type=env,target=METRICS_SERVICE_SECRET_KEY'
+      - 'automationmetrics_resource_server,type=env,target=METRICS_SERVICE_RESOURCE_SERVER__SECRET_KEY'
+
+- name: Add primary database password secret when not using certificate authentication
+  ansible.builtin.set_fact:
+    _automationmetrics_secrets: >-
+      {{ _automationmetrics_secrets +
+         ['automationmetrics_pg_password,type=env,target=METRICS_SERVICE_DATABASES__default__PASSWORD'] }}
+  when: not automationmetrics_pg_cert_auth | bool
+
+- name: Add controller read database password secret when not using certificate authentication
+  ansible.builtin.set_fact:
+    _automationmetrics_secrets: >-
+      {{ _automationmetrics_secrets +
+         ['automationmetrics_controller_read_pg_password,type=env,target=METRICS_SERVICE_DATABASES__awx__PASSWORD'] }}
+  when: not automationmetrics_controller_read_pg_cert_auth | bool
+
+- name: Set automation metrics common secrets facts
+  ansible.builtin.set_fact:
+    _common_secrets: '{{ _automationmetrics_secrets }}'
+
+- name: Set automation metrics volumes facts
+  ansible.builtin.set_fact:
+    _common_volumes:
+      - '{{ _ca_tls_dir }}/extracted:/etc/pki/ca-trust/extracted:z'
+      - '{{ automationmetrics_config_path }}/settings.yaml:/etc/ansible-automation-platform/metrics_service/settings.yaml:ro,z'
+    _nginx_volumes:
+      - '{{ automationmetrics_nginx_conf_dir }}/nginx.conf:/etc/nginx/nginx.conf:ro,z'
+
+- name: Add postgresql socket volume to common volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _postgresql_volumes }}'
+  vars:
+    _postgresql_volumes:
+      - '{{ automationmetrics_pg_socket }}:{{ automationmetrics_pg_socket }}:z'
+  when: automationmetrics_pg_socket is defined
+
+- name: Add postgresql TLS volumes to common volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _postgresql_tls_volumes }}'
+  vars:
+    _postgresql_tls_volumes:
+      - '{{ automationmetrics_config_path }}/postgresql.cert:/etc/automation-metrics/postgresql.cert:ro,z'
+      - '{{ automationmetrics_config_path }}/postgresql.key:/etc/automation-metrics/postgresql.key:ro,z'
+  when: automationmetrics_pg_cert_auth | bool
+
+- name: Add controller read postgresql TLS volumes to common volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _controller_read_tls_volumes }}'
+  vars:
+    _controller_read_tls_volumes:
+      - '{{ automationmetrics_config_path }}/postgresql-controller.cert:/etc/automation-metrics/postgresql-controller.cert:ro,z'
+      - '{{ automationmetrics_config_path }}/postgresql-controller.key:/etc/automation-metrics/postgresql-controller.key:ro,z'
+  when: automationmetrics_controller_read_pg_cert_auth | bool
+
+- name: Set automation metrics per-container volumes
+  ansible.builtin.set_fact:
+    _web_volumes: >-
+      {{ _common_volumes + _nginx_volumes +
+      [automationmetrics_config_path + '/supervisord_web.conf:/etc/supervisord_web.conf:ro,z'] }}
+    _task_volumes: '{{ _common_volumes }}'
+    _scheduler_volumes: '{{ _common_volumes }}'
+
+- name: Add TLS volumes to automation metrics web volumes
+  ansible.builtin.set_fact:
+    _web_volumes: '{{ _web_volumes + _automationmetrics_tls_volumes }}'
+  vars:
+    _automationmetrics_tls_volumes:
+      - '{{ automationmetrics_config_path }}/automationmetrics.cert:/etc/ansible-automation-platform/metrics_service/metrics_service.crt:ro,z'
+      - '{{ automationmetrics_config_path }}/automationmetrics.key:/etc/ansible-automation-platform/metrics_service/metrics_service.key:ro,z'
+  when: not automationmetrics_nginx_disable_https | bool
+
+- name: Set automation metrics IPs
+  ansible.builtin.set_fact:
+    _automationmetrics_ips: '{{ _automationmetrics_ips | default([]) | union(["IP:" + item]) }}'
+  loop: '{{ ansible_all_ipv4_addresses + ansible_all_ipv6_addresses }}'
+  when: ansible_all_ipv4_addresses is defined
+
+- name: Add postgresql container to requires when on the same node
+  ansible.builtin.set_fact:
+    automationmetrics_container_requires: '{{ automationmetrics_container_requires | union(["postgresql"]) }}'
+  when: inventory_hostname in groups.get('database', [])
+
+- name: Set automation metrics systemd requires
+  ansible.builtin.set_fact:
+    __systemd_requires: '{{ automationmetrics_container_requires | sort | product([".service"]) | map("join") | list }}'
+...

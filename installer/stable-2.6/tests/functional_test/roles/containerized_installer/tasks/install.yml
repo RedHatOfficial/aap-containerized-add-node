@@ -1,0 +1,63 @@
+---
+- name: Generate installer inventory
+  ansible.builtin.template:
+    src: "inventory.j2"
+    dest: "{{ ansible_env.PWD }}/inventory"
+    mode: '0640'
+
+- name: Generate installer vars
+  ansible.builtin.template:
+    src: "vars.yaml.j2"
+    dest: "{{ ansible_env.PWD }}/vars.yaml"
+    mode: '0640'
+
+- name: Copy ansible cfg
+  ansible.builtin.template:
+    src: "ansible.cfg"
+    dest: "{{ ansible_env.PWD }}/ansible.cfg"
+    mode: '0640'
+
+- name: Get bundle
+  environment:
+    ANSIBLE_LOG_PATH: "bundle.log"
+  ansible.builtin.shell:
+    cmd: |
+      ansible-playbook ansible.containerized_installer.bundle -vv \
+        -i inventory \
+        -e @vars.yaml
+  when: installer_vars.bundle_install|default(False)
+  changed_when: false
+
+- name: Download ansible collections
+  environment:
+    ANSIBLE_LOG_PATH: "bundle.log"
+  ansible.builtin.shell:
+    cmd: |
+      ansible-galaxy collection download -p $(pwd)/bundle/collections/certified ansible.hub
+      ansible-galaxy collection download -p $(pwd)/bundle/collections/validated infra.ah_configuration
+  when: installer_vars.bundle_install|default(False)
+  changed_when: false
+
+- name: Run online installer
+  environment:
+    ANSIBLE_LOG_PATH: "setup.log"
+  ansible.builtin.shell:
+    cmd: |
+      ansible-playbook ansible.containerized_installer.install -vv \
+        -i inventory \
+        -e @vars.yaml
+  when: not installer_vars.bundle_install|default(False)
+  changed_when: false
+
+- name: Run offline installer
+  environment:
+    ANSIBLE_LOG_PATH: "setup.log"
+  ansible.builtin.shell:
+    cmd: |
+      ansible-playbook ansible.containerized_installer.install -vv \
+        -i inventory \
+        -e bundle_install=true -e bundle_dir=$(pwd)/bundle \
+        -e @vars.yaml
+  when: installer_vars.bundle_install|default(False)
+  changed_when: false
+...

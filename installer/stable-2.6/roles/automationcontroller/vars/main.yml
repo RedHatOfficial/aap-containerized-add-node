@@ -1,0 +1,5 @@
+---
+archive_extension: "{{ use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
+controller_archive_extension: "{{ controller_use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
+controller_db_filename: '{{ controller_pg_database }}.{{ controller_use_db_compression | bool | ternary(db_compressed_extension, db_decompressed_extension) }}'
+...

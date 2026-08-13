@@ -1,0 +1,61 @@
+---
+- name: Gather regular user dir and id
+  ansible.builtin.setup:
+    filter:
+      - 'ansible_user_dir'
+      - 'ansible_user_id'
+
+- name: Set the bundle directories path
+  ansible.builtin.set_fact:
+    _bundle_collections: '{{ lookup("ansible.builtin.env", "PWD") }}/bundle/collections'
+    _bundle_images: '{{ lookup("ansible.builtin.env", "PWD") }}/bundle/images'
+
+- name: Configure sub UID/GIDs
+  ansible.builtin.include_tasks: subids.yml
+
+- name: Run ostree tasks
+  ansible.builtin.include_tasks: ostree.yml
+
+- name: Install container tools
+  ansible.builtin.package:
+    name: '{{ podman_packages }}'
+  become: true
+  when: not ostree | bool
+
+- name: Create the bundle directory
+  ansible.builtin.file:
+    name: '{{ item }}'
+    mode: '0755'
+    state: directory
+  loop:
+    - '{{ _bundle_collections }}'
+    - '{{ _bundle_images }}'
+
+- name: Include registry tasks
+  ansible.builtin.include_tasks: registry.yml
+  when: registry_auth | bool
+
+- name: Add localhost to all groups
+  ansible.builtin.add_host:
+    name: localhost
+    groups:
+      - ansiblelightspeed
+      - ansiblemcp
+      - automationcontroller
+      - automationeda
+      - automationgateway
+      - automationhub
+      - automationmetrics
+      - database
+      - execution_nodes
+      - redis
+
+- name: Include container image tasks
+  ansible.builtin.include_tasks: images.yml
+  vars:
+    setup_monitoring: true
+
+- name: Include container bundle image tasks
+  ansible.builtin.include_tasks: bundle_images.yml
+  loop: '{{ _images | union((__de_images | default([])) | union(__ee_images | default([]))) | unique }}'
+...

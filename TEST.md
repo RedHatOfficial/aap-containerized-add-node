@@ -245,7 +245,7 @@ ansible-playbook -i inventory-growth ansible.containerized_installer.install
 
 **Notes**
 
-- This validates **inventory compatibility** with the official installer after an additive join — not the `installer-overlay` playbook.
+- This validates **inventory compatibility** with the official installer after an additive join — not the `installer` playbook.
 - Optional: set `routable_hostname` when `ansible_host` is an IP.
 
 **Last result:** 2026-08-07 — lab 2.6 AIO (`aap26`) with collection-added `aap26-hn-01` + `aap26-en-01`; full upgrade install succeeded; mesh remained healthy.

@@ -1,0 +1,19 @@
+---
+- name: Stop pcp systemd service
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+
+- name: Unarchive the pcp data
+  ansible.builtin.unarchive:
+    src: '{{ hostvars["localhost"]["_backup_dir"] }}/pcp_{{ inventory_hostname }}.{{ pcp_archive_extension }}'
+    dest: '{{ ansible_user_dir }}'
+    exclude:
+      - 'aap/tls'
+      - '.local/share/containers/storage/secrets/'
+
+- name: Start pcp systemd service
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: started
+...

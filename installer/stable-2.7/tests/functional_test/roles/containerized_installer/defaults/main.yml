@@ -1,0 +1,14 @@
+known_groups:
+  - automationcontroller
+  - sso
+  - database
+  - automationhub
+  - execution_nodes
+  - hop_nodes
+  - automationedacontroller
+  - automationgateway
+  - automationmetrics
+
+# convert provisioner group name to the containerized installer supported name
+provisioner_group_name_mapping:
+  automationedacontroller: automationeda

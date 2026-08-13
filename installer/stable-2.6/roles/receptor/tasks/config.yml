@@ -1,0 +1,23 @@
+---
+- name: Create the receptor directory
+  ansible.builtin.file:
+    path: '{{ receptor_conf_dir }}'
+    mode: '0770'
+    state: directory
+
+- name: Create the controller directories
+  ansible.builtin.file:
+    path: '{{ item }}'
+    mode: '0770'
+    state: directory
+  loop:
+    - '{{ controller_data_dir }}/job_execution'
+    - '{{ controller_data_dir }}/projects'
+
+- name: Create the receptor configuration
+  ansible.builtin.template:
+    src: receptor.conf.j2
+    dest: '{{ receptor_conf_dir }}/receptor.conf'
+    mode: '0640'
+  notify: Restart receptor
+...

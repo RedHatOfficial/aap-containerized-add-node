@@ -1,0 +1,174 @@
+version: '2'
+image_name: ansible-chatbot
+container_image: ansible-chatbot
+apis:
+- inference
+- vector_io
+- safety
+- agents
+- datasetio
+- tool_runtime
+- files
+providers:
+  inference:
+  - provider_id: {{ lightspeed_chatbot_default_provider }}
+    provider_type: {{ lightspeed_chatbot_default_provider_type }}
+    config:
+{% if lightspeed_chatbot_default_provider == "rhoai" %}
+      base_url: ${env.VLLM_URL}
+      max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
+      api_token: ${env.VLLM_API_TOKEN:=}
+      tls_verify: ${env.VLLM_TLS_VERIFY:=true}
+{% elif lightspeed_chatbot_default_provider == "openai" %}
+      base_url: ${env.OPENAI_BASE_URL:=https://api.openai.com/v1}
+      api_key: ${env.OPENAI_API_KEY:=}
+{% elif lightspeed_chatbot_default_provider == "azure" %}
+      api_key: ${env.AZURE_API_KEY:=}
+      base_url: ${env.AZURE_API_BASE:=}
+{% endif %}
+{% for key, value in lightspeed_chatbot_model_extra_settings.items() %}
+      {{ key }}: {{ value }}
+{% endfor %}
+  - provider_id: sentence-transformers
+    provider_type: inline::sentence-transformers
+    config: {}
+  vector_io:
+  - provider_id: aap_faiss
+    provider_type: inline::faiss
+    config:
+      persistence:
+        namespace: vector_io::faiss
+        backend: kv_rag
+  safety:
+  - provider_id: llama-guard
+    provider_type: inline::llama-guard
+    config:
+      excluded_categories: []
+  agents:
+  - provider_id: lightspeed_inline_agent
+    provider_type: inline::lightspeed_inline_agent
+    config:
+      persistence:
+        agent_state:
+          namespace: agents_state
+          backend: kv_default
+        responses:
+          table_name: agents_responses
+          backend: sql_default
+      tools_filter:
+        enabled: true
+        model_id: {{ lightspeed_chatbot_default_provider }}/${env.INFERENCE_MODEL_FILTER:=}
+        always_include_tools:
+        - knowledge_search
+{% for key, value in lightspeed_chatbot_agent_extra_settings.items() %}
+      {{ key }}: {{ value }}
+{% endfor %}
+  datasetio:
+  - provider_id: localfs
+    provider_type: inline::localfs
+    config:
+      kvstore:
+        namespace: localfs_datasetio
+        backend: kv_default
+  files:
+  - provider_id: meta-reference-files
+    provider_type: inline::localfs
+    config:
+      storage_dir: ${env.PROVIDERS_DB_DIR:=/.llama/data/distributions/ansible-chatbot}/files
+      metadata_store:
+        table_name: files_metadata
+        backend: sql_default
+  tool_runtime:
+  - provider_id: rag-runtime
+    provider_type: inline::rag-runtime
+    config: {}
+  - provider_id: model-context-protocol
+    provider_type: remote::model-context-protocol
+    config: {}
+storage:
+  backends:
+    kv_rag:
+      type: kv_sqlite
+      db_path: ${env.VECTOR_DB_DIR:=/.llama/data/distributions/ansible-chatbot}/aap_faiss_store.db
+    kv_default:
+      type: kv_sqlite
+      db_path: ${env.KV_STORE_DB_DIR:=/.llama/data/distributions/ansible-chatbot}/kv_store.db
+    sql_default:
+      type: sql_sqlite
+      db_path: ${env.SQL_STORE_DB_DIR:=/.llama/data/distributions/ansible-chatbot}/sql_store.db
+  stores:
+    metadata:
+      namespace: registry
+      backend: kv_default
+    inference:
+      table_name: inference_store
+      backend: sql_default
+      max_write_queue_size: 10000
+      num_writers: 4
+    conversations:
+      table_name: openai_conversations
+      backend: sql_default
+    prompts:
+      namespace: prompts
+      backend: kv_default
+registered_resources:
+  models:
+{% if lightspeed_chatbot_default_provider == "rhoai" %}
+    - metadata: {}
+      model_id: {{ lightspeed_chatbot_default_provider }}/${env.INFERENCE_MODEL}
+      provider_id: {{ lightspeed_chatbot_default_provider }}
+      provider_model_id: null
+{% endif %}
+    - metadata:
+        embedding_dimension: 768
+      model_id: sentence-transformers/all-mpnet-base-v2
+      provider_id: sentence-transformers
+      provider_model_id: ${env.EMBEDDINGS_MODEL:=/.llama/data/embeddings_model}
+      model_type: embedding
+  shields: []
+  vector_stores:
+    - metadata: {}
+      vector_store_id: {{ _provider_vector_db_id.stdout }}
+      embedding_model: sentence-transformers/${env.EMBEDDINGS_MODEL:=/.llama/data/embeddings_model}
+      embedding_dimension: 768
+      provider_id: aap_faiss
+  datasets: []
+  scoring_fns: []
+  benchmarks: []
+  tool_groups:
+    - toolgroup_id: builtin::rag
+      provider_id: rag-runtime
+{% if lightspeed_mcp_controller_enabled | bool %}
+    - toolgroup_id: mcp::aap-controller
+      provider_id: model-context-protocol
+      mcp_endpoint:
+        uri: "{{ _lightspeed_mcp_controller_url }}/sse"
+{% endif %}
+{% if lightspeed_mcp_lightspeed_enabled | bool %}
+    - toolgroup_id: mcp::aap-lightspeed
+      provider_id: model-context-protocol
+      mcp_endpoint:
+        uri: "{{ _lightspeed_mcp_lightspeed_url }}/sse"
+{% endif %}
+  safety:
+    - default_shield_id: llama-guard
+vector_stores:
+  default_provider_id: aap_faiss
+  default_embedding_model: # Define the default embedding model for RAG
+    provider_id: sentence-transformers
+    model_id: /.llama/data/embeddings_model
+  annotation_prompt_params:
+    enable_annotations: true
+    annotation_instruction_template: >
+      When appropriate, cite sources at the end of sentences using doc_url and doc_title format.
+      Citing sources is not always required because citations are handled externally.
+      Never include any citation that is in the form '<| file-id |>'.
+logging: null
+server:
+  port: 8321
+  tls_certfile: null
+  tls_keyfile: null
+  tls_cafile: null
+  auth: null
+  disable_ipv6: false
+external_providers_dir: ${env.EXTERNAL_PROVIDERS_DIR:=/.llama/providers.d}

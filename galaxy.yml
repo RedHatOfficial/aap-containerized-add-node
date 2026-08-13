@@ -78,7 +78,7 @@ build_ignore:
   - docs-requirements.txt
   - mkdocs.yml
   # Installer upstream scaffold
-  - installer-overlay
+  - installer
   # Changelog build artifacts
   - changelogs
   - CHANGELOG.md

@@ -1,0 +1,38 @@
+---
+- name: Set facts for containers
+  ansible.builtin.set_fact:
+    __containers:
+      - automation-hub-api
+      - automation-hub-content
+      - automation-hub-web
+
+- name: Add hub workers to containers list
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["automation-hub-worker-" + item | string]) }}'
+  loop: '{{ hub_workers_range }}'
+
+- name: Get hub container information
+  containers.podman.podman_container_info:
+    name: '{{ __containers }}'
+  register: _hub_container_info
+
+- name: Get hub image information
+  containers.podman.podman_image_info:
+    name:
+      - '{{ _hub_image }}'
+      - '{{ _hub_web_image }}'
+  register: _hub_image_info
+
+- name: Set hub update fact
+  ansible.builtin.set_fact:
+    _hub_image_update: '{{ _hub_before | difference(_hub_after) | length > 0 }}'
+  vars:
+    _hub_before: '{{ _hub_container_info.containers | map(attribute="Image") | unique }}'
+    _hub_after: '{{ _hub_image_info.images | map(attribute="Id") | unique }}'
+
+- name: Stop hub service on update
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+  when: _hub_image_update | bool
+...

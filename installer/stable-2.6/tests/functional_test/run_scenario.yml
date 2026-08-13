@@ -1,0 +1,86 @@
+---
+- name: Run test scenario
+  hosts: localhost
+  vars:
+    artifacts_dest_base_dir: "{{ ansible_env.PWD }}/artifacts/"
+    # provisioner params
+    provision_prefix: 'minimal_online_rhel92'
+    provision_cloud: 'input/provisioner/cloud/aws.yml'
+    provision_topology: 'input/aap_scenarios/1inst_1hybr_1db.yml'
+    provision_platform: 'input/platform/rhel92.yml'
+
+    # provide vars to pass to the containerized installer
+    installer_vars:
+      controller_admin_password: adminpassword
+      postgresql_admin_password: adminpassword
+      controller_pg_host: database-0
+      controller_pg_password: adminpassword
+      bundle_install: true
+
+      # those are secrets so get them from env
+      registry_username: "{{ _registry_username | default(lookup('env', 'AAPQA_REGISTRY_USERNAME')) }}"
+      registry_password: "{{ _registry_passowrd | default(lookup('env', 'AAPQA_REGISTRY_PASSWORD')) }}"
+  tasks:
+    - name: Create artifacts dir
+      ansible.builtin.file:
+        path: "{{ artifacts_dest_base_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Start scenario
+      block:
+        - name: Install aapqa-provisioner
+          ansible.builtin.import_role:
+            name: aapqa_provisioner
+            tasks_from: setup.yml
+          tags:
+            - provision
+
+        - name: Provision vms
+          ansible.builtin.import_role:
+            name: aapqa_provisioner
+            tasks_from: provision.yml
+          tags:
+            - provision
+
+        - name: Save vars to pass to the installer run
+          ansible.builtin.copy:
+            content: |
+              {{ {'installer_vars': installer_vars} | to_nice_yaml }}
+            dest: "{{ ansible_env.PWD }}/installer_vars_{{ provision_prefix }}.yml"
+            mode: '0640'
+          tags:
+            - install
+
+        - name: Run installer with provisioner inventory
+          environment:
+            ANSIBLE_LOG_PATH: "{{ artifacts_dest_base_dir }}/run_installer.log"
+          ansible.builtin.shell:
+            cmd: |
+              ansible-playbook run_installer.yml \
+                -i provisioner_inventory_{{ provision_prefix }} \
+                -e @installer_vars_{{ provision_prefix }}.yml \
+                -e run_idempotence_installer={{ run_idempotence_installer | default(True) }}
+          changed_when: false
+          tags:
+            - install
+      always:
+        - name: Collect install artifacts
+          environment:
+            ANSIBLE_LOG_PATH: "{{ artifacts_dest_base_dir }}/collect_artifacts.log"
+          ansible.builtin.shell:
+            cmd: |
+              ansible-playbook collect_install_artifacts.yml \
+                -i {{ ansible_env.PWD }}/provisioner_inventory_{{ provision_prefix }}
+          changed_when: false
+          failed_when: false
+          tags:
+            - collect_artifacts
+
+        - name: Cleanup vms
+          ansible.builtin.import_role:
+            name: aapqa_provisioner
+            tasks_from: cleanup.yml
+          tags:
+            - cleanup
+...

@@ -1,0 +1,28 @@
+---
+- name: Import postgresql TLS certificate and key
+  when:
+    - hub_pg_tls_cert is defined
+    - hub_pg_tls_key is defined
+  block:
+    - name: Copy postgresql TLS certificate
+      ansible.builtin.copy:
+        src: '{{ hub_pg_tls_cert }}'
+        dest: '{{ hub_conf_dir }}/postgresql.cert'
+        mode: '0640'
+        remote_src: '{{ hub_tls_remote | default(false) }}'
+      notify:
+        - Restart hub api
+        - Restart hub content
+        - Restart hub workers
+
+    - name: Copy postgresql TLS key
+      ansible.builtin.copy:
+        src: '{{ hub_pg_tls_key }}'
+        dest: '{{ hub_conf_dir }}/postgresql.key'
+        mode: '0400'
+        remote_src: '{{ hub_tls_remote | default(false) }}'
+      notify:
+        - Restart hub api
+        - Restart hub content
+        - Restart hub workers
+...

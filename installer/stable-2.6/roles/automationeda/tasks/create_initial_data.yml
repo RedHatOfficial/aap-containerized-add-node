@@ -1,0 +1,22 @@
+---
+- name: Create the initial automation eda data
+  containers.podman.podman_container:
+    name: automation-eda-init
+    image: '{{ _eda_image }}'
+    command: 'aap-eda-manage create_initial_data'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _api_volumes }}'
+    env: '{{ _common_env | combine({"ANSIBLE_REVERSE_RESOURCE_SYNC": False}) }}'
+  register: _initial_data
+  changed_when: "'Nothing to do' not in _initial_data.stdout"
+  run_once: true
+  retries: 5
+  delay: 60
+  until: _initial_data is not failed
+...

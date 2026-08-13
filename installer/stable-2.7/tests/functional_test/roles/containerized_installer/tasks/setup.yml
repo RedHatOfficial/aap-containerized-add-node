@@ -1,0 +1,25 @@
+---
+- name: Push current folder to the installer
+  ansible.posix.synchronize:
+    # pwd is tests/functional_test so we need to go up two steps
+    src: "{{ lookup('env', 'PWD') }}/../../"
+    dest: "{{ ansible_env.PWD }}/aap_containerized_installer"
+    rsync_opts:
+      - "--exclude=ansible.cfg"
+
+- name: Install collection dependencies
+  ansible.builtin.package:
+    name:
+      - ansible-core
+      - python3-dnf # required for bundle
+    state: present
+  become: true
+
+- name: Install collection
+  ansible.builtin.shell:
+    cmd: |
+      ansible-galaxy collection install -r requirements.yml
+      ansible-galaxy collection install .
+    chdir: "{{ ansible_env.PWD }}/aap_containerized_installer"
+  changed_when: false
+...

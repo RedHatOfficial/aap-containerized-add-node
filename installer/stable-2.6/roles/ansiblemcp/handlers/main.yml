@@ -1,0 +1,7 @@
+---
+- name: Restart ansiblemcp
+  ansible.builtin.systemd:
+    name: ansiblemcp.service
+    scope: user
+    state: restarted
+...

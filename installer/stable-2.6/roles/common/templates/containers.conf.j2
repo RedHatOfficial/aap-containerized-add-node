@@ -1,0 +1,12 @@
+[engine]
+runtime = "{{ podman_runtime }}"
+
+[containers]
+# Set default PID limit for containers
+{% if __systemd_default_tasks_max is defined %}
+pids_limit = {{ __systemd_default_tasks_max }}
+{% elif podman_default_pids_limit is defined %}
+pids_limit = {{ podman_default_pids_limit }}
+{% else %}
+# pids_limit not set - using system defaults
+{% endif %}

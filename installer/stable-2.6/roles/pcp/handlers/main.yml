@@ -1,0 +1,7 @@
+---
+- name: Restart pcp
+  ansible.builtin.systemd:
+    name: pcp.service
+    scope: user
+    state: restarted
+...

@@ -1,0 +1,9 @@
+---
+- name: Ensure MCP has a base URL in standalone mode
+  ansible.builtin.assert:
+    that:
+      - mcp_public_base_url is defined
+      - mcp_public_base_url | length
+      - mcp_public_base_url is regex('^https?://.*')
+    fail_msg: 'mcp_public_base_url should be defined and points on an AAP base URL'
+...

@@ -1,0 +1,24 @@
+---
+- name: Get ansiblemcp container information
+  containers.podman.podman_container_info:
+    name: ansiblemcp
+  register: _mcp_container_info
+
+- name: Get ansiblemcp image information
+  containers.podman.podman_image_info:
+    name: '{{ _mcp_image }}'
+  register: _mcp_image_info
+
+- name: Set ansiblemcp update fact
+  ansible.builtin.set_fact:
+    _mcp_image_update: '{{ _mcp_before | difference(_mcp_after) | length > 0 }}'
+  vars:
+    _mcp_before: '{{ _mcp_container_info.containers | map(attribute="Image") | unique }}'
+    _mcp_after: '{{ _mcp_image_info.images | map(attribute="Id") | unique }}'
+
+- name: Stop ansiblemcp service on update
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+  when: _mcp_image_update | bool
+...

@@ -1,0 +1,27 @@
+---
+- name: Create OAuth2 application in AAP for Lightspeed
+  ansible.platform.application:
+    name: 'lightspeed-oauth'
+    description: 'Lightspeed oauth token'
+    state: present
+    organization: 'Default'
+    client_type: 'confidential'
+    authorization_grant_type: 'authorization-code'
+    redirect_uris:
+      - '{{ _lightspeed_instance_url }}/complete/aap/'
+    gateway_hostname: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+    gateway_username: '{{ gateway_admin_user | default("admin") }}'
+    gateway_password: '{{ gateway_admin_password }}'
+    gateway_validate_certs: true
+  environment:
+    SSL_CERT_FILE: '{{ _ca_tls_dir }}/extracted/pem/tls-ca-bundle.pem'
+  register: _lightspeed_oauth_result
+  retries: 5
+  delay: 60
+  until: _lightspeed_oauth_result is not failed
+
+- name: Store OAuth credentials as a fact
+  ansible.builtin.set_fact:
+    _lightspeed_oauth_client_id: '{{ _lightspeed_oauth_result.client_id }}'
+    _lightspeed_oauth_client_secret: '{{ _lightspeed_oauth_result.client_secret }}'
+  no_log: true

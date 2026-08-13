@@ -1,0 +1,19 @@
+---
+collections:
+  - name: ansible.hub
+    version: 1.0.6
+  - name: ansible.posix
+    version: 1.5.4
+  - name: community.crypto
+    version: 2.26.7
+  - name: community.postgresql
+    version: 3.14.3
+  - name: containers.podman
+    version: 1.19.1
+  - name: infra.ah_configuration
+    version: 2.1.0
+  - name: infra.controller_configuration
+    version: 2.9.0
+  - name: vendor/ansible-controller-4.8.0.tar.gz
+  - name: vendor/ansible-platform-2.7.20260313.tar.gz
+...

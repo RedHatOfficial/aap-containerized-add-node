@@ -1,0 +1,104 @@
+---
+- name: Install python-psycopg
+  ansible.builtin.package:
+    name: python3-psycopg2
+  become: true
+
+- name: Copy postgresql TLS certificate and key
+  when:
+    - _postgresql_cert_auth | default(false) | bool
+    - not _postgresql_tls_remote | default(false) | bool
+  block:
+    - name: Create temporary files
+      ansible.builtin.tempfile:
+        suffix: '{{ item }}'
+      loop: '{{ range(0, 2, 1) }}'
+      register: _tmp_tls_files
+
+    - name: Copy postgresql TLS certificate
+      ansible.builtin.copy:
+        src: '{{ _postgresql_tls_cert }}'
+        dest: '{{ _tmp_tls_files.results | map(attribute="path") | first }}'
+        mode: '0600'
+
+    - name: Copy postgresql TLS key
+      ansible.builtin.copy:
+        src: '{{ _postgresql_tls_key }}'
+        dest: '{{ _tmp_tls_files.results | map(attribute="path") | last }}'
+        mode: '0600'
+
+- name: Copy CA TLS certificate
+  when: _postgresql_tls_ca_cert is defined
+  block:
+    - name: Create temporary file for CA certificate
+      ansible.builtin.tempfile:
+        suffix: ca_cert
+        state: directory
+      register: _tmp_ca_tls_cert
+
+    - name: Copy CA bundle certificate
+      ansible.builtin.copy:
+        src: '/etc/pki/tls/certs/ca-bundle.crt'
+        dest: '{{ _tmp_ca_tls_cert.path }}/ca-bundle.crt'
+        remote_src: true
+        mode: '0600'
+
+    - name: Copy custom certificate to temp CA bundle directory
+      ansible.builtin.copy:
+        src: '{{ _postgresql_tls_ca_cert }}'
+        dest: '{{ _tmp_ca_tls_cert.path }}/custom.crt'
+        remote_src: '{{ _postgresql_tls_ca_remote | default(false) }}'
+        mode: '0600'
+
+    - name: Slurp custom certificate
+      ansible.builtin.slurp:
+        src: '{{ _tmp_ca_tls_cert.path }}/custom.crt'
+      register: _temp_custom_ca
+      no_log: true
+
+    - name: Append custom certificate to temp CA bundle
+      ansible.builtin.blockinfile:
+        path: '{{ _tmp_ca_tls_cert.path }}/ca-bundle.crt'
+        block: "{{ _temp_custom_ca.content | b64decode }}"
+        insertafter: EOF
+
+- name: Check external database connection
+  block:
+    - name: Ping external database
+      community.postgresql.postgresql_ping:
+        login_host: '{{ _postgresql_host }}'
+        login_port: '{{ _postgresql_port | default(5432) }}'
+        login_user: '{{ _postgresql_username }}'
+        login_password: '{{ _postgresql_password | default(omit) }}'
+        login_db: '{{ _postgresql_database }}'
+        ca_cert: '{{ _tmp_ca_tls_cert.path | default("/etc/pki/tls/certs") }}/ca-bundle.crt'
+        ssl_cert: '{{ (_tmp_tls_files.results | map(attribute="path") | first) | default(_postgresql_tls_cert) | default(omit) }}'
+        ssl_key: '{{ (_tmp_tls_files.results | map(attribute="path") | last) | default(_postgresql_tls_key) | default(omit) }}'
+        ssl_mode: '{{ _postgresql_tls_mode | default("prefer") }}'
+      failed_when: _postgresql_ping.conn_err_msg | length
+      register: _postgresql_ping
+  always:
+    - name: Delete temporary TLS files
+      ansible.builtin.file:
+        path: '{{ item }}'
+        state: absent
+      loop: '{{ _tmp_tls_files.results | map(attribute="path") }}'
+      when:
+        - _tmp_tls_files is not skipped
+        - _tmp_tls_files.results | length > 0
+
+    - name: Delete temporary CA TLS certificate file
+      ansible.builtin.file:
+        path: '{{ _tmp_ca_tls_cert.path }}'
+        state: absent
+      when:
+        - _tmp_ca_tls_cert is not skipped
+        - _tmp_ca_tls_cert.path is defined
+
+- name: Check the postgresql version
+  ansible.builtin.assert:
+    that:
+      - _postgresql_ping.server_version.major | int >= 15
+    fail_msg: "PostgreSQL version (detected: {{ _postgresql_ping.server_version.major }}) must be higher than or equal to 15"
+    success_msg: "PostgreSQL version (detected: {{ _postgresql_ping.server_version.major }}) satisfies version requirements"
+...

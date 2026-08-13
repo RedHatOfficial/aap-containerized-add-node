@@ -1,0 +1,22 @@
+DATABASES = {
+   'default': {
+       'ATOMIC_REQUESTS': True,
+       'ENGINE': 'awx.main.db.profiled_pg',
+       'NAME': '{{ controller_pg_database }}',
+       'USER': '{{ controller_pg_username }}',
+{% if not controller_pg_cert_auth | bool %}
+       'PASSWORD': """{{ controller_pg_password }}""",
+{% endif %}
+       'HOST': '{{ controller_pg_socket | default(controller_pg_host) }}',
+       'PORT': '{{ controller_pg_port }}',
+       'OPTIONS': {
+           'options': '-c datestyle=ISO,\\ MDY',
+           'sslmode': '{{ controller_pg_sslmode }}',
+           'sslrootcert': '{{ ca_trust_bundle }}',
+{% if controller_pg_cert_auth | bool %}
+           'sslcert': '/etc/tower/postgresql.cert',
+           'sslkey': '/etc/tower/postgresql.key',
+{% endif %}
+       },
+   }
+}

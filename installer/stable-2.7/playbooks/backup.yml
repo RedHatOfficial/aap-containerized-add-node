@@ -1,0 +1,189 @@
+---
+- name: Preflight checks
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  become: false
+  tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Run preflight checks
+      ansible.builtin.import_role:
+        name: preflight
+
+    - name: Set backup directory fact
+      ansible.builtin.set_fact:
+        _backup_dir: '{{ backup_dir | default(lookup("env", "PWD")) }}/backups'
+
+    - name: Create the local backup directory
+      ansible.builtin.file:
+        path: '{{ _backup_dir }}'
+        state: directory
+        mode: '0750'
+
+- name: Gather minimal facts
+  hosts: automationcontroller:automationeda:automationgateway:automationhub:ansiblelightspeed:ansiblemcp:automationmetrics:database:execution_nodes:redis
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Gather regular user directory and uid
+      ansible.builtin.setup:
+        filter:
+          - 'ansible_env'
+          - 'ansible_user_dir'
+          - 'ansible_user_uid'
+
+    - name: Create the backup directory
+      ansible.builtin.file:
+        path: '{{ ansible_user_dir }}/aap/backups'
+        state: directory
+        mode: '0750'
+
+- name: Prepare the postgresql backup
+  hosts: automationcontroller:automationeda:automationgateway:automationhub:ansiblelightspeed:automationmetrics
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Create common postgresql backup resources
+      ansible.builtin.import_role:
+        name: common
+        tasks_from: postgresql.yml
+
+- name: Backup the Automation Controller
+  hosts: automationcontroller
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the automation controller
+      ansible.builtin.import_role:
+        name: automationcontroller
+        tasks_from: backup.yml
+
+- name: Backup the Automation EDA
+  hosts: automationeda
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the automation eda
+      ansible.builtin.import_role:
+        name: automationeda
+        tasks_from: backup.yml
+
+- name: Backup the Automation Gateway
+  hosts: automationgateway
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the automation gateway
+      ansible.builtin.import_role:
+        name: automationgateway
+        tasks_from: backup.yml
+
+- name: Backup the Automation Hub
+  hosts: automationhub
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the automation hub
+      ansible.builtin.import_role:
+        name: automationhub
+        tasks_from: backup.yml
+
+- name: Backup the Ansible Lightspeed
+  hosts: ansiblelightspeed
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the ansible lightspeed
+      ansible.builtin.import_role:
+        name: ansiblelightspeed
+        tasks_from: backup.yml
+
+- name: Backup the Automation Metrics Service
+  hosts: automationmetrics
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the automation metrics
+      ansible.builtin.import_role:
+        name: automationmetrics
+        tasks_from: backup.yml
+
+- name: Backup the Ansible MCP
+  hosts: ansiblemcp
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the ansible mcp
+      ansible.builtin.import_role:
+        name: ansiblemcp
+        tasks_from: backup.yml
+
+- name: Backup the Receptor
+  hosts: automationcontroller:execution_nodes
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the receptor
+      ansible.builtin.import_role:
+        name: receptor
+        tasks_from: backup.yml
+
+- name: Backup the Redis cluster
+  hosts: redis
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the redis cluster
+      ansible.builtin.include_role:
+        name: redis
+        tasks_from: backup.yml
+      when: redis_mode | default('cluster') == 'cluster'
+
+- name: Backup the Redis
+  hosts: automationgateway
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the redis
+      ansible.builtin.include_role:
+        name: redis
+        tasks_from: backup.yml
+      when:
+        - redis_mode | default('cluster') == 'standalone'
+        - inventory_hostname == groups['automationgateway'] | first
+
+- name: Backup the Postgresql
+  hosts: database
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Backup the postgresql
+      ansible.builtin.import_role:
+        name: postgresql
+        tasks_from: backup.yml
+
+- name: Clean backup files
+  hosts: automationcontroller:automationeda:automationgateway:automationhub:ansiblelightspeed:ansiblemcp:automationmetrics:database:execution_nodes
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Remove the backup directory
+      ansible.builtin.file:
+        path: '{{ ansible_user_dir }}/aap/backups'
+        state: absent
+...

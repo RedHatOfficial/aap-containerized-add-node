@@ -1,0 +1,65 @@
+---
+- name: Generate TLS certificate and key
+  when:
+    - mcp_tls_cert is not defined
+    - mcp_tls_key is not defined
+  block:
+    - name: Install python-cryptography
+      ansible.builtin.package:
+        name: python3-cryptography
+      become: true
+      when: not ostree | bool
+
+    - name: Generate a private key
+      community.crypto.openssl_privatekey:
+        path: '{{ mcp_conf_dir }}/ansiblemcp.key'
+        mode: '0400'
+      notify: Restart ansiblemcp
+
+    - name: Generate a certificate signing request
+      community.crypto.openssl_csr:
+        path: '{{ mcp_conf_dir }}/ansiblemcp.csr'
+        privatekey_path: '{{ mcp_conf_dir }}/ansiblemcp.key'
+        common_name: '{{ _mcp_hostname }}'
+        country_name: 'US'
+        locality_name: 'Raleigh'
+        organization_name: 'Red Hat'
+        organizational_unit_name: 'Ansible'
+        state_or_province_name: 'North Carolina'
+        subject_alt_name: '{{ [_mcp_hostname | ansible.containerized_installer.subject_alt_name] | union(_mcp_ips) }}'
+        mode: '0640'
+
+    - name: Generate a self signed x509 certificate
+      community.crypto.x509_certificate:
+        path: '{{ mcp_conf_dir }}/ansiblemcp.cert'
+        csr_path: '{{ mcp_conf_dir }}/ansiblemcp.csr'
+        privatekey_path: '{{ mcp_conf_dir }}/ansiblemcp.key'
+        provider: ownca
+        ownca_path: '{{ _ca_tls_dir }}/ca.cert'
+        ownca_privatekey_path: '{{ _ca_tls_dir }}/ca.key'
+        ownca_privatekey_passphrase: '{{ ca_tls_key_passphrase | default(omit) }}'
+        force: '{{ _ca_cert_changed | bool }}'
+        mode: '0640'
+      notify: Restart ansiblemcp
+
+- name: Import TLS certificate and key
+  when:
+    - mcp_tls_cert is defined
+    - mcp_tls_key is defined
+  block:
+    - name: Copy ansiblemcp TLS certificate
+      ansible.builtin.copy:
+        src: '{{ mcp_tls_cert }}'
+        dest: '{{ mcp_conf_dir }}/ansiblemcp.cert'
+        mode: '0640'
+        remote_src: '{{ mcp_tls_remote }}'
+      notify: Restart ansiblemcp
+
+    - name: Copy ansiblemcp TLS key
+      ansible.builtin.copy:
+        src: '{{ mcp_tls_key }}'
+        dest: '{{ mcp_conf_dir }}/ansiblemcp.key'
+        mode: '0400'
+        remote_src: '{{ mcp_tls_remote }}'
+      notify: Restart ansiblemcp
+...

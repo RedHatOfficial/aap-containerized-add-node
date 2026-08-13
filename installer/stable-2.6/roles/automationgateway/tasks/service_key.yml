@@ -1,0 +1,20 @@
+---
+- name: Generate service key
+  containers.podman.podman_container:
+    name: automation-gateway-init
+    image: '{{ _gateway_image }}'
+    command: 'aap-gateway-manage generate_service_secret {{ _component }}'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/var/cache/ansible-automation-platform/gateway,U=true'
+    secrets: '{{ _django_secrets }}'
+    volume: '{{ _web_volumes }}'
+    env: '{{ _common_env }}'
+  register: _service_key
+  no_log: true
+...

@@ -1,0 +1,18 @@
+aap_install.log
+collections
+inventory*
+vars.yaml
+/bundle
+__pycache__
+.venv
+.python-version
+.DS_Store
+
+# functional tests
+tests/functional_test/provisioner_inventory_*
+tests/functional_test/installer_vars*
+tests/functional_test/installer_id_rsa*
+tests/functional_test/*.log
+
+# IDEs
+.idea/

@@ -1,0 +1,7 @@
+---
+- name: Set pcp volume
+  ansible.builtin.set_fact:
+    _pcp_volume:
+      - 'pcp_archives:/var/log/pcp/pmlogger:z'
+      - '{{ pcp_conf_dir }}/openmetrics:/var/lib/pcp/pmdas/openmetrics:z'
+...

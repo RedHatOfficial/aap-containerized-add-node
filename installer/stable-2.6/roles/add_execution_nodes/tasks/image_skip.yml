@@ -1,0 +1,60 @@
+---
+# Uses registry_ns_aap, receptor_image, ee_* from installer inventory when set.
+
+- name: Resolve expected EN image refs
+  ansible.builtin.set_fact:
+    add_execution_nodes_expected_receptor_image: >-
+      {{ _reg }}/{{ _ns }}/{{ receptor_image | default(add_execution_nodes_default_receptor_image) }}
+    add_execution_nodes_expected_ee_images:
+      - "{{ _reg }}/{{ _ns }}/{{ ee_minimal_image | default(add_execution_nodes_default_ee_minimal_image) }}"
+      - "{{ _reg }}/{{ _ns }}/{{ ee_supported_image | default('ee-supported-rhel9:latest') }}"
+  vars:
+    _reg: "{{ registry_url | default('registry.redhat.io') }}"
+    _ns: "{{ registry_ns_aap | default(add_execution_nodes_default_registry_ns_aap) }}"
+
+- name: Force-skip image load when override set
+  ansible.builtin.set_fact:
+    add_execution_nodes_skip_image_load_effective: true
+  when: add_execution_nodes_skip_image_load | bool
+
+- name: Probe whether expected images are already loaded
+  when:
+    - not (add_execution_nodes_skip_image_load_effective | default(false) | bool)
+    - add_execution_nodes_skip_image_load_if_present | bool
+  block:
+    - name: Check execution-plane storage.conf exists
+      ansible.builtin.stat:
+        path: "{{ ansible_user_dir }}/aap/containers/storage.conf"
+      register: _add_en_ee_storage_conf
+
+    - name: Check receptor image in default store
+      ansible.builtin.command:
+        cmd: podman image exists {{ add_execution_nodes_expected_receptor_image }}
+      register: _add_en_receptor_img_exists
+      changed_when: false
+      failed_when: false
+
+    - name: Check EE images in execution-plane store
+      ansible.builtin.command:
+        cmd: podman image exists {{ item }}
+      environment:
+        CONTAINERS_STORAGE_CONF: "{{ ansible_user_dir }}/aap/containers/storage.conf"
+      loop: "{{ add_execution_nodes_expected_ee_images }}"
+      register: _add_en_ee_img_exists
+      changed_when: false
+      failed_when: false
+      when: _add_en_ee_storage_conf.stat.exists | bool
+
+    - name: Auto-skip when all expected images are present
+      ansible.builtin.set_fact:
+        add_execution_nodes_skip_image_load_effective: true
+      when:
+        - _add_en_receptor_img_exists.rc | default(1) == 0
+        - _add_en_ee_storage_conf.stat.exists | bool
+        - (_add_en_ee_img_exists.results | default([]) | length) == (add_execution_nodes_expected_ee_images | length)
+        - (_add_en_ee_img_exists.results | default([]) | selectattr('rc', 'ne', 0) | list | length) == 0
+
+- name: Default skip flag to false when unset
+  ansible.builtin.set_fact:
+    add_execution_nodes_skip_image_load_effective: false
+  when: add_execution_nodes_skip_image_load_effective is not defined

@@ -1,0 +1,123 @@
+---
+- name: Create the lightspeed config directories
+  ansible.builtin.file:
+    path: '{{ item }}'
+    mode: '0770'
+    state: directory
+  loop:
+    - '{{ lightspeed_conf_dir }}'
+    - '{{ lightspeed_static_dir }}'
+    - '{{ lightspeed_django_metrics_dir }}'
+
+- name: Check current somaxconn value
+  ansible.builtin.slurp:
+    src: /proc/sys/net/core/somaxconn
+  register: somaxconn
+
+- name: Check current net.ipv4.tcp_max_syn_backlog value
+  ansible.builtin.slurp:
+    src: /proc/sys/net/ipv4/tcp_max_syn_backlog
+  register: tcp_max_syn_backlog
+
+- name: Set somaxconn to value greater than or equal to lightspeed_uwsgi_listen_queue_size in supervisor config
+  ansible.posix.sysctl:
+    name: net.core.somaxconn
+    value: "{{ lightspeed_uwsgi_listen_queue_size }}"
+    sysctl_set: true
+  become: true
+  when: (lightspeed_uwsgi_listen_queue_size | int) > (somaxconn['content'] | b64decode | int)
+
+- name: Set tcp_max_syn_backlog to value greater than or equal to lightspeed_uwsgi_listen_queue_size in supervisor config
+  ansible.posix.sysctl:
+    name: net.ipv4.tcp_max_syn_backlog
+    value: "{{ lightspeed_uwsgi_listen_queue_size }}"
+    sysctl_set: true
+  become: true
+  when: (lightspeed_uwsgi_listen_queue_size | int) > (tcp_max_syn_backlog['content'] | b64decode | int)
+
+- name: Template uwsgi configuration for lightspeed
+  ansible.builtin.template:
+    src: uwsgi.ini.j2
+    dest: "{{ lightspeed_conf_dir }}/uwsgi.ini"
+    mode: '0644'
+  notify: Restart lightspeed
+
+- name: Template supervisord configuration for lightspeed
+  ansible.builtin.template:
+    src: supervisord.conf.j2
+    dest: "{{ lightspeed_conf_dir }}/supervisord.conf"
+    mode: '0644'
+  notify: Restart lightspeed
+
+- name: Create the lightspeed configuration
+  ansible.builtin.template:
+    src: lightspeed_settings.py.j2
+    dest: '{{ lightspeed_conf_dir }}/lightspeed_settings.py'
+    mode: '0640'
+  notify: Restart lightspeed
+
+- name: Create the lightspeed chatbot configuration
+  when: lightspeed_chatbot_model_url is defined
+  block:
+    - name: Create the lightspeed chatbot config directories
+      ansible.builtin.file:
+        path: '{{ item }}'
+        mode: '0770'
+        state: directory
+      loop:
+        - '{{ lightspeed_chatbot_conf_dir }}'
+        - '{{ lightspeed_chatbot_data_dir }}'
+
+    - name: Read provider-vector-db-id from ansible lightspeed chatbot container
+      containers.podman.podman_container:
+        name: ansible-lightspeed-chatbot-provider-vector-db-id
+        image: '{{ _lightspeed_chatbot_image }}'
+        command: "cat /rag/llama_stack_vector_db/provider_vector_db_id.ind"
+        detach: false
+        rm: true
+        log_driver: '{{ container_log_driver }}'
+        user: '{{ ansible_user_uid }}'
+        userns: keep-id
+        network: host
+      register: _provider_vector_db_id
+
+    - name: Read provider-vector-db-id from BYOK image for templating
+      containers.podman.podman_container:
+        name: ansible-lightspeed-byok-provider-vector-db-id
+        image: '{{ lightspeed_chatbot_byok_image }}'
+        command:
+          - sed
+          - '-n'
+          - 's/.*vector_store_id: //p'
+          - /rag/vector_db/llama-stack.yaml
+        pull: never
+        detach: false
+        rm: true
+        log_driver: '{{ container_log_driver }}'
+        user: '{{ ansible_user_uid }}'
+        userns: keep-id
+        network: host
+      register: _byok_provider_vector_db_id
+      when: lightspeed_chatbot_byok_image is defined
+
+    - name: Template lightspeed chatbot configuration
+      ansible.builtin.template:
+        src: lightspeed-stack.yaml.j2
+        dest: "{{ lightspeed_chatbot_conf_dir }}/lightspeed-stack.yaml"
+        mode: '0644'
+      notify: Restart lightspeed chatbot
+
+    - name: Template lightspeed chatbot llama-stack configuration
+      ansible.builtin.template:
+        src: ansible-chatbot-run.yaml.j2
+        dest: "{{ lightspeed_chatbot_conf_dir }}/ansible-chatbot-run.yaml"
+        mode: '0644'
+      notify: Restart lightspeed chatbot
+
+    - name: Template lightspeed chatbot system prompt
+      ansible.builtin.template:
+        src: ansible-chatbot-system-prompt.txt.j2
+        dest: "{{ lightspeed_chatbot_conf_dir }}/ansible-chatbot-system-prompt.txt"
+        mode: '0644'
+      notify: Restart lightspeed chatbot
+...

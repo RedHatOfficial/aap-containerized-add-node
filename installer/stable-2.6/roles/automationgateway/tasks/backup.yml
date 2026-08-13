@@ -1,0 +1,57 @@
+---
+- name: Backup the PostgreSQL database
+  when: not gateway_postgresql_skip_data | bool or groups.get('database', []) | length == 1
+  block:
+    - name: Create postgresql CLI aliases
+      ansible.builtin.include_role:
+        name: postgresql
+        tasks_from: cli.yml
+      vars:
+        _postgresql_socket: '{{ gateway_pg_socket | default("") }}'
+        _postgresql_cert_auth: '{{ gateway_pg_cert_auth }}'
+        _postgresql_src_dir: '{{ gateway_conf_dir }}'
+        _postgresql_dest_dir: /etc/ansible-automation-platform/gateway
+
+    - name: Add postgresql TLS environment variable for certificate authentication
+      ansible.builtin.set_fact:
+        _common_pg_env: '{{ _common_pg_env | combine(_gateway_pg_ssl) }}'
+      vars:
+        _gateway_pg_ssl:
+          PGSSLCERT: /etc/ansible-automation-platform/gateway/postgresql.cert
+          PGSSLKEY: /etc/ansible-automation-platform/gateway/postgresql.key
+          PGSSLROOTCERT: '{{ ca_trust_bundle }}'
+      when: gateway_pg_cert_auth | bool
+
+    - name: Backup the automation gateway postgresql database
+      community.postgresql.postgresql_db:
+        name: '{{ gateway_pg_database }}'
+        login_host: '{{ gateway_pg_host }}'
+        login_port: '{{ gateway_pg_port }}'
+        login_user: '{{ gateway_pg_username }}'
+        login_password: '{{ gateway_pg_password | default(omit) }}'
+        login_unix_socket: '{{ gateway_pg_socket | default(omit) }}'
+        ssl_mode: '{{ gateway_pg_sslmode }}'
+        target: '{{ ansible_user_dir }}/aap/backups/{{ gateway_db_filename }}'
+        target_opts: '--clean --create'
+        state: dump
+      environment: '{{ _common_pg_env }}'
+      run_once: true
+
+- name: Archive the automation gateway data
+  ansible.containerized_installer.archive:
+    path:
+      - '{{ ansible_user_dir }}/.local/share/containers/storage/secrets'
+      - '{{ ansible_user_dir }}/aap/backups/{{ gateway_db_filename }}'
+      - '{{ ansible_user_dir }}/aap/gateway'
+      - '{{ ansible_user_dir }}/aap/gatewayproxy'
+      - '{{ ansible_user_dir }}/aap/tls'
+    dest: '{{ ansible_user_dir }}/aap/backups/gateway.{{ gateway_archive_extension }}'
+    format: '{{ gateway_use_archive_compression | bool | ternary(omit, archive_decompressed_extension) }}'
+    mode: '0640'
+
+- name: Download the automation gateway tarball
+  ansible.builtin.fetch:
+    src: '{{ ansible_user_dir }}/aap/backups/gateway.{{ gateway_archive_extension }}'
+    dest: '{{ hostvars["localhost"]["_backup_dir"] }}/gateway_{{ inventory_hostname }}.{{ gateway_archive_extension }}'
+    flat: true
+...

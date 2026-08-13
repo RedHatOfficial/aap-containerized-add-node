@@ -1,0 +1,481 @@
+ancestor: null
+releases:
+  1.0.0:
+    changes:
+      bugfixes:
+      - Fix undefined `ai_deny_index` key in the GALAXY_FEATURE_FLAGS hub settings.
+      - Fix undefined ansible_user_uid fact with bundle playbook.
+      - Use systemd requires instead of podman to fix on boot race conditions.
+      known_issues:
+      - Deploying controller with AAP 2.4 won't work anymore.
+      - Use AWX 21.x container images in tests since AWX 22.x architecture isn't compatible
+        with the installer
+      major_changes:
+      - Disable ee-29 container image in the controller configuration by default.
+        This can be turned back on with `ee_29_enabled=true`.
+      - Run AAP/AWX containers as rootless. The host location to hold the container
+        volumes is defined by variable ``aap_volumes_dir``, which defaults to $HOME/aap.
+      minor_changes:
+      - Use redis and postgresql container images from sclorg for tests.
+      - Use the user containers configuration file instead of the global one (/etc/containers/containers.conf).
+      release_summary: This is the first release of the AAP containerized installer.
+    fragments:
+    - bundle_gather_user_uid_fact.yml
+    - disable_ee_29.yml
+    - release_1.0.0.yml
+    - remove_galaxy_feature_flags.yml
+    - rootless_podman.yml
+    - tests_use_pinned_awx_images.yml
+    - tests_use_sclorg_images.yml
+    - use_systemd_requires.yml
+    - user_containers_config.yml
+    release_date: '2023-04-05'
+  1.1.0:
+    changes:
+      bugfixes:
+      - Delete EE container images from receptor container storage during uninstall.
+      - Ensure remote users are non root user.
+      - If offline mode is used, do not mount auth.json from host and copy EE image
+        to receptor storage.
+      - Load EE image into receptor, as it has isolated storage separate from control
+        plane.
+      - Remove all redis volumes during uninstall playbook execution.
+      - Remove systemd podman override configuration directory during controller uninstall.
+      - Some controller containers don't stop cleanly or need more time to be stopped.
+      - Some unneeded directories were left on disk after the uninstall playbook execdution.
+      - The container configuration is now stored in the user home directory so this
+        needs to be removed during the uninstall playbook.
+      minor_changes:
+      - AAP 2.4 introduced a new controller container with rsyslog.
+      - Add ability to auto update the containers by putting special label. User can
+        run podman auto-update to perform such action.
+      - Add the podman authfile path to the io.containers.autoupdate.authfile label
+        in registry scenario.
+      - Load all EE container images into the receptor container storage (execution
+        plane).
+      - Remove systemd daemon-reload tasks because this isn't needed for rootless
+        services.
+      - The web and task controller containers are using different commands and environment
+        values depending on the controller version.
+      - Use podman volumes for PostgreSQL and Redis, instead of bind mounts
+      release_summary: This adds new features and fixes issues for the AAP containerized
+        installer.
+    fragments:
+    - cleanup_receptor_images.yml
+    - controller_web_task_split.yml
+    - ensure_non_root_user.yml
+    - fix_controller_container_stop.yml
+    - fix_offline_mode.yml
+    - load_ee_in_receptor.yml
+    - podman_auto_update.yml
+    - podman_autoupdate_authfile.yml
+    - podman_volumes.yml
+    - receptor_loads_all_ee_container_images.yml
+    - receptor_uninstall_remove_podman_override.yml
+    - redis_cleanup_volumes.yml
+    - release_1.1.0.yml
+    - remove_systemd_daemon_reload.yml
+    - uninstall_remove_container_directory.yml
+    - uninstall_remove_leftovers.yml
+    release_date: '2023-05-29'
+  1.1.1:
+    changes:
+      bugfixes:
+      - Use FQCN for random_token plugin.
+      release_summary: This fixes issues for the AAP containerized installer.
+    fragments:
+    - fix_fqcn_random_token_plugin.yml
+    - release_1.1.1.yml
+    release_date: '2023-05-30'
+  1.2.0:
+    changes:
+      bugfixes:
+      - Allow deploying Automation Hub without Automation Controller variables set.
+      - EDA, Hub and Controller initialize and configure the DB only once.
+      - Enable postgresql hstore extension on automation hub database.
+      - Fail if trying to create more than one managed database
+      - Fix HTTP only provisioning by always installing python3-cryptography
+      - Fix ansible user fact for bundle scenario when using registry authentication.
+      - Fix automation hub workers temporary directory creation.
+      - Fix host metrics not showing in current UI.
+      - Grant component role to postgres user in case RDS DB is used. In non RDS,
+        it's a noop operation.
+      - Reload systemd daemon for receptor as well.
+      - Reload systemd daemon to make aware of any changes to config files.
+      - Remove podman unnamed receptor volume during uninstall.
+      - Use RECEPTOR_RELEASE_WORK and AWX_CLEANUP_PATHS True defaults.
+      major_changes:
+      - Add Automation Controller postintall configuration.
+      - Add EDA support.
+      - Automation Hub containers are using a podman volume for /var/lib/pulp directory.
+      - Use Ansible Automation Platform 2.4 by default.
+      - Use podman secrets for sensitive data.
+      minor_changes:
+      - Add a dedicated image variable for receptor container.
+      - Allow adding extra Execution Environment container images.
+      - Allow connecting the Hub to an existing LDAP server.
+      - Allow customize postgresql memory variables and set better default values.
+      - Allow scaling hub worker containers.
+      - Allow sharing the Hub storage using an existing NFS Server.
+      - Allow using remote repository with Automation Controller postintall configuration.
+      - Do not remove Podman packages on uninstall.
+      - Ensure podman is installed before doing podman tasks with the bundle scenario.
+      - Remove podman version code.
+      - Retrieve pulpcore version with importlib.metadata.
+      release_summary: This adds new features and fixes issues for the AAP containerized
+        installer.
+    fragments:
+    - add_controller_postinstall.yml
+    - add_eda_support.yml
+    - automation_hub_volume.yml
+    - config_db_once.yml
+    - controller_postinstall_with_repo.yml
+    - default_aap_24.yml
+    - delete_completed_work_units.yml
+    - do_not_uninstall_podman.yml
+    - enable_hub_pg_hstore_extension.yml
+    - ensure_podman_is_installed_with_bundle.yml
+    - extra_ee_images.yml
+    - fix_bundle_with_registry_auth.yml
+    - fix_host_metrics_ui.yml
+    - hub_add_ldap_support.yml
+    - hub_add_nfs_support.yml
+    - hub_fix_http_provisioning.yml
+    - hub_scale_works.yml
+    - hub_workers_tmp_directory.yml
+    - postgresql_memory_variables.yml
+    - puplcore_version_from_importlib.yml
+    - rds_superuser_grants.yml
+    - receptor_daemon_reload.yml
+    - receptor_image.yml
+    - release_1.2.0.yml
+    - remove_podman_version.yml
+    - remove_receptor_unnamed_volume.yml
+    - single_component_deployment.yml
+    - systemd_daemon_reload.yml
+    - use_podman_secrets.yml
+    release_date: '2023-08-24'
+  1.2.1:
+    changes:
+      bugfixes:
+      - Add missing secrets to automation-controller-web container
+      release_summary: This fixes issues for the AAP containerized installer.
+    fragments:
+    - add_missing_secrets_controller_web.yml
+    - release_1.2.1.yml
+    release_date: '2023-08-28'
+  1.2.2:
+    changes:
+      minor_changes:
+      - Allow pulling container images from a different architecture with the bundle
+        playbook.
+      release_summary: This fixes issues for the AAP containerized installer.
+    fragments:
+    - bundle_allows_container_images_architecture.yml
+    - release_1.2.2.yml
+    release_date: '2023-09-05'
+  1.2.3:
+    changes:
+      bugfixes:
+      - Ensure subuids and subgids are configured for non local users.
+      - Fix registry logout during uninstall.
+      - Remove firewalld rules during uninstall.
+      - Remove uid option from podman volume to avoid insufficient GIDs in user namespace.
+      minor_changes:
+      - Install the redis cache in parallel for all components.
+      release_summary: This fixes issues for the AAP containerized installer.
+    fragments:
+    - add_volume_gid_option.yml
+    - ensure_sub_uid_gid_are_set.yml
+    - install_redis_in_parallel.yml
+    - release_1.2.3.yml
+    - uninstall_fix_registry_logout.yml
+    - uninstall_remove_firewalld_rules.yml
+    release_date: '2023-09-22'
+  1.3.0:
+    changes:
+      bugfixes:
+      - Abort install playbook execution on the first error.
+      - Add EDA nodes to the ostree preflight validation.
+      - Add database and execution nodes to the ostree preflight validation.
+      - EDA 1.0.2 fixes using port value in the controller URL.
+      - Ensure controller_main_url starts with "http(s)://" prefix when provided.
+      - Ensure hub_main_url starts with "http(s)://" prefix when provided.
+      - Fix multiple automation hub workers name.
+      - Notify handlers when the TLS certificate and key are updated.
+      - Remove non breaking spaces and add gitlab pipeline.
+      - Remove top level component directories during uninstall.
+      - The ansible_processor_vcpus fact doesn't exist on s390x before ansible-core
+        2.15 so adding default event workers value.
+      - Use apply for run_once on include_tasks
+      - When no IPv6 addresses are present on the host then disable the nginx IPv6
+        listening.
+      major_changes:
+      - Add Automation Hub postintall configuration.
+      - Add a new EDA scheduler container when EDA version is greater than 1.0.1.
+      - Add execution_nodes group for running automation controller jobs on remote
+        nodes via receptor.
+      - Add new EDA activation worker containers when EDA version is greater than
+        1.0.1.
+      - Add support for automation hub collection and container signing.
+      - Add support for postgresql TLS and enabled by default.
+      - Add support for receptor TLS and enabled by default.
+      - Add support for receptor signing and enabled by default.
+      - Generate or copy TLS CA certificate/key for signing TLS certificate (selfsigned
+        vs ownca)
+      - Move the receptor code into a dedicated role shared between automation controller
+        and execution nodes.
+      - Receptor container is using a podman volume for the socket directory.
+      - Remove default ports for non-root and avoid using 445 as SMB can be blocked
+        in some routers.
+      - Trust the TLS CA certificate and bind mount the trusted bundle into containers.
+      minor_changes:
+      - Add IP addresses to TLS certificate SAN.
+      - Add async delay/retries variables for controller postinstall.
+      - Add execution nodes to default queue.
+      - Add listener_port option to provision_instance controller command when version
+        is >= 4.5.0.
+      - Allow keeping the postgresql databases during uninstall playbook.
+      - Allow overriding the galaxy-importer configuration for Automation Hub.
+      - Allow providing custom value for automation hub secret key.
+      - Create EDA Decision environment(s) resources.
+      - Create EDA registry credentials resource when needed.
+      - Enable IPv6 listening in Nginx configuration.
+      - Enable TLS certificate validation during controller postinstall.
+      - Enable TLS certificate validation during eda resources creation.
+      - Ignore builtin image volumes (VOLUME within container file) for receptor.
+      - Only gather facts once during uninstall playbook.
+      - Reduce postgresql delay time when waiting for initialization.
+      - Refact uninstall facts to avoid duplicated code.
+      - Register execution node peers for controller.
+      - Remove provision_instance call from controller task entrypoint.
+      - Remove the automation controller secret_key template as we can use the password
+        lookup directly.
+      - Remove the automation hub database fields jinja template as we can use the
+        random_token plugin directly.
+      - Split preflight checks into dedicated files per component.
+      - Trust the Automation Hub registry in podman configuration.
+      - Update ansible.cfg to reference collections path, inventory and log file.
+      - Update ansible.controller collection to 4.4.8
+      - Use a dedicated uWSGI file for the controller configuration.
+      - Use a fact for automation hub NFS.
+      - Use a podman volume for receptor data directory.
+      - Use ansible FQCN for lookup.
+      - Use same client_max_body_size defaults on controller/hub as VM based installer.
+      release_summary: This adds new features and fixes issues for the AAP containerized
+        installer.
+    fragments:
+    - add_eda_scheduler_activation_worker.yml
+    - add_execution_nodes_to_default_queue.yml
+    - add_hub_postinstall.yml
+    - add_ips_to_san_tls_cert.yml
+    - add_tls_ca_certificate.yml
+    - any_errors_fatal.yml
+    - change_default_ports.yml
+    - controller_license_run_once.yml
+    - controller_postinstall_async_delay_retries.yml
+    - controller_register_peers.yml
+    - controller_remove_provision_instance_entrypoint.yml
+    - controller_uses_uwsgi_file.yml
+    - create_eda_decision_environments.yml
+    - eda_supports_controller_port_in_url.yml
+    - enable_controller_postinstall_validate_certs.yml
+    - enable_eda_de_validate_certs.yml
+    - execution_nodes.yml
+    - hub_add_galaxy_importer_config.yml
+    - hub_nfs_use_fact.yml
+    - hub_secret_key.yml
+    - hub_signing.yml
+    - hub_worker_hostname.yml
+    - nginx_ipv6_conditional.yml
+    - nginx_listen_ipv6.yml
+    - notify_handler_for_tls_cert_key.yml
+    - ostree_database_execution_nodes_preflight.yml
+    - ostree_eda_preflight.yml
+    - postgresql_reduce_wait_time.yml
+    - postgresql_tls.yml
+    - preflight_eda_controller_url_prefix.yml
+    - preflight_hub_main_url_prefix.yml
+    - provision_instance_listener_port.yml
+    - receptor_datadir.yml
+    - receptor_ignore_image_volume.yml
+    - receptor_signing.yml
+    - receptor_tls.yml
+    - release_1.3.0.yml
+    - remove_controller_secret_key_template.yml
+    - remove_hub_databasefields_template.yml
+    - remove_non_breaking_spaces.yml
+    - split_preflight_checks.yml
+    - trust_hub_registry.yml
+    - uninstall_keep_databases.yml
+    - uninstall_refact_facts.yml
+    - uninstall_remove_duplicate_gather_facts.yml
+    - uninstall_remove_toplevel_dir.yml
+    - update_ansible_cfg.yml
+    - update_controller_collection.yml
+    - use_fqcn_for_lookup.yml
+    - use_vm_installer_client_max_body_size_defaults.yml
+    - vcpus_fact_s390x.yml
+    release_date: '2023-12-07'
+  1.3.1:
+    changes:
+      release_summary: This fixes issues for the AAP containerized installer.
+    fragments:
+    - release_1.3.1.yml
+    release_date: '2023-12-11'
+  1.3.2:
+    changes:
+      bugfixes:
+      - Add execution_nodes group during bundle execution.
+      - Add missing receptor firewallrules in configuration file.
+      - Ensure execution nodes aren't collocated on automation controller node.
+      - Fix TLS certificate/key copy to other nodes when running the installer after
+        the initial deployment.
+      - Fix receptor peers from controller to execution nodes.
+      - Include volumes tasks file in receptor role.
+      minor_changes:
+      - Ensure the images directory is present within the bundle directory provided.
+      - Update ansible.controller collection to 4.5.0
+      release_summary: This fixes issues for the AAP containerized installer.
+    fragments:
+    - bundle_dir_preflight.yml
+    - bundle_execution_nodes.yml
+    - execution_nodes_on_controller.yml
+    - receptor_firewallrules.yml
+    - receptor_includes_volumes.yml
+    - receptor_peers.yml
+    - release_1.3.2.yml
+    - tls_ca_copy.yml
+    - update_controller_collection.yml
+    release_date: '2023-12-14'
+  1.3.3:
+    changes:
+      bugfixes:
+      - Sort systemd requires elements to avoid container updates.
+      minor_changes:
+      - Allow adding peers to execution nodes via receptor_peers variable.
+      - Change postgresql password encryption from md5 to scram-sha-256.
+      - Do not bind mount the entire controller conf.d directory but individual files
+        instead.
+      - Do not only add receptor execution type instances as controller peers.
+      - Reduce automation hub delay time when waiting for gpg import.
+      - Remove automation hub entrypoints and use direct commands.
+      - Use the gpg_fingerprint lookup from community.crypto collection.
+      release_summary: This fixes issues for the AAP containerized installer.
+    fragments:
+    - controller_confd_bindmount.yml
+    - gpg_fingerprint_lookup.yml
+    - hub_gpg_signing_reduce_wait_time.yml
+    - postgresql_password_encryption.yml
+    - receptor_peers.yml
+    - release_1.3.3.yml
+    - remove_hub_entrypoints.yml
+    - systemd_requires_sorted.yml
+    release_date: '2024-01-02'
+  2.5.0:
+    changes:
+      bugfixes:
+      - Add /var/log/tower log directory to automation controller containers.
+      - Add SYSTEM_UUID parameter in automation controller configuration for insights.
+      - Add locales directive for controller nginx configuration.
+      - Add redis data directory path in the configuration.
+      - Add until statement to hub collection/container gpg key import.
+      - Fix automation hub container signing condition.
+      - Fix hub_ldap_extra_settings default value as dict rather than list.
+      - Fix nginx configuration when providing custom headers.
+      - Set nginx error log to /dev/stdout and use error level rather than info.
+      - Use the eda data podman volume for eda user home rather than media subdirectory.
+      major_changes:
+      - Add TCP socket support to redis (components still use Unix socket by default).
+      - Add TLS support with TCP socket is used (enabled by default).
+      - Add a backup playbook to create database and files archives for each components.
+      - Add a restore playbook to restore database and files from archives for each
+        components.
+      - Add an update workflow for recreating the containers when the images changed.
+      - Add components prefix for nginx variables.
+      - Add experimental support for Automation Gateway.
+      - Add mTLS authentication when TCP socket is used.
+      - Allow automation eda node type with api, hybrid and worker.
+      - Allow deploying multiple redis services on the same node (unix and tcp sockets)
+      - Allow using multiple EDA nodes.
+      - Requires an Automation Gateway node to be present.
+      - Update postgresql container version to 15.
+      - Use Ansible Automation Platform 2.5 by default.
+      - Use EDA settings file instead of environment variables.
+      minor_changes:
+      - Add EDA activation db host variable.
+      - Add EDA max running activations variables (default to 12)
+      - Add EDA safe plugins allow list for port forward.
+      - Add add_receptor_address controller comand for configuring the mesh instance
+        port.
+      - Add eda rulebook unique queue name for hybrid/worker type.
+      - Add eda rulebook worker queues list with all worker queue names.
+      - Add redis support over TCP support for automation gateway.
+      - Add support for Azure Blob and AWS S3 object storage with Automation Hub.
+      - Allow one to configure nginx HSTS max age and update default value.
+      - Allowing adding custom TLS CA certificates.
+      - Enable HTTP2 in nginx configuration.
+      - Enable nginx gzip compression and cache on static files.
+      - Move services fact to systemd task file so it can be reuse.
+      - Remove LDAP support from Automation Hub.
+      - Remove the deprecated ee-29 container image.
+      - Update ansible.controller collection to 4.6.0
+      - Use TLS 1.2 and 1.3 protocols with nginx.
+      - Use dedicated receptor image rather than ee-supported.
+      - Use system profile for gateway/hub nginx TLS ciphers.
+      - Use the EDA status endpoint to validate that the API is ready.
+      - Use tmpfs and volumes for web containers using nginx.
+      release_summary: This adds new features and fixes issues for the AAP containerized
+        installer.
+    fragments:
+    - add_backup_playbook.yml
+    - add_custom_ca_certificates.yml
+    - add_experimental_automation_gateway.yml
+    - add_restore_playbook.yml
+    - add_update_worklow.yml
+    - controller_add_logdir.yml
+    - controller_add_receptor_address.yml
+    - controller_system_uuid.yml
+    - controller_ui_add_locales.yml
+    - default_aap_25.yml
+    - eda_activation_db_host.yml
+    - eda_api_ready_endpoint.yml
+    - eda_data_volume.yml
+    - eda_max_running_activations.yml
+    - eda_multiple_nodes.yml
+    - eda_node_type.yml
+    - eda_rulebook_queues.yml
+    - eda_safe_plugins.yml
+    - eda_settings_file.yml
+    - gateway_mandatory.yml
+    - gateway_redis_support.yml
+    - hub_container_signing_condition.yml
+    - hub_gpg_import_until.yml
+    - hub_ldap_extra_settings_dict.yml
+    - hub_object_storage.yml
+    - hub_remove_ldap_support.yml
+    - multiple_redis.yml
+    - nginx_enable_gzip.yml
+    - nginx_enable_http2.yml
+    - nginx_error_log_stdout.yml
+    - nginx_fix_custom_headers.yml
+    - nginx_hsts_max_age.yml
+    - nginx_system_ciphers.yml
+    - nginx_update_tls_protocols.yml
+    - nginx_uses_tmpfs_volumes.yml
+    - postgresql_15.yml
+    - prefix_nginx_variables.yml
+    - receptor_container_image.yml
+    - redis_datadir.yml
+    - redis_tcp_socket.yml
+    - release_2.5.0.yml
+    - remove_ee_29.yml
+    - systemd_services_refact.yml
+    - update_controller_collection.yml
+    release_date: '2024-09-24'
+  2.6.0:
+    changes:
+      release_summary: This adds new features and fixes issues for the AAP containerized.
+    fragments:
+    - release_2.6.0.yml
+    release_date: '2025-09-16'

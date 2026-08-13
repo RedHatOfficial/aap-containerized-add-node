@@ -1,0 +1,24 @@
+---
+- name: Get postgresql container information
+  containers.podman.podman_container_info:
+    name: postgresql
+  register: _postgresql_container_info
+
+- name: Get postgresql image information
+  containers.podman.podman_image_info:
+    name: '{{ _postgresql_image }}'
+  register: _postgresql_image_info
+
+- name: Set postgresql update fact
+  ansible.builtin.set_fact:
+    _postgresql_image_update: '{{ _postgresql_before | difference(_postgresql_after) | length > 0 }}'
+  vars:
+    _postgresql_before: '{{ _postgresql_container_info.containers | map(attribute="Image") | unique }}'
+    _postgresql_after: '{{ _postgresql_image_info.images | map(attribute="Id") | unique }}'
+
+- name: Stop postgresql service on update
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+  when: _postgresql_image_update | bool
+...

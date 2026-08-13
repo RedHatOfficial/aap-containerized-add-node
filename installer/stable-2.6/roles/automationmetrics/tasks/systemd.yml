@@ -1,0 +1,13 @@
+---
+- name: Ensure automation metrics containers are enabled and started
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    state: '{{ __systemd_state | default("started") }}'
+    enabled: '{{ __systemd_enabled | default(true) }}'
+    scope: user
+    daemon_reload: true
+  loop:
+    - automation-metrics-web.service
+    - automation-metrics-tasks.service
+    - automation-metrics-scheduler.service
+...

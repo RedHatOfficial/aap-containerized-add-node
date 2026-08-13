@@ -1,0 +1,19 @@
+---
+- name: Generate ssh key
+  ansible.builtin.command:
+    cmd: ssh-keygen -q -b 2048 -t rsa -N "" -C "installer SSH key" -f ~/.ssh/id_rsa
+    creates: "~/.ssh/id_rsa"
+
+
+- name: Fetch public keyfile from the node to master
+  ansible.builtin.fetch:
+    src: "~/.ssh/id_rsa.pub"
+    dest: "{{ lookup('env', 'PWD') }}/installer_id_rsa.pub"
+    flat: true
+
+- name: Fetch private keyfile from the node to master
+  ansible.builtin.fetch:
+    src: "~/.ssh/id_rsa"
+    dest: "{{ lookup('env', 'PWD') }}/installer_id_rsa"
+    flat: true
+...

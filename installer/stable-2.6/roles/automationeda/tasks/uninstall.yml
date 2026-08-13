@@ -1,0 +1,79 @@
+---
+- name: Set facts for containers
+  ansible.builtin.set_fact:
+    __containers:
+      - automation-eda-api
+      - automation-eda-daphne
+      - automation-eda-scheduler
+      - automation-eda-web
+
+- name: Add eda workers to containers list
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["automation-eda-worker-" + item | string]) }}'
+  loop: '{{ eda_workers_range }}'
+
+- name: Add eda activation workers containers list
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["automation-eda-activation-worker-" + item | string]) }}'
+  loop: '{{ eda_activation_workers_range }}'
+
+- name: Set facts for systemd services
+  ansible.builtin.set_fact:
+    __services: '{{ __containers | product(["service"]) | map("join", ".") }}'
+
+- name: Set eda port list
+  ansible.builtin.set_fact:
+    _eda_ports: ['{{ eda_nginx_http_port }}']
+
+- name: Add https port to eda port list
+  ansible.builtin.set_fact:
+    _eda_ports: '{{ _eda_ports | union([eda_nginx_https_port]) }}'
+  when: not eda_nginx_disable_https | bool
+
+- name: Ensure systemd units are disabled and stopped
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    state: stopped
+    enabled: false
+    scope: user
+  failed_when: false
+  loop: '{{ __services }}'
+
+- name: Delete the containers
+  containers.podman.podman_container:
+    name: '{{ item }}'
+    state: absent
+  loop: '{{ __containers }}'
+
+- name: Delete the systemd unit files
+  ansible.builtin.file:
+    path: '{{ ansible_user_dir }}/.config/systemd/user/{{ item }}'
+    state: absent
+  loop: '{{ __services }}'
+
+- name: Delete the automation eda secrets
+  containers.podman.podman_secret:
+    name: '{{ item }}'
+    state: absent
+  loop:
+    - eda_admin_password
+    - eda_db_password
+    - eda_redis_password
+    - eda_resource_server
+    - eda_secret_key
+
+- name: Delete podman volumes
+  ansible.builtin.include_tasks: volumes.yml
+  vars:
+    __volume_state: absent
+
+- name: Delete the automation eda directories
+  ansible.builtin.file:
+    path: '{{ aap_volumes_dir }}/eda'
+    state: absent
+
+- name: Delete firewalld rules
+  ansible.builtin.include_tasks: firewalld.yml
+  vars:
+    __firewalld_state: disabled
+...

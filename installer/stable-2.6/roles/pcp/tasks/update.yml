@@ -1,0 +1,24 @@
+---
+- name: Get pcp container information
+  containers.podman.podman_container_info:
+    name: pcp
+  register: _pcp_container_info
+
+- name: Get pcp image information
+  containers.podman.podman_image_info:
+    name: '{{ _pcp_image }}'
+  register: _pcp_image_info
+
+- name: Set pcp update fact
+  ansible.builtin.set_fact:
+    _pcp_image_update: '{{ _pcp_before | difference(_pcp_after) | length > 0 }}'
+  vars:
+    _pcp_before: '{{ _pcp_container_info.containers | map(attribute="Image") | unique }}'
+    _pcp_after: '{{ _pcp_image_info.images | map(attribute="Id") | unique }}'
+
+- name: Stop pcp service on update
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+  when: _pcp_image_update | bool
+...

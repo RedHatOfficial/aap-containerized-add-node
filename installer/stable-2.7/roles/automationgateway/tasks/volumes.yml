@@ -1,0 +1,6 @@
+---
+- name: Manage the Automation Gateway nginx volume
+  containers.podman.podman_volume:
+    name: gateway_nginx
+    state: '{{ __volume_state }}'
+...

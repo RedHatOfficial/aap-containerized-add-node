@@ -1,0 +1,145 @@
+---
+- name: Set lightspeed facts
+  ansible.builtin.include_tasks: facts.yml
+
+- name: Set lightspeed mcp facts
+  ansible.builtin.include_tasks: config_mcp.yml
+
+- name: Stop lightspeed systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+
+- name: Unarchive the lightspeed data
+  ansible.builtin.unarchive:
+    src: '{{ hostvars["localhost"]["_backup_dir"] }}/lightspeed_{{ inventory_hostname }}.{{ lightspeed_archive_extension }}'
+    dest: '{{ ansible_user_dir }}'
+    exclude:
+      - 'aap/tls'
+      - '.local/share/containers/storage/secrets/'
+      - 'aap/lightspeed/etc/lightspeed.key'
+      - 'aap/lightspeed/etc/lightspeed.cert'
+      - 'aap/lightspeed/etc/lightspeed-chatbot.key'
+      - 'aap/lightspeed/etc/lightspeed-chatbot.cert'
+      - 'aap/lightspeed/etc/lightspeed_settings.py'
+      - 'aap/lightspeed/static'
+      - 'aap/lightspeed/django_metrics'
+      - 'aap/lightspeed/etc/chatbot/'
+
+- name: Set ansible lightspeed secret facts
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: restore_secrets.yml
+  vars:
+    backup_file: '{{ hostvars["localhost"]["_backup_dir"] }}/lightspeed_{{ inventory_hostname }}.{{ lightspeed_archive_extension }}'
+
+- name: Update the relevant lightspeed secrets
+  containers.podman.podman_secret:
+    name: "{{ item }}"
+    data: "{{ lookup('ansible.builtin.vars', '__old_' + item) | b64decode }}"
+  loop:
+    - lightspeed_secret_key
+    - lightspeed_resource_server
+    - lightspeed_oauth_client_id
+    - lightspeed_oauth_client_secret
+
+- name: Update lightspeed oauth Application in gateway
+  ansible.builtin.include_tasks: aap_oauth.yml
+
+- name: Reconfigure containers
+  ansible.builtin.include_tasks: containers.yml
+  vars:
+    __containers_recreate: true
+
+- name: Recreate token cleanup timers
+  ansible.builtin.include_tasks: token_cleanup.yml
+
+- name: Find the lightspeed postgresql database
+  ansible.builtin.find:
+    path: '{{ ansible_user_dir }}/aap/backups'
+    patterns:
+      - '{{ lightspeed_pg_database }}.{{ db_compressed_extension }}'
+      - '{{ lightspeed_pg_database }}.{{ db_decompressed_extension }}'
+  register: _lightspeed_db_file
+  run_once: true
+
+- name: Fail if the database backup file is missing and lightspeed_postgresql_skip_data not enabled
+  ansible.builtin.assert:
+    that:
+      - lightspeed_postgresql_skip_data | bool
+    fail_msg: "lightspeed_postgresql_skip_data needs to be set to true when the database dump does not exist"
+  run_once: true
+  when:
+    - groups.get('database', []) | length == 0
+    - _lightspeed_db_file.matched == 0
+
+- name: Restore the PostgreSQL database
+  when: not lightspeed_postgresql_skip_data | bool or groups.get('database', []) | length == 1
+  block:
+    - name: Create postgresql CLI aliases
+      ansible.builtin.include_role:
+        name: postgresql
+        tasks_from: cli.yml
+      vars:
+        _postgresql_socket: '{{ lightspeed_pg_socket | default("") }}'
+        _postgresql_cert_auth: '{{ lightspeed_pg_cert_auth }}'
+        _postgresql_src_dir: '{{ lightspeed_conf_dir }}'
+        _postgresql_dest_dir: /etc/ansible-automation-platform/lightspeed
+        _postgresql_db_file: '{{ _lightspeed_db_file.files[0].path }}'
+
+    - name: Add postgresql TLS environment variable for certificate authentication
+      ansible.builtin.set_fact:
+        _common_pg_env: '{{ _common_pg_env | combine(_lightspeed_pg_ssl) }}'
+      vars:
+        _lightspeed_pg_ssl:
+          PGSSLCERT: /etc/ansible-automation-platform/lightspeed/postgresql.cert
+          PGSSLKEY: /etc/ansible-automation-platform/lightspeed/postgresql.key
+          PGSSLROOTCERT: '{{ ca_trust_bundle }}'
+      when: lightspeed_pg_cert_auth | bool
+
+    - name: Grant createdb role to the lightspeed postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ lightspeed_pg_username }}'
+        role_attr_flags: CREATEDB
+        login_host: '{{ lightspeed_pg_host }}'
+        login_port: '{{ lightspeed_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ lightspeed_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+    - name: Restore the lightspeed postgresql database
+      community.postgresql.postgresql_db:
+        name: template1
+        login_host: '{{ lightspeed_pg_host }}'
+        login_port: '{{ lightspeed_pg_port }}'
+        login_user: '{{ lightspeed_pg_username }}'
+        login_password: '{{ lightspeed_pg_password | default(omit) }}'
+        login_unix_socket: '{{ lightspeed_pg_socket | default(omit) }}'
+        ssl_mode: '{{ lightspeed_pg_sslmode }}'
+        target: '{{ _lightspeed_db_file.files[0].path }}'
+        target_opts: '{{ (_lightspeed_db_file.files[0].path | split(".") | last == "pgc") | ternary("--create --clean --if-exists", omit) }}'
+        state: restore
+      environment: '{{ _common_pg_env }}'
+      run_once: true
+
+    - name: Revoke createdb role to the lightspeed postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ lightspeed_pg_username }}'
+        role_attr_flags: NOCREATEDB
+        login_host: '{{ lightspeed_pg_host }}'
+        login_port: '{{ lightspeed_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ lightspeed_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+- name: Start lightspeed systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: started
+...

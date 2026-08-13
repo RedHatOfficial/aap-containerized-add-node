@@ -1,0 +1,13 @@
+---
+- name: Run ppahub installer
+  environment:
+    ANSIBLE_LOG_PATH: "{{ artifacts_dest_base_dir }}/install_ppahub.log"
+  ansible.builtin.shell:
+    cmd: |
+      ansible-playbook aapqa.ppahub_installer.install -i {{ ansible_env.PWD }}/provisioner_inventory_{{ provision_prefix }} \
+        -e @input/ppahub/flags/containerized_installer_from_local.yml \
+        -e containerized_installer_local_dir="{{ lookup('env', 'PWD') }}/../../" {{ ppahub_extra_args }}
+
+    chdir: "/tmp/aapqa-provisioner"
+  changed_when: false
+...

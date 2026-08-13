@@ -1,0 +1,130 @@
+ANSIBLE_CERTS_DIR = '/etc/pulp/keys/'
+CACHE_ENABLED = True
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': '{{ hub_pg_database }}',
+        'USER': '{{ hub_pg_username }}',
+{% if not hub_pg_cert_auth | bool %}
+        'PASSWORD': '{{ hub_pg_password }}',
+{% endif %}
+        'HOST': '{{ hub_pg_socket | default(hub_pg_host) }}',
+        'PORT': '{{ hub_pg_port }}',
+        'OPTIONS': {
+            'options': '-c datestyle=ISO,\\ MDY',
+            'sslmode': '{{ hub_pg_sslmode }}',
+            'sslrootcert': '{{ ca_trust_bundle }}',
+{% if hub_pg_cert_auth | bool %}
+            'sslcert': '/etc/pulp/keys/postgresql.cert',
+            'sslkey': '/etc/pulp/keys/postgresql.key',
+{% endif %}
+        },
+    }
+}
+{% if hub_storage_backend in ['azure', 's3'] %}
+MEDIA_ROOT = ''
+{% if hub_storage_backend == 'azure' %}
+STORAGES = {
+    'default': {
+        'BACKEND': 'storages.backends.azure_storage.AzureStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
+AZURE_ACCOUNT_KEY = '{{ hub_azure_account_key }}'
+AZURE_ACCOUNT_NAME = '{{ hub_azure_account_name }}'
+AZURE_CONTAINER = '{{ hub_azure_container }}'
+{% for key, value in hub_azure_extra_settings.items() %}
+{% if value is string %}
+{{ key | upper }} = '{{ value }}'
+{% else %}
+{{ key | upper }} = {{ value }}
+{% endif %}
+{% endfor %}
+{% else %}
+STORAGES = {
+    'default': {
+        'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
+AWS_ACCESS_KEY_ID = '{{ hub_s3_access_key }}'
+AWS_SECRET_ACCESS_KEY = '{{ hub_s3_secret_key }}'
+AWS_STORAGE_BUCKET_NAME = '{{ hub_s3_bucket_name }}'
+{% for key, value in hub_s3_extra_settings.items() %}
+{% if value is string %}
+{{ key | upper }} = '{{ value }}'
+{% else %}
+{{ key | upper }} = {{ value }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+DB_ENCRYPTION_KEY = '/etc/pulp/keys/database_fields.symmetric.key'
+REDIS_URL = 'unix:///run/redis/redis.sock?db={{ hub_redis_cache_db }}'
+CONTENT_ORIGIN = '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+ANSIBLE_API_HOSTNAME = '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+CSRF_TRUSTED_ORIGINS = [
+    '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+]
+ANSIBLE_CONTENT_HOSTNAME = '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+X_PULP_API_HOST = '127.0.0.1'
+X_PULP_API_PORT = '{{ hub_api_port }}'
+X_PULP_CONTENT_HOST = '127.0.0.1'
+X_PULP_CONTENT_PORT = '{{ hub_content_port }}'
+STATIC_ROOT = '/var/lib/operator/static/'
+TOKEN_SERVER = '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}/token/'
+TOKEN_AUTH_DISABLED = False
+TOKEN_SIGNATURE_ALGORITHM = 'ES256'
+PUBLIC_KEY_PATH = '/etc/pulp/keys/container_auth_public_key.pem'
+PRIVATE_KEY_PATH = '/etc/pulp/keys/container_auth_private_key.pem'
+{% if hub_collection_auto_sign | bool %}
+GALAXY_AUTO_SIGN_COLLECTIONS = True
+{% endif %}
+{% if hub_collection_signing | bool %}
+GALAXY_COLLECTION_SIGNING_SERVICE = '{{ hub_collection_signing_service }}'
+{% endif %}
+{% if hub_container_signing | bool %}
+GALAXY_CONTAINER_SIGNING_SERVICE = '{{ hub_container_signing_service }}'
+{% endif %}
+{% if _hub_nfs | bool %}
+WORKING_DIRECTORY = '/var/tmp/pulp'
+{% endif %}
+# ---------------------------------------------------------
+# GATEWAY SETTINGS
+# ---------------------------------------------------------
+ENABLE_SERVICE_BACKED_SSO = False
+ANSIBLE_BASE_JWT_VALIDATE_CERT = True
+ANSIBLE_BASE_JWT_KEY = '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+ANSIBLE_BASE_JWT_REDIRECT_TYPE = 'hub'
+ANSIBLE_BASE_ROLES_REQUIRE_VIEW = False
+GALAXY_FEATURE_FLAGS__external_authentication = True
+GALAXY_AUTHENTICATION_CLASSES = [
+    "galaxy_ng.app.auth.session.SessionAuthentication",
+    "ansible_base.jwt_consumer.hub.auth.HubJWTAuth",
+    "rest_framework.authentication.TokenAuthentication",
+    "rest_framework.authentication.BasicAuthentication"
+]
+DYNACONF_AFTER_GET_HOOKS = [
+    "read_settings_from_cache_or_db",
+    "alter_hostname_settings"
+]
+RESOURCE_SERVER__URL = '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+RESOURCE_SERVER__VALIDATE_HTTPS = True
+
+{% for item in hub_extra_settings %}
+{% if item.value is string %}
+{{ item.setting }} = '{{ item.value }}'
+{% else %}
+{{ item.setting }} = {{ item.value }}
+{% endif %}
+{% endfor %}
+
+{% if feature_flags is defined %}
+{% for flag_name, flag_value in feature_flags.items() %}
+{{ flag_name | upper }} = {{ flag_value | bool }}
+{% endfor %}
+{% endif %}

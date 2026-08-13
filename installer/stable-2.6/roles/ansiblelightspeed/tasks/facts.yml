@@ -1,0 +1,262 @@
+---
+- name: Set lightspeed hostname, port(s) and protocol
+  ansible.builtin.set_fact:
+    _lightspeed_hostname: '{{ routable_hostname | default(ansible_host) }}'
+    _lightspeed_port: '{{ (lightspeed_nginx_disable_https | bool) | ternary(lightspeed_nginx_http_port, lightspeed_nginx_https_port) }}'
+    _lightspeed_ports: ['{{ lightspeed_nginx_http_port }}']
+    _lightspeed_protocol: '{{ (lightspeed_nginx_disable_https | bool) | ternary("http", "https") }}'
+
+- name: Set lightspeed chatbot hostname, port(s) and protocol
+  ansible.builtin.set_fact:
+    _lightspeed_chatbot_hostname: '{{ routable_hostname | default(ansible_host) }}'
+    _lightspeed_chatbot_port: '{{ (lightspeed_chatbot_disable_https | bool) | ternary(lightspeed_chatbot_http_port, lightspeed_chatbot_https_port) }}'
+    _lightspeed_chatbot_ports: '{{ (lightspeed_chatbot_disable_https | bool) | ternary([lightspeed_chatbot_http_port], [lightspeed_chatbot_https_port]) }}'
+    _lightspeed_chatbot_protocol: '{{ (lightspeed_chatbot_disable_https | bool) | ternary("http", "https") }}'
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Set lightspeed URL
+  ansible.builtin.set_fact:
+    _lightspeed_instance_url: >-
+      {{ _lightspeed_protocol }}://{{ __lightspeed_instance_host }}
+  vars:
+    __lightspeed_hostname: '{{ _lightspeed_hostname | ansible.containerized_installer.ipv6_wrap }}'
+    __lightspeed_instance_host: >-
+      {{ (_lightspeed_port | int in [80, 443]) | ternary(__lightspeed_hostname, __lightspeed_hostname + ":" + (_lightspeed_port | string)) }}
+
+- name: Set lightspeed chatbot URL
+  ansible.builtin.set_fact:
+    _lightspeed_chatbot_url: >-
+      {{ _lightspeed_chatbot_protocol }}://{{ _lightspeed_chatbot_hostname | ansible.containerized_installer.ipv6_wrap }}:{{ _lightspeed_chatbot_port }}
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Set lightspeed chatbot provider type
+  ansible.builtin.set_fact:
+    lightspeed_chatbot_default_provider_type: '{{ __lightspeed_chatbot_provider_type[lightspeed_chatbot_default_provider] }}'
+  vars:
+    __lightspeed_chatbot_provider_type:
+      rhoai: "remote::vllm"
+      openai: "remote::openai"
+      azure: "remote::azure"
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Set lightspeed mcp-controller hostname, port(s) and protocol
+  ansible.builtin.set_fact:
+    _lightspeed_mcp_controller_hostname: '{{ routable_hostname | default(ansible_host) }}'
+    _lightspeed_mcp_controller_port: '{{ lightspeed_mcp_controller_port }}'
+    _lightspeed_mcp_controller_ports: ['{{ lightspeed_mcp_controller_port }}']
+    _lightspeed_mcp_controller_protocol: 'http'
+  when: lightspeed_mcp_controller_enabled | bool
+
+- name: Set lightspeed mcp-controller URL
+  ansible.builtin.set_fact:
+    _lightspeed_mcp_controller_url: >-
+      {{ _lightspeed_mcp_controller_protocol }}://{{
+         _lightspeed_mcp_controller_hostname | ansible.containerized_installer.ipv6_wrap
+      }}:{{ _lightspeed_mcp_controller_port }}
+  when: lightspeed_mcp_controller_enabled | bool
+
+- name: Set lightspeed mcp-lightspeed hostname, port(s) and protocol
+  ansible.builtin.set_fact:
+    _lightspeed_mcp_lightspeed_hostname: '{{ routable_hostname | default(ansible_host) }}'
+    _lightspeed_mcp_lightspeed_port: '{{ lightspeed_mcp_lightspeed_port }}'
+    _lightspeed_mcp_lightspeed_ports: ['{{ lightspeed_mcp_lightspeed_port }}']
+    _lightspeed_mcp_lightspeed_protocol: 'http'
+  when: lightspeed_mcp_lightspeed_enabled | bool
+
+- name: Set lightspeed mcp-lightspeed URL
+  ansible.builtin.set_fact:
+    _lightspeed_mcp_lightspeed_url: >-
+      {{ _lightspeed_mcp_lightspeed_protocol }}://{{
+         _lightspeed_mcp_lightspeed_hostname | ansible.containerized_installer.ipv6_wrap
+      }}:{{ _lightspeed_mcp_lightspeed_port }}
+  when: lightspeed_mcp_lightspeed_enabled | bool
+
+- name: Add https port to lightspeed port list
+  ansible.builtin.set_fact:
+    _lightspeed_ports: '{{ _lightspeed_ports | union([lightspeed_nginx_https_port]) }}'
+  when: not lightspeed_nginx_disable_https | bool
+
+- name: Set lightspeed IPs
+  ansible.builtin.set_fact:
+    _lightspeed_ips: '{{ _lightspeed_ips | default([]) | union(["IP:" + item]) }}'
+  loop: '{{ ansible_all_ipv4_addresses + ansible_all_ipv6_addresses }}'
+
+- name: Set lightspeed chatbot IPs
+  ansible.builtin.set_fact:
+    _lightspeed_chatbot_ips: '{{ _lightspeed_chatbot_ips | default([]) | union(["IP:" + item]) }}'
+  loop: '{{ ansible_all_ipv4_addresses + ansible_all_ipv6_addresses }}'
+
+- name: Set facts for firewalld ports
+  ansible.builtin.set_fact:
+    _lightspeed_firewalld_ports: '{{ _lightspeed_ports }}'
+
+- name: Add lightspeed chatbot ports when available
+  ansible.builtin.set_fact:
+    _lightspeed_firewalld_ports: '{{ _lightspeed_firewalld_ports | union(_lightspeed_chatbot_ports) }}'
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Add lightspeed mcp-controller ports when available
+  ansible.builtin.set_fact:
+    _lightspeed_firewalld_ports: '{{ _lightspeed_firewalld_ports | union(_lightspeed_mcp_controller_ports) }}'
+  when: lightspeed_mcp_controller_enabled | bool
+
+- name: Add lightspeed mcp-lightspeed ports when available
+  ansible.builtin.set_fact:
+    _lightspeed_firewalld_ports: '{{ _lightspeed_firewalld_ports | union(_lightspeed_mcp_lightspeed_ports) }}'
+  when: lightspeed_mcp_lightspeed_enabled | bool
+
+- name: Add postgresql container to requires when on the same node
+  ansible.builtin.set_fact:
+    lightspeed_container_requires: '{{ lightspeed_container_requires | union(["postgresql"]) }}'
+  when: inventory_hostname in groups.get('database', [])
+
+- name: Set lightspeed volumes and env secrets
+  ansible.builtin.set_fact:
+    _common_secrets:
+      - 'lightspeed_resource_server,type=env,target=RESOURCE_SERVER__SECRET_KEY'
+      - 'lightspeed_secret_key,type=env,target=SECRET_KEY'
+      - 'lightspeed_oauth_client_id,type=env,target=SOCIAL_AUTH_AAP_KEY'
+      - 'lightspeed_oauth_client_secret,type=env,target=SOCIAL_AUTH_AAP_SECRET'
+      - 'lightspeed_model_mesh_config,type=env,target=ANSIBLE_AI_MODEL_MESH_CONFIG'
+      - 'lightspeed_admin_password,type=env,target=DJANGO_SUPERUSER_PASSWORD'
+    _common_volumes:
+      - '{{ _ca_tls_dir }}/extracted:/etc/pki/ca-trust/extracted:z'
+      - '{{ lightspeed_conf_dir }}/lightspeed_settings.py:/var/www/venv/lib/python3.12/site-packages/ansible_ai_connect/lightspeed_settings.py:ro,z'
+      - '{{ lightspeed_static_dir }}:/var/www/wisdom/public/static/:z'
+      - 'lightspeed_static_console:/var/www/wisdom/public/static/console:z'
+      - '{{ lightspeed_django_metrics_dir }}:/run/django_metrics:z'
+    _nginx_volumes:
+      - '{{ lightspeed_nginx_conf_dir }}/nginx.conf:/etc/nginx/nginx.conf:ro,z'
+      - 'lightspeed_nginx:/var/lib/nginx:U'
+    _supervisord_volumes:
+      - '{{ lightspeed_conf_dir }}/supervisord.conf:/etc/supervisor/supervisord.conf:ro,z'
+      - '{{ lightspeed_conf_dir }}/uwsgi.ini:/etc/lightspeed/uwsgi.ini:ro,z'
+    _lightspeed_env:
+      DJANGO_SETTINGS_MODULE: 'ansible_ai_connect.lightspeed_settings'
+      DEPLOYMENT_MODE: "onprem"
+      PYTHONUNBUFFERED: "1"
+      XDG_CACHE_HOME: "/tmp"
+      DJANGO_LOG_LEVEL: 'INFO'
+      ANSIBLE_AI_DATABASE_NAME: '{{ lightspeed_pg_database }}'
+      ANSIBLE_AI_DATABASE_USER: '{{ lightspeed_pg_username }}'
+      ANSIBLE_AI_DATABASE_HOST: '{{ lightspeed_pg_host }}'
+      ANSIBLE_AI_DATABASE_PORT: '{{ lightspeed_pg_port }}'
+
+- name: Add postgresql socket directory to common lightspeed volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _postgresql_volumes }}'
+  vars:
+    _postgresql_volumes:
+      - '{{ lightspeed_pg_socket }}:{{ lightspeed_pg_socket }}:z'
+  when: lightspeed_pg_socket is defined
+
+- name: Set lightspeed volumes
+  ansible.builtin.set_fact:
+    _lightspeed_volumes: '{{ _common_volumes + _nginx_volumes + _supervisord_volumes }}'
+
+- name: Add postgresql password secret to secrets
+  ansible.builtin.set_fact:
+    _common_secrets: '{{ _common_secrets + _postgresql_db_secret }}'
+  vars:
+    _postgresql_db_secret:
+      - 'lightspeed_pg_password,type=env,target=ANSIBLE_AI_DATABASE_PASSWORD'
+  when: not lightspeed_pg_cert_auth | bool
+
+- name: Add postgresql tls to lightspeed volumes
+  ansible.builtin.set_fact:
+    _lightspeed_volumes: '{{ _lightspeed_volumes + _postgresql_tls_volumes }}'
+  vars:
+    _postgresql_tls_volumes:
+      - '{{ lightspeed_conf_dir }}/postgresql.cert:/etc/ansible-automation-platform/lightspeed/postgresql.cert:ro,z'
+      - '{{ lightspeed_conf_dir }}/postgresql.key:/etc/ansible-automation-platform/lightspeed/postgresql.key:ro,z'
+  when: lightspeed_pg_cert_auth | bool
+
+- name: Add tls to lightspeed volumes
+  ansible.builtin.set_fact:
+    _lightspeed_volumes: '{{ _lightspeed_volumes + _tls_volumes }}'
+  vars:
+    _tls_volumes:
+      - '{{ lightspeed_conf_dir }}/lightspeed.cert:/etc/ansible-automation-platform/lightspeed/lightspeed.crt:ro,z'
+      - '{{ lightspeed_conf_dir }}/lightspeed.key:/etc/ansible-automation-platform/lightspeed/lightspeed.key:ro,z'
+  when: not lightspeed_nginx_disable_https | bool
+
+- name: Add chatbot api key secret to lightspeed secrets
+  ansible.builtin.set_fact:
+    _common_secrets: '{{ _common_secrets + _chatbot_api_key_secret }}'
+  vars:
+    _chatbot_api_key_secret:
+      - 'lightspeed_chatbot_api_token,type=env,target=CHATBOT_API_KEY'
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Set lightspeed chatbot volumes and common ENVs
+  ansible.builtin.set_fact:
+    _lightspeed_chatbot_volumes:
+      - '{{ _ca_tls_dir }}/extracted:/etc/pki/ca-trust/extracted:z'
+      - '{{ lightspeed_chatbot_data_dir }}:/.llama/data:z'
+      - '{{ lightspeed_chatbot_conf_dir }}/lightspeed-stack.yaml:/.llama/distributions/ansible-chatbot/config/lightspeed-stack.yaml:ro,z'
+      - '{{ lightspeed_chatbot_conf_dir }}/ansible-chatbot-run.yaml:/.llama/distributions/llama-stack/config/ansible-chatbot-run.yaml:ro,z'
+      - '{{ lightspeed_chatbot_conf_dir }}/ansible-chatbot-system-prompt.txt:/.llama/distributions/ansible-chatbot/system-prompts/default.txt:ro,z'
+    _lightspeed_chatbot_common_env:
+      INFERENCE_MODEL: '{{ lightspeed_chatbot_model_id }}'
+      INFERENCE_MODEL_FILTER: '{{ lightspeed_chatbot_model_id }}'
+      EMBEDDING_MODEL: './embeddings_model'
+      LLAMA_STACK_CONFIG_DIR: '/.llama/data'
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Add tls to lightspeed chatbot volumes
+  ansible.builtin.set_fact:
+    _lightspeed_chatbot_volumes: '{{ _lightspeed_chatbot_volumes + _tls_chatbot_volumes }}'
+  vars:
+    _tls_chatbot_volumes:
+      - '{{ lightspeed_conf_dir }}/lightspeed-chatbot.cert:/etc/ansible-automation-platform/lightspeed/lightspeed-chatbot.crt:ro,z'
+      - '{{ lightspeed_conf_dir }}/lightspeed-chatbot.key:/etc/ansible-automation-platform/lightspeed/lightspeed-chatbot.key:ro,z'
+  when:
+    - lightspeed_chatbot_model_url is defined
+    - not lightspeed_chatbot_disable_https | bool
+
+- name: Set lightspeed chatbot ENVs and Secrets for RHOAI provider
+  ansible.builtin.set_fact:
+    _lightspeed_chatbot_secrets:
+      - 'lightspeed_chatbot_model_api_key,type=env,target=VLLM_API_TOKEN'
+      - 'lightspeed_chatbot_api_token,type=env,target=CHATBOT_API_KEY'
+    _lightspeed_chatbot_model_env:
+      VLLM_URL: '{{ lightspeed_chatbot_model_url }}'
+      VLLM_MAX_TOKENS: '{{ lightspeed_chatbot_chatbot_max_tokens }}'
+      VLLM_TLS_VERIFY: '{{ lightspeed_chatbot_model_verify_ssl }}'
+  when:
+    - lightspeed_chatbot_model_url is defined
+    - lightspeed_chatbot_default_provider == "rhoai"
+
+- name: Set lightspeed chatbot ENVs and Secrets for OpenAI provider
+  ansible.builtin.set_fact:
+    _lightspeed_chatbot_secrets:
+      - 'lightspeed_chatbot_model_api_key,type=env,target=OPENAI_API_KEY'
+      - 'lightspeed_chatbot_api_token,type=env,target=CHATBOT_API_KEY'
+    _lightspeed_chatbot_model_env:
+      OPENAI_BASE_URL: '{{ lightspeed_chatbot_model_url }}'
+  when:
+    - lightspeed_chatbot_model_url is defined
+    - lightspeed_chatbot_default_provider == "openai"
+
+- name: Set lightspeed chatbot ENVs and Secrets for Azure provider
+  ansible.builtin.set_fact:
+    _lightspeed_chatbot_secrets:
+      - 'lightspeed_chatbot_model_api_key,type=env,target=AZURE_API_KEY'
+      - 'lightspeed_chatbot_api_token,type=env,target=CHATBOT_API_KEY'
+    _lightspeed_chatbot_model_env:
+      AZURE_API_BASE: '{{ lightspeed_chatbot_model_url | regex_replace("/$", "") | regex_replace("/openai/v1$", "") }}/openai/v1'
+  when:
+    - lightspeed_chatbot_model_url is defined
+    - lightspeed_chatbot_default_provider == "azure"
+
+- name: Set ENV dictionary for host configuration
+  ansible.builtin.set_fact:
+    _lightspeed_chatbot_env: '{{ _lightspeed_chatbot_common_env | combine(_lightspeed_chatbot_model_env) }}'
+  when:
+    - lightspeed_chatbot_model_url is defined
+    - _lightspeed_chatbot_model_env is defined
+
+- name: Set systemd requires
+  ansible.builtin.set_fact:
+    __systemd_requires: '{{ lightspeed_container_requires | sort | product([".service"]) | map("join") | list }}'
+...

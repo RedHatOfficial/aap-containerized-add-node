@@ -1,0 +1,67 @@
+---
+- name: Install python-psycopg2
+  ansible.builtin.package:
+    name: python3-psycopg2
+  become: true
+  when: not ostree | bool
+
+- name: Wait for postgresql to be ready
+  community.postgresql.postgresql_ping:
+    login_host: '127.0.0.1'
+    login_port: '{{ postgresql_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+  register: _ping
+  retries: 5
+  delay: 60
+  until:
+    - _ping.is_available is defined
+    - _ping.is_available | bool
+
+- name: Get postgres database collation
+  community.postgresql.postgresql_query:
+    query: 'SELECT datcollversion FROM pg_database WHERE datname=(%s)'
+    positional_args: '{{ postgresql_admin_database | default("postgres") }}'
+    login_host: '127.0.0.1'
+    login_port: '{{ postgresql_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+  register: _postgres_db_info
+
+- name: Refresh postgres database collation version
+  community.postgresql.postgresql_query:
+    query: 'ALTER DATABASE {{ postgresql_admin_database | default("postgres") }} REFRESH COLLATION VERSION'
+    login_host: '127.0.0.1'
+    login_port: '{{ postgresql_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+  when:
+    - _postgres_db_info.query_result[0].datcollversion is not none
+    - _postgres_db_info.query_result[0].datcollversion is version('2.34', '<')
+
+- name: Get template1 database collation
+  community.postgresql.postgresql_query:
+    query: 'SELECT datcollversion FROM pg_database WHERE datname=(%s)'
+    positional_args: 'template1'
+    login_host: '127.0.0.1'
+    login_port: '{{ postgresql_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+  register: _template1_db_info
+
+- name: Refresh template1 database collation version
+  community.postgresql.postgresql_query:
+    query: 'ALTER DATABASE template1 REFRESH COLLATION VERSION'
+    login_host: '127.0.0.1'
+    login_port: '{{ postgresql_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+  when:
+    - _template1_db_info.query_result[0].datcollversion is not none
+    - _template1_db_info.query_result[0].datcollversion is version('2.34', '<')
+...

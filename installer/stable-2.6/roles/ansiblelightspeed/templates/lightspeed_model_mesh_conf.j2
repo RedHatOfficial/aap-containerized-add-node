@@ -1,0 +1,57 @@
+{
+{% if lightspeed_chatbot_model_url is defined %}
+{% for pipeline in ["ModelPipelineChatBot", "ModelPipelineStreamingChatBot"] %}
+  "{{ pipeline }}": {
+    "provider": "http",
+    "config": {
+      "inference_url": "{{ _lightspeed_chatbot_url }}",
+      "model_id": "{{ lightspeed_chatbot_model_id }}",
+      "enable_health_check": true,
+{% if lightspeed_mcp_controller_enabled | bool or lightspeed_mcp_lightspeed_enabled | bool %}
+      "mcp_servers": [
+{% if lightspeed_mcp_controller_enabled | bool %}
+        {
+          "name": "mcp::aap-controller",
+          "type": "controller"
+        },
+{% endif %}
+{% if lightspeed_mcp_lightspeed_enabled | bool %}
+        {
+          "name": "mcp::aap-lightspeed",
+          "type": "lightspeed"
+        },
+{% endif %}
+      ]
+{% endif %}
+    }
+  },
+{% endfor %}
+{% endif %}
+{% if lightspeed_wca_model_api_key is defined %}
+{% for pipeline in ["MetaData", "ModelPipelineCompletions", "ModelPipelineContentMatch", "ModelPipelinePlaybookGeneration", "ModelPipelineRoleGeneration", "ModelPipelinePlaybookExplanation", "ModelPipelineRoleExplanation"] %}
+  "{{ pipeline }}": {
+    "provider": "{{ lightspeed_wca_model_type }}",
+    "config": {
+      "inference_url": "{{ lightspeed_wca_model_url }}",
+      "api_key": "{{ lightspeed_wca_model_api_key }}",
+      "model_id": "{{ lightspeed_wca_model_id | default("") }}",
+      "verify_ssl": {{ lightspeed_wca_model_verify_ssl }},
+      "retry_count": 4,
+      "enable_ari_postprocessing": true,
+{% if lightspeed_wca_model_type == "wca" and lightspeed_wca_idp_url is defined %}
+      "idp_url": "{{ lightspeed_wca_idp_url }}",
+      "idp_login": "{{ lightspeed_wca_idp_login }}",
+      "idp_password": "{{ lightspeed_wca_idp_password }}",
+{% endif %}
+{% if lightspeed_wca_model_type == "wca-onprem" %}
+      "username": "{{ lightspeed_wca_model_username }}",
+{% endif %}
+      "lightspeed_wca_model_enable_anonymization": {{ lightspeed_wca_model_enable_anonymization }},
+      "enable_health_check": {{ lightspeed_wca_health_check }},
+      "health_check_api_key": "{{ lightspeed_wca_model_api_key }}",
+      "health_check_model_id": "{{ lightspeed_wca_model_id | default("") }}",
+    }
+  },
+{% endfor %}
+{% endif %}
+}

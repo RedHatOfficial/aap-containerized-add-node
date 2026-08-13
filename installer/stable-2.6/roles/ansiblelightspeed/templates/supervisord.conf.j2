@@ -1,0 +1,68 @@
+[supervisord]
+umask = 022
+minfds = 4096
+nodaemon = true
+pidfile = /run/supervisor/supervisord.pid
+logfile = /dev/stdout
+logfile_maxbytes = 0
+childlogdir = /run/supervisor
+
+[program:nginx]
+command = nginx -g "daemon off;"
+autorestart = true
+stopasgroup = true
+killasgroup = true
+stdout_logfile = /dev/stdout
+stdout_logfile_maxbytes = 0
+redirect_stderr=true
+
+[program:uwsgi]
+command = /var/www/venv/bin/uwsgi /etc/lightspeed/uwsgi.ini
+autorestart = true
+stopwaitsecs = 1
+stopsignal = KILL
+stopasgroup = true
+killasgroup = true
+stdout_logfile = /dev/stdout
+stdout_logfile_maxbytes = 0
+redirect_stderr=true
+
+
+[fcgi-program:daphne]
+# TCP socket used by Nginx backend upstream
+socket=unix:///run/daphne/ansible_lightspeed.sock
+
+# When daphne is running in multiple processes, each needs to have a different socket.
+# In such a case, it is recommended to include process # in the name of socket, but
+# then those generated socket names cannot be specified in nginx config file...
+# So use this with numprocs=1 for now.  See https://github.com/django/daphne/issues/287
+# for more details.
+numprocs=1
+command = /var/www/venv/bin/daphne -u /run/daphne/ansible_lightspeed.sock --endpoint fd:fileno=0 --access-log - --proxy-headers ansible_ai_connect.main.asgi:application
+
+autostart = true
+autorestart = true
+stopwaitsecs = 1
+stopsignal = KILL
+stopasgroup = true
+killasgroup = true
+stdout_logfile = /dev/stdout
+stdout_logfile_maxbytes = 0
+redirect_stderr=true
+
+
+[group:wisdom-processes]
+programs = nginx,uwsgi
+priority = 5
+
+[unix_http_server]
+file = /run/supervisor/supervisor.sock
+
+[supervisorctl]
+serverurl = unix:///run/supervisor/supervisor.sock
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[include]
+files = /etc/supervisor/supervisord.d/*.conf

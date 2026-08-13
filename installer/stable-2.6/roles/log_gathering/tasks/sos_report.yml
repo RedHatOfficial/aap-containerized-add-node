@@ -1,0 +1,73 @@
+---
+- name: Ensure the sos report role can run
+  when:
+    - not upload | bool
+  run_once: true
+  block:
+    - name: Preflight - Check if the target directory exists - when upload is false
+      ansible.builtin.stat:
+        path: "{{ target_sos_directory }}"
+      delegate_to: localhost
+      register: stat_target_dir
+
+    - name: Preflight - Fail if the target directory is missing - when upload is false
+      ansible.builtin.assert:
+        that:
+          - stat_target_dir.stat.exists | bool
+          - stat_target_dir.stat.isdir | bool
+        fail_msg: 'The path {{ target_sos_directory }} does not exist, or it is a file. Please set another value or create the directory.'
+
+- name: Gather regular user id
+  ansible.builtin.setup:
+    filter:
+      - 'ansible_user_id'
+
+- name: Ensure sos is installed
+  ansible.builtin.dnf:
+    name: sos
+    state: present
+  become: true
+
+- name: Execute sosreport command on the server
+  ansible.builtin.command: >
+    sos report --batch
+      -k aap_containerized.username={{ ansible_user_id }}
+      {% if case_number != '' %} --case-id {{ case_number }}{% endif %}
+      {% if upload | bool %} --upload{% endif %}
+      {% if clean | bool %} --clean{% endif %}
+  become: true
+  register: sosreport_output
+  changed_when: sosreport_output.rc == 0
+
+- name: Set sosreport location variable
+  ansible.builtin.set_fact:
+    sosreport_location: "{{ sosreport_output.stdout | regex_search('.*/sosreport-.*.tar.xz') | regex_replace('\\t', '') }}"
+
+- name: View sosreport location on remote nodes
+  ansible.builtin.debug:
+    msg: "server-side sosreport located at: {{ sosreport_location }}"
+
+- name: View sosreport upload user - when upload is true
+  ansible.builtin.debug:
+    msg: "{{ sosreport_output.stdout | regex_search('.*anonymous upload.*') }}"
+  run_once: true
+  when:
+    - upload | bool
+
+- name: Gathering local files
+  when:
+    - not upload | bool
+  run_once: true
+  block:
+    - name: Fetch sosreport files from server - when upload is false
+      ansible.builtin.fetch:
+        src: "{{ sosreport_location }}"
+        dest: "{{ target_sos_directory }}/"
+        flat: true
+      become: true
+      register: sosreport_fetch
+
+    - name: View sosreport location on the current node - when upload is false
+      ansible.builtin.debug:
+        msg: "Downloaded sosreport located at: {{ sosreport_fetch.dest }} . Please upload it to the support case."
+...

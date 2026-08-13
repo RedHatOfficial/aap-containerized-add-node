@@ -1,0 +1,57 @@
+#jinja2: lstrip_blocks: True
+---
+ALLOWED_HOSTS:
+  - '*'
+
+URL_PREFIX: /api/metrics
+DEBUG: False
+
+DATABASES__default__HOST: '{{ automationmetrics_pg_host }}'
+DATABASES__default__PORT: '{{ automationmetrics_pg_port }}'
+DATABASES__default__NAME: '{{ automationmetrics_pg_database }}'
+DATABASES__default__USER: '{{ automationmetrics_pg_username }}'
+DATABASES__default__OPTIONS__sslmode: '{{ automationmetrics_pg_sslmode }}'
+DATABASES__default__OPTIONS__options: '-c datestyle=ISO,\ MDY'
+{% if automationmetrics_pg_cert_auth | bool %}
+DATABASES__default__OPTIONS__sslcert: /etc/automation-metrics/postgresql.cert
+DATABASES__default__OPTIONS__sslkey: /etc/automation-metrics/postgresql.key
+DATABASES__default__OPTIONS__sslrootcert: '{{ ca_trust_bundle }}'
+{% endif %}
+
+{% if groups.get('automationcontroller', []) | length > 0 %}
+DATABASES__awx__HOST: '{{ automationmetrics_controller_read_pg_host }}'
+DATABASES__awx__PORT: '{{ automationmetrics_controller_read_pg_port }}'
+DATABASES__awx__NAME: '{{ automationmetrics_controller_db }}'
+DATABASES__awx__USER: '{{ automationmetrics_controller_pg_username }}'
+DATABASES__awx__OPTIONS__sslmode: '{{ automationmetrics_controller_read_pg_sslmode }}'
+DATABASES__awx__OPTIONS__options: '-c datestyle=ISO,\ MDY'
+{% if automationmetrics_controller_read_pg_cert_auth | bool %}
+DATABASES__awx__OPTIONS__sslcert: /etc/automation-metrics/postgresql-controller.cert
+DATABASES__awx__OPTIONS__sslkey: /etc/automation-metrics/postgresql-controller.key
+DATABASES__awx__OPTIONS__sslrootcert: '{{ ca_trust_bundle }}'
+{% endif %}
+{% endif %}
+
+CSRF_TRUSTED_ORIGINS:
+  - '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+
+RESOURCE_SERVER__URL: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+RESOURCE_SERVER__VALIDATE_HTTPS: True
+RESOURCE_SERVER_SYNC_ENABLED: True
+
+ANSIBLE_BASE_JWT_KEY: '{{ automationmetrics_jwt_key | default(hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"]) }}'
+ANSIBLE_BASE_JWT_VALIDATE_CERT: True
+
+{% for item in automationmetrics_extra_settings %}
+{% if item.value is string %}
+{{ item.setting }}: '{{ item.value }}'
+{% else %}
+{{ item.setting }}: {{ item.value }}
+{% endif %}
+{% endfor %}
+{% if feature_flags is defined %}
+{% for flag_name, flag_value in feature_flags.items() %}
+{{ flag_name | upper }}: {{ flag_value | bool }}
+{% endfor %}
+{% endif %}
+...

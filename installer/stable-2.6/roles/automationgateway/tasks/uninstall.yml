@@ -1,0 +1,82 @@
+---
+- name: Set facts for containers
+  ansible.builtin.set_fact:
+    __containers:
+      - automation-gateway
+      - automation-gateway-proxy
+
+- name: Set facts for systemd services and containers
+  ansible.builtin.set_fact:
+    __services: '{{ __containers | product(["service"]) | map("join", ".") }}'
+
+- name: Set gateway ports fact
+  ansible.builtin.set_fact:
+    _gateway_ports: ['{{ gateway_nginx_http_port }}']
+
+- name: Set gateway proxy ports fact
+  ansible.builtin.set_fact:
+    _gateway_proxy_ports: ['{{ envoy_http_port }}']
+
+- name: Add https port to gateway port list
+  ansible.builtin.set_fact:
+    _gateway_ports: '{{ _gateway_ports | union([gateway_nginx_https_port]) }}'
+  when: not gateway_nginx_disable_https | bool
+
+- name: Add https port to gateway proxy port list
+  ansible.builtin.set_fact:
+    _gateway_proxy_ports: '{{ _gateway_proxy_ports | union([envoy_https_port]) }}'
+  when: not envoy_disable_https | bool
+
+- name: Combine gateway ports
+  ansible.builtin.set_fact:
+    _gateway_ports: '{{ _gateway_ports | union(_gateway_proxy_ports) }}'
+
+- name: Ensure systemd units are disabled and stopped
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    state: stopped
+    enabled: false
+    scope: user
+  failed_when: false
+  loop: '{{ __services }}'
+
+- name: Delete the containers
+  containers.podman.podman_container:
+    name: '{{ item }}'
+    state: absent
+  loop: '{{ __containers }}'
+
+- name: Delete the systemd unit files
+  ansible.builtin.file:
+    path: '{{ ansible_user_dir }}/.config/systemd/user/{{ item }}'
+    state: absent
+  loop: '{{ __services }}'
+
+- name: Delete podman volumes
+  ansible.builtin.include_tasks: volumes.yml
+  vars:
+    __volume_state: absent
+
+- name: Delete the automation gateway secrets
+  containers.podman.podman_secret:
+    name: '{{ item }}'
+    state: absent
+  loop:
+    - gateway_admin_password
+    - gateway_db_password
+    - gateway_redis_url
+    - gateway_secret_key
+
+- name: Delete the automation gateway directories
+  ansible.builtin.file:
+    path: '{{ aap_volumes_dir }}/{{ item }}'
+    state: absent
+  loop:
+    - gateway
+    - gatewayproxy
+
+- name: Delete automation gateway firewalld rules
+  ansible.builtin.include_tasks: firewalld.yml
+  vars:
+    __firewalld_state: disabled
+...

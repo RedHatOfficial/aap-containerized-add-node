@@ -1,0 +1,28 @@
+---
+- name: Get gateway container information
+  containers.podman.podman_container_info:
+    name:
+      - automation-gateway
+      - automation-gateway-proxy
+  register: _gateway_container_info
+
+- name: Get gateway image information
+  containers.podman.podman_image_info:
+    name:
+      - '{{ _gateway_image }}'
+      - '{{ _gateway_proxy_image }}'
+  register: _gateway_image_info
+
+- name: Set gateway update fact
+  ansible.builtin.set_fact:
+    _gateway_image_update: '{{ _gateway_before | difference(_gateway_after) | length > 0 }}'
+  vars:
+    _gateway_before: '{{ _gateway_container_info.containers | map(attribute="Image") | unique }}'
+    _gateway_after: '{{ _gateway_image_info.images | map(attribute="Id") | unique }}'
+
+- name: Stop gateway service on update
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+  when: _gateway_image_update | bool
+...

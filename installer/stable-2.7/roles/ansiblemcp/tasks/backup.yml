@@ -1,0 +1,17 @@
+---
+- name: Archive the ansiblemcp data
+  ansible.containerized_installer.archive:
+    path:
+      - '{{ ansible_user_dir }}/.local/share/containers/storage/secrets'
+      - '{{ ansible_user_dir }}/aap/ansiblemcp'
+      - '{{ ansible_user_dir }}/aap/tls'
+    dest: '{{ ansible_user_dir }}/aap/backups/ansiblemcp.{{ mcp_archive_extension }}'
+    format: '{{ mcp_use_archive_compression | bool | ternary(omit, archive_decompressed_extension) }}'
+    mode: '0640'
+
+- name: Download the ansiblemcp tarball
+  ansible.builtin.fetch:
+    src: '{{ ansible_user_dir }}/aap/backups/ansiblemcp.{{ mcp_archive_extension }}'
+    dest: '{{ hostvars["localhost"]["_backup_dir"] }}/mcp_{{ inventory_hostname }}.{{ mcp_archive_extension }}'
+    flat: true
+...

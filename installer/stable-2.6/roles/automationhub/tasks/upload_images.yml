@@ -1,0 +1,55 @@
+---
+- name: Ensure automation hub is ready
+  ansible.builtin.uri:
+    url: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}/pulp/api/v3/status/'
+    validate_certs: true
+    ca_path: '{{ _ca_tls_dir }}/extracted/pem/tls-ca-bundle.pem'
+  register: _hub_ready
+  until: _hub_ready.status == 200
+  retries: 5
+  delay: 60
+
+- name: Tag the container images to automation hub
+  containers.podman.podman_tag:
+    image: '{{ item }}'
+    target_names:
+      - '{{ __dest }}/{{ item | basename | split("@") | first }}'
+  vars:
+    __dest: '{{ (__dest_port | int == 443) | ternary(__dest_host, __dest_host + ":" + (__dest_port | string)) }}'
+    __dest_url: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+    __dest_host: '{{ __dest_url | urlsplit("hostname") }}'
+    __dest_port: '{{ __dest_url | urlsplit("port") | ternary(__dest_url | urlsplit("port"), 443) }}'
+  loop: '{{ __images | unique }}'
+  environment:
+    CONTAINERS_STORAGE_CONF: '{{ ansible_user_dir }}/aap/containers/storage.conf'
+
+- name: Push the container images to automation hub
+  containers.podman.podman_image:
+    name: '{{ item | basename | split("@") | first }}'
+    pull: false
+    push: true
+    push_args:
+      dest: '{{ __dest }}/{{ item | basename | split("@") | first }}'
+      remove_signatures: true
+      transport: docker
+    username: '{{ gateway_admin_user | default("admin") }}'
+    password: '{{ gateway_admin_password }}'
+    validate_certs: '{{ (__dest_scheme == "https") | bool }}'
+  vars:
+    __dest: '{{ (__dest_port | int == 443) | ternary(__dest_host, __dest_host + ":" + (__dest_port | string)) }}'
+    __dest_url: '{{ hostvars[groups["automationgateway"][0]]["_gateway_proxy_url"] }}'
+    __dest_host: '{{ __dest_url | urlsplit("hostname") }}'
+    __dest_port: '{{ __dest_url | urlsplit("port") | ternary(__dest_url | urlsplit("port"), 443) }}'
+    __dest_scheme: '{{ __dest_url | urlsplit("scheme") }}'
+  loop: '{{ __images | unique }}'
+  environment:
+    CONTAINERS_STORAGE_CONF: '{{ ansible_user_dir }}/aap/containers/storage.conf'
+    HTTP_PROXY: "{{ http_proxy | default('') }}"
+    HTTPS_PROXY: "{{ https_proxy | default('') }}"
+    NO_PROXY: "{{ no_proxy | default('') }}"
+  run_once: true
+  register: _push_image
+  until: _push_image is not failed
+  retries: 6
+  delay: 10
+...

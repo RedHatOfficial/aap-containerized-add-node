@@ -1,0 +1,43 @@
+---
+- name: Ensure automation controller is present
+  ansible.builtin.assert:
+    that:
+      - groups.get('automationcontroller', []) | length > 0
+    fail_msg: 'execution nodes need to have automationcontroller node.'
+
+- name: Ensure execution nodes aren't collocated with controller node
+  ansible.builtin.assert:
+    that:
+      - groups['automationcontroller'] | intersect(groups['execution_nodes']) | length == 0
+    fail_msg: 'execution nodes can not be on the same node than automationcontroller node'
+
+- name: Ensure receptor type is a valid choice for execution nodes
+  ansible.builtin.assert:
+    that:
+      - _receptor_types | difference(_receptor_allowed_types) | length == 0
+    fail_msg: 'Invalid receptor type value. Only execution and hop values are allowed for execution nodes'
+  vars:
+    _receptor_allowed_types: ['execution', 'hop']
+    _receptor_types: '{{ _receptor_nodes | selectattr("receptor_type", "defined") | map(attribute="receptor_type") | unique }}'
+    _receptor_nodes: '{{ groups["execution_nodes"] | map("extract", hostvars) }}'
+
+- name: Ensure receptor type is a valid choice controller nodes
+  ansible.builtin.assert:
+    that:
+      - _receptor_types | difference(_receptor_allowed_types) | length == 0
+    fail_msg: 'Invalid receptor type value. Only control and hybrid values are allowed for controller nodes'
+  vars:
+    _receptor_allowed_types: ['control', 'hybrid']
+    _receptor_types: '{{ _receptor_nodes | selectattr("receptor_type", "defined") | map(attribute="receptor_type") | unique }}'
+    _receptor_nodes: '{{ groups["automationcontroller"] | map("extract", hostvars) }}'
+
+- name: Ensure receptor protocol is a valid choice
+  ansible.builtin.assert:
+    that:
+      - _receptor_protocols | difference(_receptor_allowed_protocols) | length == 0
+    fail_msg: 'Invalid receptor protocol value. Only tcp and udp values are allowed'
+  vars:
+    _receptor_allowed_protocols: ['tcp', 'udp']
+    _receptor_protocols: '{{ _receptor_nodes | selectattr("receptor_protocol", "defined") | map(attribute="receptor_protocol") | unique }}'
+    _receptor_nodes: '{{ groups["automationcontroller"] | union(groups["execution_nodes"]) | map("extract", hostvars) }}'
+...

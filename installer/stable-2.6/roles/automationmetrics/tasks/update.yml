@@ -1,0 +1,28 @@
+---
+- name: Get automation metrics container information
+  containers.podman.podman_container_info:
+    name:
+      - automation-metrics-web
+      - automation-metrics-tasks
+      - automation-metrics-scheduler
+  register: _automationmetrics_container_info
+
+- name: Get automation metrics image information
+  containers.podman.podman_image_info:
+    name:
+      - '{{ _automationmetrics_image }}'
+  register: _automationmetrics_image_info
+
+- name: Set automation metrics update fact
+  ansible.builtin.set_fact:
+    _automationmetrics_image_update: '{{ _automationmetrics_before | difference(_automationmetrics_after) | length > 0 }}'
+  vars:
+    _automationmetrics_before: '{{ _automationmetrics_container_info.containers | map(attribute="Image") | unique }}'
+    _automationmetrics_after: '{{ _automationmetrics_image_info.images | map(attribute="Id") | unique }}'
+
+- name: Stop automation metrics service on update
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+  when: _automationmetrics_image_update | bool
+...

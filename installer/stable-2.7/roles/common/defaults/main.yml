@@ -1,0 +1,59 @@
+---
+bundle_install: false
+
+### registry variables
+registry_auth: true
+registry_url: registry.redhat.io
+registry_tls_verify: true
+registry_ns_aap: ansible-automation-platform-27
+registry_ns_aap_tp: ansible-automation-platform-tech-preview
+registry_ns_rhel: rhel9
+
+### database
+postgresql_version: 15
+
+### podman
+podman_packages:
+  - crun
+  - podman
+  - slirp4netns
+  - fuse-overlayfs
+podman_runtime: crun
+# Default PID limit for containers (0 = unlimited)
+# This will be overridden by __systemd_default_tasks_max if available
+# 80% of 59555 which is the /proc/sys/kernel/threads-max on RHEL 9.4
+podman_default_pids_limit: 47644
+
+### redis
+redis_version: 6
+
+### container image variables
+container_compress: gzip
+container_keep_images: false
+container_pull_images: true
+container_pull_timeout: 600
+controller_image: 'controller-rhel9:latest'
+de_supported_image: 'de-supported-rhel9:latest'
+de_extra_images: []
+eda_image: 'eda-controller-rhel9:latest'
+eda_web_image: 'eda-controller-ui-rhel9:latest'
+ee_minimal_image: 'ee-minimal-rhel9:2.16'
+ee_supported_image: 'ee-supported-rhel9:latest'
+ee_extra_images: []
+hub_image: 'hub-rhel9:latest'
+hub_web_image: 'hub-web-rhel9:latest'
+lightspeed_image: 'lightspeed-rhel9:latest'
+lightspeed_chatbot_image: 'lightspeed-chatbot-rhel9:latest'
+mcp_tools_image: 'mcp-tools-rhel9:latest'
+postgresql_image: 'postgresql-{{ postgresql_version }}:latest'
+receptor_image: 'receptor-rhel9:latest'
+redis_image: 'redis-{{ redis_version }}:latest'
+gateway_image: 'gateway-rhel9:latest'
+gateway_proxy_image: 'gateway-proxy-rhel9:latest'
+pcp_image: 'pcp:latest'
+mcp_image: 'mcp-server-rhel9:latest'
+automationmetrics_image: metrics-service-rhel9:latest
+
+### TLS variables
+ca_tls_remote: false
+...

@@ -1,0 +1,18 @@
+---
+- name: Get eda version from container image
+  containers.podman.podman_container:
+    name: eda-version
+    image: '{{ _eda_image }}'
+    entrypoint: ''
+    command: ["python3", "-c", "{{ __py_args }}"]
+    detach: false
+    rm: true
+  changed_when: false
+  vars:
+    __py_args: 'from importlib.metadata import version; print(version("aap_eda"))'
+  register: _eda_version
+
+- name: Set eda version fact
+  ansible.builtin.set_fact:
+    __eda_version: '{{ _eda_version.stdout | trim }}'
+...

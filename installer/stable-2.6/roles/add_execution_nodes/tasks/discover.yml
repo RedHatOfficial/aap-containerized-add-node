@@ -1,0 +1,88 @@
+---
+# Build dynamic group execution_nodes_new: inventory hosts without list_instances heartbeat.
+
+- name: Require execution_nodes inventory group
+  ansible.builtin.assert:
+    that:
+      - add_execution_nodes_inventory_group in groups
+      - groups[add_execution_nodes_inventory_group] | length > 0
+    fail_msg: >
+      Inventory group '{{ add_execution_nodes_inventory_group }}' must exist with at least one host.
+
+- name: List registered instances via awx-manage on controller
+  ansible.builtin.import_tasks: list_instances.yml
+
+- name: Publish discovery result
+  ansible.builtin.set_fact:
+    add_execution_nodes_new_inventory_hosts: "{{ _hosts }}"
+    add_execution_nodes_has_work: "{{ (_hosts | default([], true) | length) > 0 }}"
+  vars:
+    _hosts_yaml: |
+      {% for h in groups[add_execution_nodes_inventory_group] %}
+      {% if (hostvars[h].routable_hostname | default(h))
+           not in (add_execution_nodes_ready_hostnames | default([])) %}
+      - {{ h | to_json }}
+      {% endif %}
+      {% endfor %}
+    _hosts: "{{ ((_hosts_yaml | trim | length > 0) | ternary(_hosts_yaml | from_yaml, [])) | default([], true) }}"
+
+- name: Report discovery result
+  ansible.builtin.debug:
+    msg:
+      - "Registered instances: {{ add_execution_nodes_existing_hostnames | length }}"
+      - "Ready (heartbeat) instances: {{ add_execution_nodes_ready_hostnames | default([]) }}"
+      - "Hosts to add or finish: {{ add_execution_nodes_new_inventory_hosts }}"
+
+- name: Publish control host facts (runtime only; bundle/registry from inventory)
+  ansible.builtin.add_host:
+    name: add_execution_nodes_control
+    groups: add_execution_nodes_control
+    add_execution_nodes_has_work: "{{ add_execution_nodes_has_work }}"
+
+- name: Nothing to do
+  ansible.builtin.debug:
+    msg: All execution_nodes already show a heartbeat in list_instances. Remaining plays will no-op.
+  when: not (add_execution_nodes_has_work | bool)
+
+- name: Parse and require list-typed peers per new host
+  when: add_execution_nodes_has_work | bool
+  block:
+    - name: Resolve raw peers from inventory
+      ansible.builtin.set_fact:
+        add_execution_nodes_peers_by_host: "{{ (add_execution_nodes_peers_by_host | default({})) | combine({item: _normalized}) }}"
+      loop: "{{ add_execution_nodes_new_inventory_hosts }}"
+      vars:
+        _peers_raw: "{{ hostvars[item].receptor_peers | default([]) }}"
+        _as_yaml: "{{ _peers_raw | string | regex_replace(\"'\", '\"') }}"
+        _parsed: "{{ _as_yaml | from_yaml if (_peers_raw is string) else _peers_raw }}"
+        _normalized: >-
+          {{
+            _parsed
+            if (_parsed is sequence and _parsed is not string)
+            else []
+          }}
+
+    - name: Require receptor_peers to be a list
+      ansible.builtin.assert:
+        that:
+          - add_execution_nodes_peers_by_host[item] is sequence
+          - add_execution_nodes_peers_by_host[item] is not string
+          - not (_bare_hostname_string | bool)
+        fail_msg: >-
+          Host '{{ item }}': receptor_peers must be a real list.
+          INI: receptor_peers='["peer.example.com"]'.
+          Got: {{ _peers_raw | to_json }}
+      loop: "{{ add_execution_nodes_new_inventory_hosts }}"
+      vars:
+        _peers_raw: "{{ hostvars[item].receptor_peers | default([]) }}"
+        _bare_hostname_string: "{{ (_peers_raw is string) and ((_peers_raw | length) > 0) and ((add_execution_nodes_peers_by_host[item] | length) == 0) }}"
+
+- name: Add new hosts to dynamic target group
+  ansible.builtin.add_host:
+    name: "{{ item }}"
+    groups: "{{ add_execution_nodes_target_group }}"
+    routable_hostname: "{{ hostvars[item].routable_hostname | default(item) }}"
+    # Normalise peers on the host record; receptor_type/receptor_port/bundle_* stay from inventory.
+    receptor_peers: "{{ add_execution_nodes_peers_by_host[item] | default([]) }}"
+  loop: "{{ add_execution_nodes_new_inventory_hosts }}"
+  when: add_execution_nodes_has_work | bool

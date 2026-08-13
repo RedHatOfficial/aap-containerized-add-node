@@ -1,0 +1,21 @@
+---
+
+- name: Build instance groups list from inventory groups
+  ansible.builtin.set_fact:
+    _add_en_discovered_instance_groups: >-
+      {{
+        groups.keys()
+        | select('match', '^instance_group_')
+        | select('in', group_names)
+        | map('regex_replace', '^instance_group_', '')
+        | list
+      }}
+
+- name: Merge discovered groups with explicit variable
+  ansible.builtin.set_fact:
+    add_execution_nodes_instance_groups: >-
+      {{
+        (add_execution_nodes_instance_groups | default([]))
+        + (_add_en_discovered_instance_groups | default([]))
+        | unique
+      }}

@@ -1,0 +1,97 @@
+---
+- name: Set receptor node type for controller
+  ansible.builtin.set_fact:
+    receptor_type: '{{ hostvars[inventory_hostname]["receptor_type"] | default("hybrid") }}'
+  when: inventory_hostname in groups.get('automationcontroller', [])
+
+- name: Set receptor hostname, port and protocol facts
+  ansible.builtin.set_fact:
+    _receptor_hostname: '{{ routable_hostname | default(ansible_host) }}'
+    _receptor_port: '{{ receptor_port }}'
+    _receptor_protocol: '{{ receptor_protocol }}'
+    _receptor_type: '{{ receptor_type }}'
+
+- name: Set controller mesh peers
+  ansible.builtin.set_fact:
+    _controller_peers: '{{ _controller_peers | default([]) | union([item[1]]) }}'
+  loop: '{{ groups["automationcontroller"] | combinations(2) }}'
+  when:
+    - inventory_hostname in groups.get('automationcontroller', [])
+    - inventory_hostname == item[0]
+
+- name: Set receptor peers for controller
+  ansible.builtin.set_fact:
+    receptor_peers: '{{ (hostvars[inventory_hostname]["receptor_peers"] | default(peers)) | union(controllers) }}'
+  vars:
+    controllers: '{{ _controller_peers | default([]) }}'
+    executions: '{{ groups.get("execution_nodes", []) | map("extract", hostvars) }}'
+    nodes: '{{ executions | map(attribute="inventory_hostname") }}'
+    targeted: '{{ executions | selectattr("receptor_peers", "defined") | map(attribute="receptor_peers") | flatten }}'
+    peers: '{{ nodes | difference(targeted) }}'
+  when: inventory_hostname in groups.get('automationcontroller', [])
+
+- name: Set receptor peers fact
+  ansible.builtin.set_fact:
+    _receptor_peers: '{{ receptor_peers | default([]) }}'
+
+- name: Set receptor IPs
+  ansible.builtin.set_fact:
+    _receptor_ips: '{{ _receptor_ips | default([]) | union(["IP:" + item]) }}'
+  loop: '{{ ansible_all_ipv4_addresses + ansible_all_ipv6_addresses }}'
+
+- name: Set receptor volume facts
+  ansible.builtin.set_fact:
+    _receptor_auth_json_volume:
+      - '{{ ansible_user_dir }}/.config/containers/auth.json:/run/user/{{ ansible_user_uid }}/containers/auth.json:z'
+    _receptor_volumes:
+      - '{{ _ca_tls_dir }}/extracted:/etc/pki/ca-trust/extracted:z'
+      - '{{ ansible_user_dir }}/aap/containers/podman:/usr/bin/podman:ro,z'
+      - '{{ receptor_conf_dir }}/receptor.conf:/etc/receptor/receptor.conf:ro,z'
+      - 'receptor_run:/run/receptor:U'
+      - 'receptor_runner:/home/runner:U'
+      - 'receptor_home:{{ ansible_user_dir }}:U'
+      - 'receptor_data:/var/lib/receptor:U'
+      - '/run/user/{{ ansible_user_uid }}/podman/podman.sock:/run/user/{{ ansible_user_uid }}/podman/podman.sock:z'
+      - '{{ controller_data_dir }}/job_execution:{{ controller_data_dir }}/job_execution:z'
+      - '{{ controller_data_dir }}/projects:{{ controller_data_dir }}/projects:z'
+
+- name: Add tls to volumes
+  ansible.builtin.set_fact:
+    _receptor_volumes: '{{ _receptor_volumes + _tls_volumes }}'
+  vars:
+    _tls_volumes:
+      - '{{ receptor_conf_dir }}/receptor.crt:/etc/receptor/tls/receptor.crt:ro,z'
+      - '{{ receptor_conf_dir }}/receptor.key:/etc/receptor/tls/receptor.key:ro,z'
+      - '{{ receptor_conf_dir }}/mesh-CA.crt:/etc/receptor/tls/ca/mesh-CA.crt:ro,z'
+  when: not receptor_disable_tls | bool
+
+- name: Add signing private key to volumes
+  ansible.builtin.set_fact:
+    _receptor_volumes: '{{ _receptor_volumes + _signing_private_volumes }}'
+  vars:
+    _signing_private_volumes:
+      - '{{ receptor_conf_dir }}/signing_private.pem:/etc/receptor/signing_private.pem:ro,z'
+  when:
+    - not receptor_disable_signing | bool
+    - _receptor_type in ['control', 'hybrid']
+
+- name: Add signing public key to volumes
+  ansible.builtin.set_fact:
+    _receptor_volumes: '{{ _receptor_volumes + _signing_public_volumes }}'
+  vars:
+    _signing_public_volumes:
+      - '{{ receptor_conf_dir }}/signing_public.pem:/etc/receptor/signing_public.pem:ro,z'
+  when:
+    - not receptor_disable_signing | bool
+    - _receptor_type in ['control', 'execution', 'hybrid']
+
+- name: Set authentication facts when in online mode and using registry
+  when:
+    - not bundle_install | default(false) | bool
+    - registry_auth | default(true) | bool
+  block:
+    - name: Set _receptor_volumes and _registry_auth_file facts
+      ansible.builtin.set_fact:
+        _receptor_volumes: '{{ _receptor_volumes + _receptor_auth_json_volume }}'
+        _registry_auth_file: '/run/user/{{ ansible_user_uid }}/containers/auth.json'
+...

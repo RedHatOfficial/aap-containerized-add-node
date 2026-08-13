@@ -1,0 +1,56 @@
+---
+- name: Backup the PostgreSQL database
+  when: not eda_postgresql_skip_data | bool or groups.get('database', []) | length == 1
+  block:
+    - name: Create postgresql CLI aliases
+      ansible.builtin.include_role:
+        name: postgresql
+        tasks_from: cli.yml
+      vars:
+        _postgresql_socket: '{{ eda_pg_socket | default("") }}'
+        _postgresql_cert_auth: '{{ eda_pg_cert_auth }}'
+        _postgresql_src_dir: '{{ eda_conf_dir }}'
+        _postgresql_dest_dir: /etc/eda
+
+    - name: Add postgresql TLS environment variable for certificate authentication
+      ansible.builtin.set_fact:
+        _common_pg_env: '{{ _common_pg_env | combine(_eda_pg_ssl) }}'
+      vars:
+        _eda_pg_ssl:
+          PGSSLCERT: /etc/eda/postgresql.cert
+          PGSSLKEY: /etc/eda/postgresql.key
+          PGSSLROOTCERT: '{{ ca_trust_bundle }}'
+      when: eda_pg_cert_auth | bool
+
+    - name: Backup the automation eda postgresql database
+      community.postgresql.postgresql_db:
+        name: '{{ eda_pg_database }}'
+        login_host: '{{ eda_pg_host }}'
+        login_port: '{{ eda_pg_port }}'
+        login_user: '{{ eda_pg_username }}'
+        login_password: '{{ eda_pg_password | default(omit) }}'
+        login_unix_socket: '{{ eda_pg_socket | default(omit) }}'
+        ssl_mode: '{{ eda_pg_sslmode }}'
+        target: '{{ ansible_user_dir }}/aap/backups/{{ eda_db_filename }}'
+        target_opts: '--clean --create'
+        state: dump
+      environment: '{{ _common_pg_env }}'
+      run_once: true
+
+- name: Archive the automation eda data
+  ansible.containerized_installer.archive:
+    path:
+      - '{{ ansible_user_dir }}/.local/share/containers/storage/secrets'
+      - '{{ ansible_user_dir }}/aap/backups/{{ eda_db_filename }}'
+      - '{{ ansible_user_dir }}/aap/eda'
+      - '{{ ansible_user_dir }}/aap/tls'
+    dest: '{{ ansible_user_dir }}/aap/backups/eda.{{ eda_archive_extension }}'
+    format: '{{ eda_use_archive_compression | bool | ternary(omit, archive_decompressed_extension) }}'
+    mode: '0640'
+
+- name: Download the automation eda tarball
+  ansible.builtin.fetch:
+    src: '{{ ansible_user_dir }}/aap/backups/eda.{{ eda_archive_extension }}'
+    dest: '{{ hostvars["localhost"]["_backup_dir"] }}/eda_{{ inventory_hostname }}.{{ eda_archive_extension }}'
+    flat: true
+...

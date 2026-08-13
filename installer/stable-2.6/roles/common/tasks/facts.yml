@@ -1,0 +1,22 @@
+---
+- name: Set the TLS CA directory fact
+  ansible.builtin.set_fact:
+    _ca_tls_dir: '{{ ansible_user_dir }}/aap/tls'
+
+- name: Set io.containers.autoupdate=local label
+  ansible.builtin.set_fact:
+    _autoupdate_label:
+      io.containers.autoupdate: local
+  when: bundle_install | bool
+
+- name: Set io.containers.autoupdate=registry label
+  ansible.builtin.set_fact:
+    _autoupdate_label:
+      io.containers.autoupdate: registry
+      io.containers.autoupdate.authfile: '{{ ansible_user_dir }}/.config/containers/auth.json'
+  when: not bundle_install | bool
+
+- name: Set SYSTEM_UUID fact
+  ansible.builtin.set_fact:
+    _system_uuid: '{{ (ansible_product_uuid == "NA") | ternary(ansible_machine_id | to_uuid, ansible_product_uuid) }}'
+...

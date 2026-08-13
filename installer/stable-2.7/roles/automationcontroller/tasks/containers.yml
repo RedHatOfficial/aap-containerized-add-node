@@ -1,0 +1,122 @@
+---
+- name: Create the automation controller rsyslog container
+  containers.podman.podman_container:
+    name: automation-controller-rsyslog
+    image: '{{ _controller_image }}'
+    command: '{{ __rsyslog_cmd }}'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      requires: '{{ __systemd_requires }}'
+      restart_policy: always
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _rsyslog_volumes }}'
+    env: '{{ __rsyslog_env }}'
+    label:
+      '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  notify: Restart controller rsyslog
+
+- name: Create the automation controller task container
+  containers.podman.podman_container:
+    name: automation-controller-task
+    image: '{{ _controller_image }}'
+    command: '{{ __task_cmd }}'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      requires: '{{ __systemd_requires }}'
+      restart_policy: always
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _task_volumes }}'
+    security_opt: ['label=disable']
+    env: '{{ __task_env }}'
+    label:
+      '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  notify: Restart controller task
+
+- name: Create the automation controller web container
+  containers.podman.podman_container:
+    name: automation-controller-web
+    image: '{{ _controller_image }}'
+    command: '{{ __web_cmd }}'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      requires: '{{ __systemd_requires }}'
+      restart_policy: always
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/run/nginx,U=true'
+      - 'type=tmpfs,destination=/run/uwsgi,U=true'
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _web_volumes }}'
+    stop_timeout: 30
+    env: '{{ __web_env }}'
+    label:
+      '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  notify: Restart controller web
+
+- name: Create metrics-utility gather container
+  containers.podman.podman_container:
+    name: metrics-utility-gather
+    image: '{{ _controller_image }}'
+    command: 'metrics-utility gather_automation_controller_billing_data --ship --until=10m'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      restart_policy: 'no'
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    env_file: '{{ _metrics_env_file_path }}'
+    volume: '{{ _metrics_volumes }}'
+    secrets: '{{ _common_secrets }}'
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  when: metrics_utility_enabled | default(false) | bool
+
+- name: Create metrics-utility build-report container
+  containers.podman.podman_container:
+    name: metrics-utility-build-report
+    image: '{{ _controller_image }}'
+    command: 'metrics-utility build_report'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      restart_policy: 'no'
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    env_file: '{{ _metrics_env_file_path }}'
+    volume: '{{ _metrics_volumes }}'
+    secrets: '{{ _common_secrets }}'
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  when: metrics_utility_enabled | default(false) | bool
+...

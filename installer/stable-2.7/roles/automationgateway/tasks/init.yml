@@ -1,0 +1,100 @@
+---
+- name: Initialize the automation gateway database
+  containers.podman.podman_container:
+    name: automation-gateway-init
+    image: '{{ _gateway_image }}'
+    command: 'aap-gateway-manage migrate --noinput'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/var/cache/ansible-automation-platform/gateway,U=true'
+    secrets: '{{ _django_secrets }}'
+    volume: '{{ _web_volumes }}'
+    env: '{{ _common_env }}'
+  register: _migrate
+  changed_when: "'No migrations to apply' not in _migrate.stdout"
+  run_once: true
+  retries: 5
+  delay: 60
+  until: _migrate is not failed
+
+- name: Create django super user
+  containers.podman.podman_container:
+    name: automation-gateway-init
+    image: '{{ _gateway_image }}'
+    command: 'aap-gateway-manage createsuperuser --username={{ gateway_admin_user }} --email={{ gateway_admin_email }} --noinput'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/var/cache/ansible-automation-platform/gateway,U=true'
+    secrets: '{{ _django_secrets }}'
+    volume: '{{ _web_volumes }}'
+    env: '{{ _common_env }}'
+  register: _createsuperuser
+  changed_when: "'Superuser created successfully' in _createsuperuser.stdout"
+  failed_when:
+    - "'That username is already taken' not in _createsuperuser.stderr"
+    - "'Superuser created successfully' not in _createsuperuser.stdout"
+  run_once: true
+  retries: 5
+  delay: 60
+  until: _createsuperuser is not failed
+
+- name: Update django super user password
+  containers.podman.podman_container:
+    name: automation-gateway-init
+    image: '{{ _gateway_image }}'
+    command: 'aap-gateway-manage update_password --username={{ gateway_admin_user }} --password={{ gateway_admin_password }}'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/var/cache/ansible-automation-platform/gateway,U=true'
+    secrets: '{{ _django_secrets }}'
+    volume: '{{ _web_volumes }}'
+    env: '{{ _common_env }}'
+  register: _updatesuperuser
+  changed_when: "'Password updated' in _updatesuperuser.stdout"
+  failed_when:
+    - _updatesuperuser is failed
+    - not "'User matching query does not exist' in _updatesuperuser.stderr"
+  no_log: true
+  run_once: true
+  retries: 5
+  delay: 30
+  until: _updatesuperuser is not failed
+
+- name: Initialize authenticators
+  containers.podman.podman_container:
+    name: automation-gateway-init
+    image: '{{ _gateway_image }}'
+    command: 'aap-gateway-manage authenticators --initialize'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/var/cache/ansible-automation-platform/gateway,U=true'
+    secrets: '{{ _django_secrets }}'
+    volume: '{{ _web_volumes }}'
+    env: '{{ _common_env }}'
+  register: _authenticators
+  changed_when: "'Created default local authenticator' in _authenticators.stdout"
+  run_once: true
+  retries: 5
+  delay: 60
+  until: _authenticators is not failed
+...

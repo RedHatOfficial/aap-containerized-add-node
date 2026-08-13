@@ -1,0 +1,3 @@
+---
+artifacts_dest_base_dir: "{{ lookup('env', 'PWD') }}"
+...

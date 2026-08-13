@@ -1,0 +1,19 @@
+---
+- name: Create the eda directory
+  ansible.builtin.file:
+    path: '{{ eda_conf_dir }}'
+    mode: '0770'
+    state: directory
+
+- name: Create the eda configuration file
+  ansible.builtin.template:
+    src: settings.yaml.j2
+    dest: '{{ eda_conf_dir }}/settings.yaml'
+    mode: '0640'
+  notify:
+    - Restart eda api
+    - Restart eda daphne
+    - Restart eda workers
+    - Restart eda activation workers
+    - Restart eda scheduler
+...

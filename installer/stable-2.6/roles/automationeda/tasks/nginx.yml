@@ -1,0 +1,38 @@
+---
+- name: Get sysctl net.ipv4.ip_unprivileged_port_start setting
+  ansible.builtin.slurp:
+    src: /proc/sys/net/ipv4/ip_unprivileged_port_start
+  register: _sysctl_cmd
+
+- name: Allow rootless container to bind from port 80 onwards
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_unprivileged_port_start
+    value: '{{ _eda_ports | union(_sysctl_unprivileged_port_start) | min }}'
+    sysctl_set: true
+    state: present
+    reload: true
+  become: true
+  vars:
+    _sysctl_unprivileged_port_start: "[{{ _sysctl_cmd['content'] | b64decode }}]"
+  when: (_eda_ports | min) < 1024
+
+- name: Create the nginx directory
+  ansible.builtin.file:
+    path: '{{ eda_nginx_conf_dir }}'
+    mode: '0770'
+    state: directory
+
+- name: Create the nginx configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: '{{ eda_nginx_conf_dir }}/eda.conf'
+    mode: '0640'
+  notify: Restart eda web
+
+- name: Create the redirect page
+  ansible.builtin.template:
+    src: redirect-page.html.j2
+    dest: '{{ eda_nginx_conf_dir }}/redirect-page.html'
+    mode: '0644'
+  notify: Restart eda web
+...

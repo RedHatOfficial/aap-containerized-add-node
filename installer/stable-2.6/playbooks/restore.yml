@@ -1,0 +1,258 @@
+---
+- name: Preflight checks
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  become: false
+  tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Run preflight checks
+      ansible.builtin.import_role:
+        name: preflight
+
+    - name: Set backup directory fact
+      ansible.builtin.set_fact:
+        _backup_dir: '{{ backup_dir | default(lookup("env", "PWD")) }}/backups'
+
+- name: Gather minimal facts
+  hosts: automationcontroller:automationeda:automationgateway:automationhub:ansiblelightspeed:ansiblemcp:automationmetrics:database:execution_nodes:redis
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+      become: true
+
+    - name: Gather regular user id, uid and home dir
+      ansible.builtin.setup:
+        filter:
+          - 'ansible_env'
+          - 'ansible_user_dir'
+          - 'ansible_user_id'
+          - 'ansible_user_uid'
+
+    - name: Get common facts
+      ansible.builtin.import_role:
+        name: common
+        tasks_from: facts.yml
+
+    - name: Get image facts
+      ansible.builtin.import_role:
+        name: common
+        tasks_from: images.yml
+
+    - name: Create the backups directory
+      ansible.builtin.file:
+        path: '{{ ansible_user_dir }}/aap/backups'
+        state: directory
+        mode: '0750'
+
+- name: Prepare the postgresql restore
+  hosts: automationcontroller:automationeda:automationgateway:automationhub:ansiblelightspeed:automationmetrics
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Create common postgresql restore resources
+      ansible.builtin.import_role:
+        name: common
+        tasks_from: postgresql.yml
+
+- name: Restore the Postgresql
+  hosts: database
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the postgresql
+      ansible.builtin.import_role:
+        name: postgresql
+        tasks_from: restore.yml
+
+- name: Restore the Redis cluster
+  hosts: redis
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the redis cluster
+      ansible.builtin.include_role:
+        name: redis
+        tasks_from: restore.yml
+      vars:
+        redis_unix_socket: false
+        redis_cluster: true
+      when: redis_mode | default('cluster') == 'cluster'
+
+- name: Restore the Redis
+  hosts: automationgateway
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the redis
+      ansible.builtin.include_role:
+        name: redis
+        tasks_from: restore.yml
+      vars:
+        redis_unix_socket: false
+      when:
+        - redis_mode | default('cluster') == 'standalone'
+        - inventory_hostname == groups['automationgateway'] | first
+
+- name: Restore the Receptor
+  hosts: automationcontroller:execution_nodes
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the receptor
+      ansible.builtin.import_role:
+        name: receptor
+        tasks_from: restore.yml
+
+- name: Get Automation Controller configuration for gateway
+  hosts: automationcontroller
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Set automation controller facts
+      ansible.builtin.import_role:
+        name: automationcontroller
+        tasks_from: facts.yml
+
+- name: Get Automation EDA configuration for gateway
+  hosts: automationeda
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Set automation eda facts
+      ansible.builtin.import_role:
+        name: automationeda
+        tasks_from: facts.yml
+
+- name: Get Automation Hub configuration for gateway
+  hosts: automationhub
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Set automation hub facts
+      ansible.builtin.import_role:
+        name: automationhub
+        tasks_from: facts.yml
+
+- name: Get Ansible Lightspeed configuration for gateway
+  hosts: ansiblelightspeed
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Set ansible lightspeed facts
+      ansible.builtin.import_role:
+        name: ansiblelightspeed
+        tasks_from: facts.yml
+
+- name: Get Automation Metrics configuration for restore
+  hosts: automationmetrics
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Set automation metrics facts
+      ansible.builtin.import_role:
+        name: automationmetrics
+        tasks_from: facts.yml
+
+- name: Restore the Automation Gateway
+  hosts: automationgateway
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the automation gateway
+      ansible.builtin.import_role:
+        name: automationgateway
+        tasks_from: restore.yml
+
+- name: Restore the Automation Controller
+  hosts: automationcontroller
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the automation controller
+      ansible.builtin.import_role:
+        name: automationcontroller
+        tasks_from: restore.yml
+
+- name: Restore the Automation EDA
+  hosts: automationeda
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the automation eda
+      ansible.builtin.import_role:
+        name: automationeda
+        tasks_from: restore.yml
+
+- name: Restore the Automation Hub
+  hosts: automationhub
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the automation hub
+      ansible.builtin.import_role:
+        name: automationhub
+        tasks_from: restore.yml
+
+- name: Restore the Ansible Lightspeed
+  hosts: ansiblelightspeed
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the ansible lightspeed
+      ansible.builtin.import_role:
+        name: ansiblelightspeed
+        tasks_from: restore.yml
+
+- name: Restore the Ansible MCP
+  hosts: ansiblemcp
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the ansible MCP
+      ansible.builtin.import_role:
+        name: ansiblemcp
+        tasks_from: restore.yml
+
+- name: Restore the Automation Metrics Service
+  hosts: automationmetrics
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Restore the automation metrics
+      ansible.builtin.import_role:
+        name: automationmetrics
+        tasks_from: restore.yml
+
+- name: Clean backup files
+  hosts: automationcontroller:automationeda:automationgateway:automationhub:ansiblelightspeed:ansiblemcp:automationmetrics:database:execution_nodes
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Remove the backup directory
+      ansible.builtin.file:
+        path: '{{ ansible_user_dir }}/aap/backups'
+        state: absent
+...

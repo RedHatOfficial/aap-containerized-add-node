@@ -1,0 +1,19 @@
+---
+- name: Restart automation metrics web
+  ansible.builtin.systemd:
+    name: automation-metrics-web.service
+    scope: user
+    state: restarted
+
+- name: Restart automation metrics tasks
+  ansible.builtin.systemd:
+    name: automation-metrics-tasks.service
+    scope: user
+    state: restarted
+
+- name: Restart automation metrics scheduler
+  ansible.builtin.systemd:
+    name: automation-metrics-scheduler.service
+    scope: user
+    state: restarted
+...

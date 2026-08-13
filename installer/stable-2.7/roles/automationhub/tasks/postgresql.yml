@@ -1,0 +1,91 @@
+---
+- name: Install python-psycopg2
+  ansible.builtin.package:
+    name: python3-psycopg2
+  become: true
+  when: not ostree | bool
+
+- name: Wait for postgresql to be ready
+  community.postgresql.postgresql_ping:
+    login_host: '{{ hub_pg_host }}'
+    login_port: '{{ hub_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ hub_pg_socket | default(omit) }}'
+  register: _ping
+  retries: 30
+  delay: 10
+  until:
+    - _ping.is_available is defined
+    - _ping.is_available | bool
+
+- name: Create the automation hub postgresql user
+  community.postgresql.postgresql_user:
+    name: '{{ hub_pg_username }}'
+    password: '{{ hub_pg_password | default(omit) }}'
+    login_host: '{{ hub_pg_host }}'
+    login_port: '{{ hub_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ hub_pg_socket | default(omit) }}'
+
+- name: Grant the automation hub role to postgresql admin user
+  community.postgresql.postgresql_membership:
+    source_role: '{{ hub_pg_username }}'
+    target_role: '{{ postgresql_admin_username | default("postgres") }}'
+    login_host: '{{ hub_pg_host }}'
+    login_port: '{{ hub_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ hub_pg_socket | default(omit) }}'
+
+- name: Create the automation hub postgresql database
+  community.postgresql.postgresql_db:
+    name: '{{ hub_pg_database }}'
+    owner: '{{ hub_pg_username }}'
+    login_host: '{{ hub_pg_host }}'
+    login_port: '{{ hub_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_unix_socket: '{{ hub_pg_socket | default(omit) }}'
+    maintenance_db: '{{ postgresql_admin_database | default("postgres") }}'
+
+- name: Enable the hstore extension on automation hub database
+  community.postgresql.postgresql_ext:
+    name: hstore
+    login_db: '{{ hub_pg_database }}'
+    login_host: '{{ hub_pg_host }}'
+    login_port: '{{ hub_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_unix_socket: '{{ hub_pg_socket | default(omit) }}'
+
+- name: Get automation hub database collation version
+  community.postgresql.postgresql_query:
+    query: 'SELECT datcollversion FROM pg_database WHERE datname=(%s)'
+    positional_args: '{{ hub_pg_database }}'
+    login_host: '{{ hub_pg_host }}'
+    login_port: '{{ hub_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ hub_pg_socket | default(omit) }}'
+  register: _hub_db_info
+
+- name: Refresh automation hub database collation version
+  community.postgresql.postgresql_query:
+    query: 'ALTER DATABASE {{ hub_pg_database }} REFRESH COLLATION VERSION'
+    login_host: '{{ hub_pg_host }}'
+    login_port: '{{ hub_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ hub_pg_database }}'
+    login_unix_socket: '{{ hub_pg_socket | default(omit) }}'
+  when:
+    - groups.get('database', []) | length == 1
+    - _hub_db_info.query_result[0].datcollversion is not none
+    - _hub_db_info.query_result[0].datcollversion is version('2.34', '<')
+...

@@ -1,0 +1,5 @@
+---
+archive_extension: "{{ use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
+hub_archive_extension: "{{ hub_use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
+hub_db_filename: '{{ hub_pg_database }}.{{ hub_use_db_compression | bool | ternary(db_compressed_extension, db_decompressed_extension) }}'
+...

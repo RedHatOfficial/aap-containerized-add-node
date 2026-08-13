@@ -1,0 +1,157 @@
+---
+- name: Set automation gateway facts
+  ansible.builtin.include_tasks: facts.yml
+
+- name: Stop automation gateway systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+
+- name: Unarchive the automation gateway data
+  ansible.builtin.unarchive:
+    src: '{{ hostvars["localhost"]["_backup_dir"] }}/gateway_{{ inventory_hostname }}.{{ gateway_archive_extension }}'
+    dest: '{{ ansible_user_dir }}'
+    exclude:
+      - 'aap/tls'
+      - '.local/share/containers/storage/secrets/'
+      - 'aap/gateway/etc/gateway.key'
+      - 'aap/gateway/etc/gateway.cert'
+      - 'aap/gateway/etc/redis.key'
+      - 'aap/gateway/etc/redis.cert'
+      - 'aap/gateway/etc/settings.py'
+      - 'aap/gatewayproxy/etc/envoy.yaml'
+
+- name: Set automation gateway secret facts
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: restore_secrets.yml
+  vars:
+    backup_file: '{{ hostvars["localhost"]["_backup_dir"] }}/gateway_{{ inventory_hostname }}.{{ gateway_archive_extension }}'
+
+- name: Update the relevant gateway secrets
+  containers.podman.podman_secret:
+    name: "{{ item }}"
+    data: "{{ lookup('ansible.builtin.vars', '__old_' + item) | b64decode }}"
+  loop:
+    - 'gateway_secret_key'
+
+- name: Override redis database and host when using cluster
+  ansible.builtin.set_fact:
+    _redis_cluster_db: 0
+    _redis_cluster_host: '{{ hostvars[groups["redis"][0]]["_redis_hostname"] }}'
+  when: redis_mode | default('cluster') == 'cluster'
+
+- name: Invalid redis cache
+  ansible.builtin.include_role:
+    name: redis
+    tasks_from: flush.yml
+  vars:
+    __redis_databases:
+      - '{{ _redis_cluster_db | default(gateway_redis_cache_db) }}'
+    __redis_host: '{{ _redis_cluster_host | default(hostvars[groups["automationgateway"][0]]["_gateway_redis_hostname"]) }}'
+    __redis_port: '{{ gateway_redis_port }}'
+    __redis_cert: '{{ gateway_conf_dir }}/redis.cert'
+    __redis_key: '{{ gateway_conf_dir }}/redis.key'
+    redis_unix_socket: false
+    redis_disable_tls: '{{ gateway_redis_disable_tls }}'
+
+- name: Reconfigure containers
+  ansible.builtin.include_tasks: containers.yml
+  vars:
+    __containers_recreate: true
+
+- name: Find the automation gateway postgresql database
+  ansible.builtin.find:
+    path: '{{ ansible_user_dir }}/aap/backups'
+    patterns:
+      - '{{ gateway_pg_database }}.{{ db_compressed_extension }}'
+      - '{{ gateway_pg_database }}.{{ db_decompressed_extension }}'
+  register: _gateway_db_file
+  run_once: true
+
+- name: Fail if the database backup file is missing and gateway_postgresql_skip_data not enabled
+  ansible.builtin.assert:
+    that:
+      - gateway_postgresql_skip_data | bool
+    fail_msg: "gateway_postgresql_skip_data needs to be set to true when the database dump does not exist"
+  run_once: true
+  when:
+    - groups.get('database', []) | length == 0
+    - _gateway_db_file.matched == 0
+
+- name: Restore the PostgreSQL database
+  when: not gateway_postgresql_skip_data | bool or groups.get('database', []) | length == 1
+  block:
+    - name: Create postgresql CLI aliases
+      ansible.builtin.include_role:
+        name: postgresql
+        tasks_from: cli.yml
+      vars:
+        _postgresql_socket: '{{ gateway_pg_socket | default("") }}'
+        _postgresql_cert_auth: '{{ gateway_pg_cert_auth }}'
+        _postgresql_src_dir: '{{ gateway_conf_dir }}'
+        _postgresql_dest_dir: /etc/ansible-automation-platform/gateway
+        _postgresql_db_file: '{{ _gateway_db_file.files[0].path }}'
+
+    - name: Add postgresql TLS environment variable for certificate authentication
+      ansible.builtin.set_fact:
+        _common_pg_env: '{{ _common_pg_env | combine(_gateway_pg_ssl) }}'
+      vars:
+        _gateway_pg_ssl:
+          PGSSLCERT: /etc/ansible-automation-platform/gateway/postgresql.cert
+          PGSSLKEY: /etc/ansible-automation-platform/gateway/postgresql.key
+          PGSSLROOTCERT: '{{ ca_trust_bundle }}'
+      when: gateway_pg_cert_auth | bool
+
+    - name: Grant createdb role to the automation gateway postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ gateway_pg_username }}'
+        role_attr_flags: CREATEDB
+        login_host: '{{ gateway_pg_host }}'
+        login_port: '{{ gateway_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ gateway_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+    - name: Restore the automation gateway postgresql database
+      community.postgresql.postgresql_db:
+        name: template1
+        login_host: '{{ gateway_pg_host }}'
+        login_port: '{{ gateway_pg_port }}'
+        login_user: '{{ gateway_pg_username }}'
+        login_password: '{{ gateway_pg_password | default(omit) }}'
+        login_unix_socket: '{{ gateway_pg_socket | default(omit) }}'
+        ssl_mode: '{{ gateway_pg_sslmode }}'
+        target: '{{ _gateway_db_file.files[0].path }}'
+        target_opts: '{{ (_gateway_db_file.files[0].path | split(".") | last == "pgc") | ternary("--create --clean --if-exists", omit) }}'
+        state: restore
+      environment: '{{ _common_pg_env }}'
+      run_once: true
+
+    - name: Revoke createdb role to the automation gateway postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ gateway_pg_username }}'
+        role_attr_flags: NOCREATEDB
+        login_host: '{{ gateway_pg_host }}'
+        login_port: '{{ gateway_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ gateway_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+- name: Initialize data
+  ansible.builtin.include_tasks: init.yml
+
+- name: Start automation gateway systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: started
+
+- name: Configure automation gateway proxy resources
+  ansible.builtin.include_tasks: postinstall.yml
+...

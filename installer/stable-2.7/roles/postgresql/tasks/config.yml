@@ -1,0 +1,14 @@
+---
+- name: Create the postgresql config directory
+  ansible.builtin.file:
+    path: '{{ postgresql_conf_dir }}'
+    state: directory
+    mode: '0770'
+
+- name: Create the postgresql configuration
+  ansible.builtin.template:
+    src: postgresql.conf.j2
+    dest: '{{ postgresql_conf_dir }}/postgresql.conf'
+    mode: '0644'
+  notify: Restart postgresql
+...

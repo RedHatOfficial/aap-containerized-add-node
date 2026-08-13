@@ -1,0 +1,112 @@
+---
+- name: Initialize the automation hub database
+  containers.podman.podman_container:
+    name: automation-hub-init
+    image: '{{ _hub_image }}'
+    command: 'pulpcore-manager migrate --noinput'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _common_volumes }}'
+  register: _migrate
+  changed_when: "'No migrations to apply' not in _migrate.stdout"
+  run_once: true
+
+- name: Update admin user password
+  containers.podman.podman_container:
+    name: automation-hub-init
+    image: '{{ _hub_image }}'
+    command: 'pulpcore-manager reset-admin-password --password {{ hub_admin_password }}'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _common_volumes }}'
+    env:
+      ANSIBLE_REVERSE_RESOURCE_SYNC: false
+  register: _admin_password
+  no_log: true
+  run_once: true
+
+- name: Schedule resource sync task
+  containers.podman.podman_container:
+    name: automation-hub-init
+    image: '{{ _hub_image }}'
+    command: 'pulpcore-manager task-scheduler --id dab_sync --interval 15 --path galaxy_ng.app.tasks.resource_sync.run --force'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _common_volumes }}'
+  register: _task_scheduler
+  changed_when: "'dab_sync scheduled for' in _task_scheduler.stdout"
+  failed_when:
+    - _task_scheduler is failed
+  run_once: true
+
+- name: Add the collection signing service
+  containers.podman.podman_container:
+    name: automation-hub-init
+    image: '{{ _hub_image }}'
+    command: 'pulpcore-manager add-signing-service {{ __service }} {{ __script }} {{ __fingerprint }}'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _worker_secrets }}'
+    volume: '{{ _worker_volumes }}'
+    workdir: /var/lib/pulp
+    env:
+      HOME: /var/lib/pulp
+  run_once: true
+  vars:
+    __fingerprint: '{{ _hub_collection_signing_fingerprint }}'
+    __script: /usr/share/pulp/collection_sign.sh
+    __service: '{{ hub_collection_signing_service }}'
+  register: _collection
+  changed_when: "'Successfully added signing service' in _collection.stdout"
+  failed_when: >
+    (('Successfully added signing service' not in _collection.stdout) and
+    ('already exists.' not in _collection.stderr))
+  when: hub_collection_signing | bool
+
+- name: Add the container signing service
+  containers.podman.podman_container:
+    name: automation-hub-init
+    image: '{{ _hub_image }}'
+    command: 'pulpcore-manager add-signing-service {{ __service }} {{ __script }} {{ __fingerprint }} --class container:ManifestSigningService'
+    detach: false
+    rm: true
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _worker_secrets }}'
+    volume: '{{ _worker_volumes }}'
+    workdir: /var/lib/pulp
+    env:
+      HOME: /var/lib/pulp
+  run_once: true
+  vars:
+    __fingerprint: '{{ _hub_container_signing_fingerprint }}'
+    __script: /usr/share/pulp/container_sign.sh
+    __service: '{{ hub_container_signing_service }}'
+  register: _container
+  changed_when: "'Successfully added signing service' in _container.stdout"
+  failed_when: >
+    (('Successfully added signing service' not in _container.stdout) and
+    ('already exists.' not in _container.stderr))
+  when: hub_container_signing | bool
+...

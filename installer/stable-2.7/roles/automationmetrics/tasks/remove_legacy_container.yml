@@ -1,0 +1,29 @@
+---
+- name: Stop and disable the legacy automation metrics service systemd service
+  ansible.builtin.systemd:
+    name: automation-metrics-service.service
+    state: stopped
+    enabled: false
+    scope: user
+  failed_when: false
+
+- name: Remove the legacy automation metrics service container
+  containers.podman.podman_container:
+    name: automation-metrics-service
+    state: absent
+
+- name: Remove the legacy automation metrics service systemd unit file
+  ansible.builtin.file:
+    path: '{{ ansible_user_dir }}/.config/systemd/user/automation-metrics-service.service'
+    state: absent
+
+- name: Remove legacy automation metrics dispatcherd supervisord configuration
+  ansible.builtin.file:
+    path: '{{ automationmetrics_config_path }}/supervisord_dispatcherd.conf'
+    state: absent
+
+- name: Remove legacy automation metrics scheduler supervisord configuration
+  ansible.builtin.file:
+    path: '{{ automationmetrics_config_path }}/supervisord_scheduler.conf'
+    state: absent
+...

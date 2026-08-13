@@ -1,0 +1,29 @@
+---
+- name: Set postgresql facts
+  ansible.builtin.include_tasks: facts.yml
+
+- name: Stop postgresql systemd service
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+
+- name: Unarchive the postgresql data
+  ansible.builtin.unarchive:
+    src: '{{ hostvars["localhost"]["_backup_dir"] }}/postgresql_{{ inventory_hostname }}.{{ postgresql_archive_extension }}'
+    dest: '{{ ansible_user_dir }}'
+    exclude:
+      - 'aap/tls'
+      - '.local/share/containers/storage/secrets/'
+      - 'aap/postgresql/server.key'
+      - 'aap/postgresql/server.crt'
+
+- name: Reconfigure containers
+  ansible.builtin.include_tasks: containers.yml
+  vars:
+    __containers_recreate: true
+
+- name: Start postgresql systemd service
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: started
+...

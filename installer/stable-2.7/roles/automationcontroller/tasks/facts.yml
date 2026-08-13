@@ -1,0 +1,121 @@
+---
+- name: Set controller hostname, port(s) and protocol
+  ansible.builtin.set_fact:
+    _controller_hostname: '{{ routable_hostname | default(ansible_host) }}'
+    _controller_port: '{{ (controller_nginx_disable_https | bool) | ternary(controller_nginx_http_port, controller_nginx_https_port) }}'
+    _controller_ports: ['{{ controller_nginx_http_port }}']
+    _controller_protocol: '{{ (controller_nginx_disable_https | bool) | ternary("http", "https") }}'
+
+- name: Add https port to controller port list
+  ansible.builtin.set_fact:
+    _controller_ports: '{{ _controller_ports | union([controller_nginx_https_port]) }}'
+  when: not controller_nginx_disable_https | bool
+
+- name: Set controller URL
+  ansible.builtin.set_fact:
+    _controller_url: '{{ _controller_protocol }}://{{ _controller_hostname | ansible.containerized_installer.ipv6_wrap }}:{{ _controller_port }}'
+
+- name: Set controller IPs
+  ansible.builtin.set_fact:
+    _controller_ips: '{{ _controller_ips | default([]) | union(["IP:" + item]) }}'
+  loop: '{{ ansible_all_ipv4_addresses + ansible_all_ipv6_addresses }}'
+
+- name: Add postgresql container to requires when on the same node
+  ansible.builtin.set_fact:
+    controller_container_requires: '{{ controller_container_requires | union(["postgresql"]) }}'
+  when: inventory_hostname in groups.get('database', [])
+
+- name: Set automation controller volumes
+  ansible.builtin.set_fact:
+    _common_secrets:
+      - 'controller_secret_key,target=/etc/tower/SECRET_KEY,mode=0400,uid={{ ansible_user_uid }}'
+      - 'controller_channels,target=/etc/tower/conf.d/channels.py,mode=0400,uid={{ ansible_user_uid }}'
+      - 'controller_postgres,target=/etc/tower/conf.d/postgres.py,mode=0400,uid={{ ansible_user_uid }}'
+      - 'controller_resource_server,type=env,target=AWX_RESOURCE_SERVER__SECRET_KEY'
+    _common_volumes:
+      - '{{ _ca_tls_dir }}/extracted:/etc/pki/ca-trust/extracted:z'
+      - '{{ controller_conf_dir }}/settings.py:/etc/tower/settings.py:ro,z'
+      - '{{ controller_conf_dir }}/conf.d/callback_receiver_workers.py:/etc/tower/conf.d/callback_receiver_workers.py:ro,z'
+      - '{{ controller_conf_dir }}/conf.d/cluster_host_id.py:/etc/tower/conf.d/cluster_host_id.py:ro,z'
+      - '{{ controller_conf_dir }}/conf.d/container_groups.py:/etc/tower/conf.d/container_groups.py:ro,z'
+      - '{{ controller_conf_dir }}/conf.d/execution_environments.py:/etc/tower/conf.d/execution_environments.py:ro,z'
+      - '{{ controller_conf_dir }}/conf.d/insights.py:/etc/tower/conf.d/insights.py:ro,z'
+      - '{{ controller_conf_dir }}/conf.d/redis.py:/etc/tower/conf.d/redis.py:ro,z'
+      - '{{ controller_conf_dir }}/conf.d/subscription_usage_model.py:/etc/tower/conf.d/subscription_usage_model.py:ro,z'
+    _service_volumes:
+      - '{{ controller_data_dir }}/job_execution:{{ controller_data_dir }}/job_execution:z'
+      - '{{ controller_data_dir }}/job_status:{{ controller_data_dir }}/job_status:z'
+      - '{{ controller_data_dir }}/logs:/var/log/tower:z'
+      - '{{ controller_data_dir }}/projects:{{ controller_data_dir }}/projects:z'
+      - '{{ controller_data_dir }}/rsyslog:/var/lib/awx/rsyslog:z'
+      - '{{ controller_conf_dir }}/launch_awx_task.sh:/usr/bin/launch_awx_task.sh:ro,z'
+      - '{{ receptor_conf_dir }}/receptor.conf:/etc/receptor/receptor.conf:ro,z'
+      - 'receptor_run:/run/receptor:U'
+      - 'redis_run:/run/redis:U'
+      - '{{ rsyslog_run_dir }}:/run/awx-rsyslog:z'
+      - '{{ supervisor_run_dir }}:/run/supervisor:z'
+    _nginx_volumes:
+      - '{{ controller_conf_dir }}/uwsgi.ini:/etc/tower/uwsgi.ini:ro,z'
+      - '{{ controller_nginx_conf_dir }}/controller.conf:/etc/nginx/nginx.conf:ro,z'
+      - '{{ controller_nginx_conf_dir }}/redirect-page.html:/var/lib/awx/venv/awx/lib/python3.12/site-packages/awx/ui/build/awx/index_awx.html:ro,z'
+      - 'controller_nginx:/var/lib/nginx:U'
+    _podman_volumes:
+      - '{{ ansible_user_dir }}/aap/containers/podman:/usr/bin/podman:ro,z'
+      - '/run/user/{{ ansible_user_uid }}/podman/podman.sock:/run/user/{{ ansible_user_uid }}/podman/podman.sock:z'
+
+- name: Add postgresql tls to automation controller volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _postgresql_tls_volumes }}'
+  vars:
+    _postgresql_tls_volumes:
+      - '{{ controller_conf_dir }}/postgresql.cert:/etc/tower/postgresql.cert:ro,z'
+      - '{{ controller_conf_dir }}/postgresql.key:/etc/tower/postgresql.key:ro,z'
+  when: controller_pg_cert_auth | bool
+
+- name: Add postgresql socket directory to common automation controller volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _postgresql_volumes }}'
+  vars:
+    _postgresql_volumes:
+      - '{{ controller_pg_socket }}:{{ controller_pg_socket }}:z'
+  when: controller_pg_socket is defined
+
+- name: Set rsyslog/task/web automation controller volumes
+  ansible.builtin.set_fact:
+    _rsyslog_volumes: '{{ _common_volumes + _service_volumes }}'
+    _task_volumes: '{{ _common_volumes + _service_volumes + _podman_volumes }}'
+    _web_volumes: '{{ _common_volumes + _service_volumes + _nginx_volumes }}'
+
+- name: Add tls to web automation controller volumes
+  ansible.builtin.set_fact:
+    _web_volumes: '{{ _web_volumes + _tls_volumes }}'
+  vars:
+    _tls_volumes:
+      - '{{ controller_conf_dir }}/tower.cert:/etc/tower/tower.cert:ro,z'
+      - '{{ controller_conf_dir }}/tower.key:/etc/tower/tower.key:ro,z'
+  when: not controller_nginx_disable_https | bool
+
+- name: Set systemd requires
+  ansible.builtin.set_fact:
+    __systemd_requires: '{{ controller_container_requires | sort | product([".service"]) | map("join") | list }}'
+
+- name: Set environment variables for recent AAP releases
+  ansible.builtin.set_fact:
+    __rsyslog_cmd: /usr/bin/launch_awx_rsyslog.sh
+    __rsyslog_env:
+      SUPERVISOR_CONFIG_PATH: /etc/supervisord_rsyslog.conf
+    __task_cmd: /usr/bin/launch_awx_task.sh
+    __task_env:
+      CONTAINER_HOST: 'unix://run/user/{{ ansible_user_uid }}/podman/podman.sock'
+      SUPERVISOR_CONFIG_PATH: /etc/supervisord_task.conf
+    __web_cmd: /usr/bin/launch_awx_web.sh
+    __web_env:
+      SUPERVISOR_CONFIG_PATH: /etc/supervisord_web.conf
+
+- name: Set metrics utility volumes
+  ansible.builtin.set_fact:
+    _metrics_volumes:
+      - '{{ controller_conf_dir }}/settings.py:/etc/tower/settings.py:ro,z'
+      - "{{ metrics_data_dir }}:/var/lib/awx/metrics_utility:z"
+    _metrics_env_file_path: "{{ metrics_data_dir }}/metrics.env"
+...

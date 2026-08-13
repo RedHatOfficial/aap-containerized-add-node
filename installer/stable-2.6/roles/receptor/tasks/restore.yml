@@ -1,0 +1,31 @@
+---
+- name: Set receptor facts
+  ansible.builtin.include_tasks: facts.yml
+
+- name: Stop receptor systemd service
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+
+- name: Unarchive the receptor data
+  ansible.builtin.unarchive:
+    src: '{{ hostvars["localhost"]["_backup_dir"] }}/receptor_{{ inventory_hostname }}.{{ receptor_archive_extension }}'
+    dest: '{{ ansible_user_dir }}'
+    exclude:
+      - 'tls/'
+      - 'aap/tls'
+      - '.local/share/containers/storage/secrets/'
+      - 'receptor/etc/receptor.key'
+      - 'receptor/etc/receptor.crt'
+      - 'receptor/etc/receptor.conf'
+
+- name: Reconfigure containers
+  ansible.builtin.include_tasks: containers.yml
+  vars:
+    __containers_recreate: true
+
+- name: Start receptor systemd service
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: started
+...

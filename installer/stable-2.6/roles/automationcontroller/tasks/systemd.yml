@@ -1,0 +1,17 @@
+---
+- name: Set facts for systemd services
+  ansible.builtin.set_fact:
+    __services:
+      - automation-controller-task.service
+      - automation-controller-web.service
+      - automation-controller-rsyslog.service
+
+- name: Ensure automation controller containers are enabled and started
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    state: '{{ __systemd_state | default("started") }}'
+    enabled: '{{ __systemd_enabled | default(true) }}'
+    scope: user
+    daemon_reload: true
+  loop: '{{ __services }}'
+...

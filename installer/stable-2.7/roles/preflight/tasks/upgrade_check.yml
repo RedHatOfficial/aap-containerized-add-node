@@ -1,0 +1,42 @@
+---
+- name: Get existing gateway container information
+  containers.podman.podman_container_info:
+    name:
+      - automation-gateway
+  register: _upgrade_container_info
+  failed_when: false
+
+- name: Check installed AAP version
+  when:
+    - _upgrade_container_info.containers is defined
+    - _upgrade_container_info.containers | length > 0
+  block:
+    - name: Get installed gateway version
+      containers.podman.podman_container:
+        name: gateway-version
+        image: '{{ _upgrade_container_info.containers[0].Image }}'
+        command: ["aap-gateway-manage", "shell", "-v0", "-c", "{{ __py_args }}"]
+        detach: false
+        rm: true
+        env:
+          GATEWAY_SECRET_KEY_FILE: '/dev/null'
+      vars:
+        __py_args: "from importlib.metadata import version; print(version('aap-gateway'))"
+      register: _upgrade_version_result
+      changed_when: false
+      failed_when: false
+
+    - name: Validate upgrade path
+      ansible.builtin.assert:
+        that:
+          - _installed_gateway_version is version(aap_minimum_upgrade_version, '>=')
+        fail_msg: >-
+          Unsupported upgrade path detected.
+          Installed gateway version: {{ _installed_gateway_version }}.
+          This installer requires AAP {{ aap_minimum_upgrade_version }} or later to upgrade.
+        success_msg: >-
+          Upgrade path validated: gateway {{ _installed_gateway_version }}
+      vars:
+        _installed_gateway_version: '{{ _upgrade_version_result.stdout[0:3] }}'
+      when: _upgrade_version_result is not failed
+...

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run metrics-utility build report
+Requires=metrics-utility-build-report.service
+
+[Timer]
+OnCalendar={{ metrics_utility_cronjob_report_schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

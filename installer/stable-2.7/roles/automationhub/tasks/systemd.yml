@@ -1,0 +1,22 @@
+---
+- name: Set facts for systemd services
+  ansible.builtin.set_fact:
+    __services:
+      - automation-hub-api.service
+      - automation-hub-content.service
+      - automation-hub-web.service
+
+- name: Add hub workers to systemd services list
+  ansible.builtin.set_fact:
+    __services: '{{ __services | union(["automation-hub-worker-" + item | string + ".service"]) }}'
+  loop: '{{ hub_workers_range }}'
+
+- name: Manage automation hub container via systemd
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    scope: user
+    state: '{{ __systemd_state | default("started") }}'
+    enabled: '{{ __systemd_enabled | default(true) }}'
+    daemon_reload: true
+  loop: '{{ __services }}'
+...

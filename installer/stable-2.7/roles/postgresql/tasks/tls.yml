@@ -1,0 +1,65 @@
+---
+- name: Generate TLS certificate and key
+  when:
+    - postgresql_tls_cert is not defined
+    - postgresql_tls_key is not defined
+  block:
+    - name: Install python-cryptography
+      ansible.builtin.package:
+        name: python3-cryptography
+      become: true
+      when: not ostree | bool
+
+    - name: Generate a private key
+      community.crypto.openssl_privatekey:
+        path: '{{ postgresql_conf_dir }}/server.key'
+        mode: '0400'
+      notify: Restart postgresql
+
+    - name: Generate a certificate signing request
+      community.crypto.openssl_csr:
+        path: '{{ postgresql_conf_dir }}/server.csr'
+        privatekey_path: '{{ postgresql_conf_dir }}/server.key'
+        common_name: '{{ _postgresql_hostname }}'
+        country_name: 'US'
+        locality_name: 'Raleigh'
+        organization_name: 'Red Hat'
+        organizational_unit_name: 'Ansible'
+        state_or_province_name: 'North Carolina'
+        subject_alt_name: '{{ [_postgresql_hostname | ansible.containerized_installer.subject_alt_name] | union(_postgresql_ips) }}'
+        mode: '0640'
+
+    - name: Generate a self signed x509 certificate
+      community.crypto.x509_certificate:
+        path: '{{ postgresql_conf_dir }}/server.crt'
+        csr_path: '{{ postgresql_conf_dir }}/server.csr'
+        privatekey_path: '{{ postgresql_conf_dir }}/server.key'
+        provider: ownca
+        ownca_path: '{{ _ca_tls_dir }}/ca.cert'
+        ownca_privatekey_path: '{{ _ca_tls_dir }}/ca.key'
+        ownca_privatekey_passphrase: '{{ ca_tls_key_passphrase | default(omit) }}'
+        force: '{{ _ca_cert_changed | bool }}'
+        mode: '0640'
+      notify: Restart postgresql
+
+- name: Import TLS certificate and key
+  when:
+    - postgresql_tls_cert is defined
+    - postgresql_tls_key is defined
+  block:
+    - name: Copy postgresql TLS certificate
+      ansible.builtin.copy:
+        src: '{{ postgresql_tls_cert }}'
+        dest: '{{ postgresql_conf_dir }}/server.crt'
+        mode: '0640'
+        remote_src: '{{ postgresql_tls_remote | default(false) }}'
+      notify: Restart postgresql
+
+    - name: Copy postgresql TLS key
+      ansible.builtin.copy:
+        src: '{{ postgresql_tls_key }}'
+        dest: '{{ postgresql_conf_dir }}/server.key'
+        mode: '0400'
+        remote_src: '{{ postgresql_tls_remote | default(false) }}'
+      notify: Restart postgresql
+...

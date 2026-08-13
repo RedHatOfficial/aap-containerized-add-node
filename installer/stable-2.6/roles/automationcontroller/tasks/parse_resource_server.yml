@@ -1,0 +1,12 @@
+---
+- name: Parse the resource key secret
+  ansible.builtin.set_fact:
+    __parsed_resource_key: "{{ (__raw_resource_server_secret | regex_replace('RESOURCE_SERVER = ', '') | from_yaml).SECRET_KEY }}"
+  no_log: true
+  when: ( __raw_resource_server_secret | regex_replace('RESOURCE_SERVER = ', '') | from_yaml).SECRET_KEY is defined
+
+- name: Parse the resource key secret
+  ansible.builtin.set_fact:
+    __parsed_resource_key: "{{ __raw_resource_server_secret }}"
+  no_log: true
+  when: ( __raw_resource_server_secret | regex_replace('RESOURCE_SERVER = ', '') | from_yaml).SECRET_KEY is not defined

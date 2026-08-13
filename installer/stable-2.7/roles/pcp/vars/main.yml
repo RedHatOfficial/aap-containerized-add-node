@@ -1,0 +1,4 @@
+---
+archive_extension: "{{ use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
+pcp_archive_extension: "{{ pcp_use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
+...

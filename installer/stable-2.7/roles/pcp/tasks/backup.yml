@@ -1,0 +1,20 @@
+---
+- name: Get the pcp_archives data volume information
+  containers.podman.podman_volume_info:
+    name: pcp_archives
+  register: _data_pcp_archives
+
+- name: Archive the pcp data
+  ansible.containerized_installer.archive:
+    path:
+      - '{{  _data_pcp_archives.volumes[0].Mountpoint }}'
+    dest: '{{ hostvars["localhost"]["_backup_dir"] }}/pcp_{{ inventory_hostname }}.{{ pcp_archive_extension }}'
+    format: '{{ pcp_use_archive_compression | bool | ternary(omit, archive_decompressed_extension) }}'
+    mode: '0640'
+
+- name: Download the pcp tarball
+  ansible.builtin.fetch:
+    src: '{{ ansible_user_dir }}/aap/backups/pcp.{{ pcp_archive_extension }}'
+    dest: '{{ hostvars["localhost"]["_backup_dir"] }}/pcp_{{ inventory_hostname }}.{{ pcp_archive_extension }}'
+    flat: true
+...

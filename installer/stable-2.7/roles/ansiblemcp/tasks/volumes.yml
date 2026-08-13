@@ -1,0 +1,6 @@
+---
+- name: Manage the ansiblemcp nginx volume
+  containers.podman.podman_volume:
+    name: mcp_nginx
+    state: '{{ __volume_state }}'
+...

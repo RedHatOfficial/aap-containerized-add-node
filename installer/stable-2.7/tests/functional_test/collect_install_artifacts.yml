@@ -1,0 +1,19 @@
+- name: Collect installer artifacts
+  hosts: installer
+  gather_facts: false
+  vars:
+    _default_artifacts:
+      - setup.log
+      - inventory
+      - vars.yaml
+      - bundle.log
+    user_artifacts: []
+    artifacts_dest_base_dir: "{{ lookup('env', 'PWD') }}/artifacts/"
+  tasks:
+    - name: Collect installer setup.log
+      ansible.builtin.fetch:
+        src: "{{ item }}"
+        dest: "{{ artifacts_dest_base_dir }}/{{ item }}"
+        flat: true
+        fail_on_missing: false
+      loop: "{{ _default_artifacts + user_artifacts }}"

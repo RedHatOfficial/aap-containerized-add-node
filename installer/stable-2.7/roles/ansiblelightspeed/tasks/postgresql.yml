@@ -1,0 +1,55 @@
+---
+- name: Install python-psycopg2
+  ansible.builtin.package:
+    name: python3-psycopg2
+  become: true
+  when: not ostree | bool
+
+- name: Wait for postgresql to be ready
+  community.postgresql.postgresql_ping:
+    login_host: '{{ lightspeed_pg_host }}'
+    login_port: '{{ lightspeed_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ lightspeed_pg_socket | default(omit) }}'
+  register: _ping
+  retries: 5
+  delay: 60
+  until:
+    - _ping.is_available is defined
+    - _ping.is_available | bool
+
+- name: Create the lightspeed postgresql user
+  community.postgresql.postgresql_user:
+    name: '{{ lightspeed_pg_username }}'
+    password: '{{ lightspeed_pg_password | default(omit) }}'
+    login_host: '{{ lightspeed_pg_host }}'
+    login_port: '{{ lightspeed_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ lightspeed_pg_socket | default(omit) }}'
+
+- name: Grant the lightspeed role to postgresql admin user
+  community.postgresql.postgresql_membership:
+    source_role: '{{ lightspeed_pg_username }}'
+    target_role: '{{ postgresql_admin_username | default("postgres") }}'
+    login_host: '{{ lightspeed_pg_host }}'
+    login_port: '{{ lightspeed_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ lightspeed_pg_socket | default(omit) }}'
+
+- name: Create the lightspeed postgresql database
+  community.postgresql.postgresql_db:
+    name: '{{ lightspeed_pg_database }}'
+    owner: '{{ lightspeed_pg_username }}'
+    login_host: '{{ lightspeed_pg_host }}'
+    login_port: '{{ lightspeed_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_unix_socket: '{{ lightspeed_pg_socket | default(omit) }}'
+    maintenance_db: '{{ postgresql_admin_database | default("postgres") }}'
+...

@@ -5,7 +5,7 @@ exclude_paths:
   - .git/
   - collections/
   - site/
-  - installer-overlay/
+  - installer/
   - changelogs/
 
 skip_list:

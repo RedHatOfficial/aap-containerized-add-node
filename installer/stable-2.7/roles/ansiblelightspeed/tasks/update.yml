@@ -1,0 +1,59 @@
+---
+- name: Set facts for containers
+  ansible.builtin.set_fact:
+    __containers:
+      - ansible-lightspeed
+
+- name: Add lightspeed chatbot container when available
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["ansible-lightspeed-chatbot"]) }}'
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Add lightspeed mcp-controller container when available
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["ansible-lightspeed-mcp-controller"]) }}'
+  when: lightspeed_mcp_controller_enabled | bool
+
+- name: Add lightspeed mcp-lightspeed container when available
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["ansible-lightspeed-mcp-lightspeed"]) }}'
+  when: lightspeed_mcp_lightspeed_enabled | bool
+
+- name: Get lightspeed container information
+  containers.podman.podman_container_info:
+    name: '{{ __containers }}'
+  register: _lightspeed_container_info
+
+- name: Set facts for images
+  ansible.builtin.set_fact:
+    __images:
+      - '{{ _lightspeed_image }}'
+
+- name: Add lightspeed chatbot image when available
+  ansible.builtin.set_fact:
+    __images: '{{ __images | union(["{{ _lightspeed_chatbot_image }}"]) }}'
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Add mcp-tools image when mcp servers are enabled
+  ansible.builtin.set_fact:
+    __images: '{{ __images | union(["{{ _mcp_tools_image }}"]) }}'
+  when: lightspeed_mcp_controller_enabled | bool or lightspeed_mcp_lightspeed_enabled | bool
+
+- name: Get lightspeed image information
+  containers.podman.podman_image_info:
+    name: '{{ __images }}'
+  register: _lightspeed_image_info
+
+- name: Set lightspeed update fact
+  ansible.builtin.set_fact:
+    _lightspeed_image_update: '{{ _lightspeed_before | difference(_lightspeed_after) | length > 0 }}'
+  vars:
+    _lightspeed_before: '{{ _lightspeed_container_info.containers | map(attribute="Image") | unique }}'
+    _lightspeed_after: '{{ _lightspeed_image_info.images | map(attribute="Id") | unique }}'
+
+- name: Stop lightspeed service on update
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+  when: _lightspeed_image_update | bool
+...

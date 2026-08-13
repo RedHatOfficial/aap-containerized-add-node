@@ -1,0 +1,9 @@
+---
+exclude_paths:
+  - .github
+  - changelogs
+offline: true
+skip_list:
+  - var-naming[no-role-prefix]
+strict: true
+...

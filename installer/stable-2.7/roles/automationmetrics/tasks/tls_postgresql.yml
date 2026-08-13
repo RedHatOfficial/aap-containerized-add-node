@@ -1,0 +1,57 @@
+---
+- name: Import postgresql TLS certificate and key
+  when:
+    - automationmetrics_pg_cert_auth | bool
+    - automationmetrics_pg_tls_cert is defined
+    - automationmetrics_pg_tls_key is defined
+  block:
+    - name: Copy postgresql TLS certificate
+      ansible.builtin.copy:
+        src: '{{ automationmetrics_pg_tls_cert }}'
+        dest: '{{ automationmetrics_config_path }}/postgresql.cert'
+        mode: '0640'
+        remote_src: '{{ automationmetrics_tls_remote | default(false) }}'
+      notify:
+        - Restart automation metrics web
+        - Restart automation metrics tasks
+        - Restart automation metrics scheduler
+
+    - name: Copy postgresql TLS key
+      ansible.builtin.copy:
+        src: '{{ automationmetrics_pg_tls_key }}'
+        dest: '{{ automationmetrics_config_path }}/postgresql.key'
+        mode: '0400'
+        remote_src: '{{ automationmetrics_tls_remote | default(false) }}'
+      notify:
+        - Restart automation metrics web
+        - Restart automation metrics tasks
+        - Restart automation metrics scheduler
+
+- name: Import controller read postgresql TLS certificate and key
+  when:
+    - automationmetrics_controller_read_pg_cert_auth | bool
+    - automationmetrics_controller_read_pg_tls_cert is defined
+    - automationmetrics_controller_read_pg_tls_key is defined
+  block:
+    - name: Copy controller read postgresql TLS certificate
+      ansible.builtin.copy:
+        src: '{{ automationmetrics_controller_read_pg_tls_cert }}'
+        dest: '{{ automationmetrics_config_path }}/postgresql-controller.cert'
+        mode: '0640'
+        remote_src: '{{ automationmetrics_controller_read_pg_tls_remote | default(false) }}'
+      notify:
+        - Restart automation metrics web
+        - Restart automation metrics tasks
+        - Restart automation metrics scheduler
+
+    - name: Copy controller read postgresql TLS key
+      ansible.builtin.copy:
+        src: '{{ automationmetrics_controller_read_pg_tls_key }}'
+        dest: '{{ automationmetrics_config_path }}/postgresql-controller.key'
+        mode: '0400'
+        remote_src: '{{ automationmetrics_controller_read_pg_tls_remote | default(false) }}'
+      notify:
+        - Restart automation metrics web
+        - Restart automation metrics tasks
+        - Restart automation metrics scheduler
+...

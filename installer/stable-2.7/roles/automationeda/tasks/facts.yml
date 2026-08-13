@@ -1,0 +1,146 @@
+---
+- name: Set eda hostname, port(s) and protocol
+  ansible.builtin.set_fact:
+    _eda_hostname: '{{ routable_hostname | default(ansible_host) }}'
+    _eda_port: '{{ (eda_nginx_disable_https | bool) | ternary(eda_nginx_http_port, eda_nginx_https_port) }}'
+    _eda_ports: ['{{ eda_nginx_http_port }}']
+    _eda_protocol: '{{ (eda_nginx_disable_https | bool) | ternary("http", "https") }}'
+    _eda_ws_protocol: '{{ (eda_nginx_disable_https | bool) | ternary("ws", "wss") }}'
+
+- name: Add https port to eda port list
+  ansible.builtin.set_fact:
+    _eda_ports: '{{ _eda_ports | union([eda_nginx_https_port]) }}'
+  when: not eda_nginx_disable_https | bool
+
+- name: Set eda IPs
+  ansible.builtin.set_fact:
+    _eda_ips: '{{ _eda_ips | default([]) | union(["IP:" + item]) }}'
+  loop: '{{ ansible_all_ipv4_addresses + ansible_all_ipv6_addresses }}'
+
+- name: Set decision environment facts
+  ansible.builtin.set_fact:
+    _default_de:
+      - name: 'Default Decision Environment'
+        image: '{{ _de_supported_image }}'
+    _eda_creds: '{{ ((not bundle_install | default(false) | bool) and (registry_auth | default(true)) | bool) }}'
+
+- name: Add postgresql container to requires when on the same node
+  ansible.builtin.set_fact:
+    eda_container_requires: '{{ eda_container_requires | union(["postgresql"]) }}'
+  when: inventory_hostname in groups.get('database', [])
+
+- name: Set automation eda env and volume facts
+  ansible.builtin.set_fact:
+    _common_env:
+      EDA_SETTINGS_FILE: /etc/eda.yaml
+    _common_secrets:
+      - 'eda_secret_key,target=/etc/eda/SECRET_KEY,mode=0400,uid={{ ansible_user_uid }}'
+      - 'eda_resource_server,type=env,target=EDA_RESOURCE_SERVER__SECRET_KEY'
+    _common_volumes:
+      - '{{ _ca_tls_dir }}/extracted:/etc/pki/ca-trust/extracted:z'
+      - '{{ eda_conf_dir }}/settings.yaml:/etc/eda.yaml:ro,z'
+      - 'eda_data:/var/lib/ansible-automation-platform/eda:U'
+    _daphne_env:
+      EDA_WORKER_KIND: websocket
+    _django_secrets:
+      - 'eda_admin_password,type=env,target=DJANGO_SUPERUSER_PASSWORD'
+    _nginx_volumes:
+      - '{{ eda_nginx_conf_dir }}/eda.conf:/etc/nginx/nginx.conf:ro,z'
+      - '{{ eda_nginx_conf_dir }}/redirect-page.html:/var/lib/ansible-automation-platform/eda/index.html:ro,z'
+      - 'eda_nginx:/var/lib/nginx:U'
+    _podman_volumes:
+      - '{{ ansible_user_dir }}/aap/containers/podman:/usr/bin/podman:ro,z'
+      - '/run/user/{{ ansible_user_uid }}/podman/podman.sock:/run/user/{{ ansible_user_uid }}/podman/podman.sock:z'
+    _worker_env:
+      CONTAINER_HOST: 'unix:///run/user/{{ ansible_user_uid }}/podman/podman.sock'
+
+- name: Add postgresql password secret to secrets
+  ansible.builtin.set_fact:
+    _common_secrets: '{{ _common_secrets + _postgresql_db_secret }}'
+  vars:
+    _postgresql_db_secret:
+      - 'eda_db_password,type=env,target=EDA_DB_PASSWORD'
+  when: not eda_pg_cert_auth | bool
+
+- name: Add event stream postgresql password secret to secrets
+  ansible.builtin.set_fact:
+    _common_secrets: '{{ _common_secrets + _event_stream_db_secret }}'
+  vars:
+    _event_stream_db_secret:
+      - 'eda_event_stream_db_password,type=env,target=EDA_EVENT_STREAM_DB_PASSWORD'
+  when: not eda_event_stream_pg_cert_auth | bool
+
+- name: Add event persistence postgresql password secret to secrets
+  ansible.builtin.set_fact:
+    _common_secrets: '{{ _common_secrets + _event_persistence_db_secret }}'
+  vars:
+    _event_persistence_db_secret:
+      - 'eda_event_persistence_db_password,type=env,target=EDA_EVENT_PERSISTENCE_DB_PASSWORD'
+  when:
+    - eda_event_persistence_deploy_db | bool
+    - not eda_event_persistence_pg_cert_auth | bool
+
+- name: Add postgresql tls to common automation eda volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _postgresql_tls_volumes }}'
+  vars:
+    _postgresql_tls_volumes:
+      - '{{ eda_conf_dir }}/postgresql.cert:/etc/eda/postgresql.cert:ro,z'
+      - '{{ eda_conf_dir }}/postgresql.key:/etc/eda/postgresql.key:ro,z'
+  when: eda_pg_cert_auth | bool
+
+- name: Add event stream postgresql tls to common automation eda volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _event_stream_postgresql_tls_volumes }}'
+  vars:
+    _event_stream_postgresql_tls_volumes:
+      - '{{ eda_conf_dir }}/postgresql_event_stream.cert:/etc/eda/postgresql_event_stream.cert:ro,z'
+      - '{{ eda_conf_dir }}/postgresql_event_stream.key:/etc/eda/postgresql_event_stream.key:ro,z'
+  when: eda_event_stream_pg_cert_auth | bool
+
+- name: Add event persistence postgresql tls to common automation eda volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _event_persistence_postgresql_tls_volumes }}'
+  vars:
+    _event_persistence_postgresql_tls_volumes:
+      - '{{ eda_conf_dir }}/postgresql_event_persistence.cert:/etc/eda/postgresql_event_persistence.cert:ro,z'
+      - '{{ eda_conf_dir }}/postgresql_event_persistence.key:/etc/eda/postgresql_event_persistence.key:ro,z'
+  when:
+    - eda_event_persistence_deploy_db | bool
+    - eda_event_persistence_pg_cert_auth | bool
+
+- name: Add postgresql socket directory to common automation eda volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _postgresql_volumes }}'
+  vars:
+    _postgresql_volumes:
+      - '{{ eda_pg_socket }}:{{ eda_pg_socket }}:z'
+  when: eda_pg_socket is defined
+
+- name: Set web/worker automation eda env/volumes/secrets
+  ansible.builtin.set_fact:
+    _api_volumes: '{{ _common_volumes }}'
+    _daphne_env: '{{ _common_env | combine(_daphne_env) }}'
+    _django_secrets: '{{ _common_secrets + _django_secrets }}'
+    _web_volumes: '{{ _nginx_volumes }}'
+    _worker_env: '{{ _common_env | combine(_worker_env) }}'
+    _worker_volumes: '{{ _common_volumes + _podman_volumes }}'
+
+- name: Add tls to web automation eda volumes
+  ansible.builtin.set_fact:
+    _web_volumes: '{{ _web_volumes + _tls_volumes }}'
+  vars:
+    _tls_volumes:
+      - '{{ eda_conf_dir }}/eda.cert:/etc/eda/eda.cert:ro,z'
+      - '{{ eda_conf_dir }}/eda.key:/etc/eda/eda.key:ro,z'
+  when: not eda_nginx_disable_https | bool
+
+- name: Set eda rulebook queue name
+  ansible.builtin.set_fact:
+    _eda_queue_name: 'eda-{{ ansible_hostname[:200] }}-{{ _system_uuid }}'
+  when: eda_type in ['hybrid', 'worker']
+
+- name: Set systemd requires
+  ansible.builtin.set_fact:
+    __systemd_requires: '{{ eda_container_requires | sort | product([".service"]) | map("join") | list }}'
+...

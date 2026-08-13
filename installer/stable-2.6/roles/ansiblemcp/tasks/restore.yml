@@ -1,0 +1,45 @@
+---
+- name: Set ansiblemcp facts
+  ansible.builtin.include_tasks: facts.yml
+
+- name: Stop ansiblemcp systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+
+- name: Unarchive the ansiblemcp data
+  ansible.builtin.unarchive:
+    src: '{{ hostvars["localhost"]["_backup_dir"] }}/mcp_{{ inventory_hostname }}.{{ mcp_archive_extension }}'
+    dest: '{{ ansible_user_dir }}'
+    exclude:
+      - '.local/share/containers/storage/secrets/'
+      - 'tls/'
+      - 'aap/tls'
+      - 'aap/ansiblemcp/etc/ansiblemcp.key'
+      - 'aap/ansiblemcp/etc/ansiblemcp.cert'
+
+- name: Restore podman secrets from backup
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: restore_secrets.yml
+  vars:
+    backup_file: '{{ hostvars["localhost"]["_backup_dir"] }}/mcp_{{ inventory_hostname }}.{{ mcp_archive_extension }}'
+
+- name: Update the MCP secrets from backup
+  containers.podman.podman_secret:
+    name: "{{ item }}"
+    data: "{{ lookup('ansible.builtin.vars', '__old_' + item) | b64decode }}"
+  loop:
+    - 'mcp_telemetry_hmac_key'
+    - 'mcp_installer_id'
+
+- name: Reconfigure containers
+  ansible.builtin.include_tasks: containers.yml
+  vars:
+    __containers_recreate: true
+
+- name: Start ansiblemcp systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: started
+...

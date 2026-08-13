@@ -1,0 +1,88 @@
+---
+- name: Set lightspeed ports fact
+  ansible.builtin.set_fact:
+    _lightspeed_ports: ['{{ lightspeed_nginx_http_port }}']
+
+- name: Add https port to gateway port list
+  ansible.builtin.set_fact:
+    _lightspeed_ports: '{{ _lightspeed_ports | union([lightspeed_nginx_https_port]) }}'
+  when: not lightspeed_nginx_disable_https | bool
+
+- name: Set facts for containers
+  ansible.builtin.set_fact:
+    __containers:
+      - ansible-lightspeed
+      - ansible-lightspeed-revoke-expired-tokens
+      - ansible-lightspeed-cleartokens
+
+- name: Add lightspeed chatbot container when available
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["ansible-lightspeed-chatbot"]) }}'
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Add lightspeed mcp-controller container when available
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["ansible-lightspeed-mcp-controller"]) }}'
+  when: lightspeed_mcp_controller_enabled | bool
+
+- name: Add lightspeed mcp-lightspeed container when available
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["ansible-lightspeed-mcp-lightspeed"]) }}'
+  when: lightspeed_mcp_lightspeed_enabled | bool
+
+- name: Set facts for systemd services and containers
+  ansible.builtin.set_fact:
+    __services: '{{ __containers | product(["service"]) | map("join", ".") }}'
+    __timers: '{{ __containers | select("match", "^ansible-lightspeed-(revoke|cleartokens)") | product(["timer"]) | map("join", ".") }}'
+
+- name: Ensure systemd units are disabled and stopped
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    state: stopped
+    enabled: false
+    scope: user
+  failed_when: false
+  loop: '{{ __services + __timers }}'
+
+- name: Delete the containers
+  containers.podman.podman_container:
+    name: '{{ item }}'
+    state: absent
+  loop: '{{ __containers }}'
+
+- name: Delete the systemd unit files
+  ansible.builtin.file:
+    path: '{{ ansible_user_dir }}/.config/systemd/user/{{ item }}'
+    state: absent
+  loop: '{{ __services + __timers }}'
+
+- name: Delete podman volumes
+  ansible.builtin.include_tasks: volumes.yml
+  vars:
+    __volume_state: absent
+
+- name: Delete the lightspeed secrets
+  containers.podman.podman_secret:
+    name: '{{ item }}'
+    state: absent
+  loop:
+    - lightspeed_resource_server
+    - lightspeed_admin_password
+    - lightspeed_secret_key
+    - lightspeed_chatbot_api_token
+    - lightspeed_chatbot_model_api_key
+    - lightspeed_model_mesh_config
+    - lightspeed_pg_password
+    - lightspeed_oauth_client_secret
+    - lightspeed_oauth_client_id
+
+- name: Delete the lightspeed directories
+  ansible.builtin.file:
+    path: '{{ aap_volumes_dir }}/lightspeed'
+    state: absent
+
+- name: Delete lightspeed firewalld rules
+  ansible.builtin.include_tasks: firewalld.yml
+  vars:
+    __firewalld_state: disabled
+...

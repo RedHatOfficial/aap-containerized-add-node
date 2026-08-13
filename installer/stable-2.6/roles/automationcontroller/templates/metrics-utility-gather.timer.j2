@@ -1,0 +1,10 @@
+[Unit]
+Description=Run metrics-utility gather data collection
+Requires=metrics-utility-gather.service
+
+[Timer]
+OnCalendar={{ metrics_utility_cronjob_gather_schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

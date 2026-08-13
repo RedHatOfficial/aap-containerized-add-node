@@ -1,0 +1,37 @@
+---
+- name: Set facts for systemd services
+  ansible.builtin.set_fact:
+    __services:
+      - automation-eda-api.service
+      - automation-eda-web.service
+
+- name: Add services for hybrid/worker node type
+  when: eda_type in ['hybrid', 'worker']
+  block:
+    - name: Add eda daphne to systemd services list
+      ansible.builtin.set_fact:
+        __services: '{{ __services | union(["automation-eda-daphne.service"]) }}'
+
+    - name: Add eda workers to systemd services list
+      ansible.builtin.set_fact:
+        __services: '{{ __services | union(["automation-eda-worker-" + item | string + ".service"]) }}'
+      loop: '{{ eda_workers_range }}'
+
+    - name: Add eda activation workers to systemd services list
+      ansible.builtin.set_fact:
+        __services: '{{ __services | union(["automation-eda-activation-worker-" + item | string + ".service"]) }}'
+      loop: '{{ eda_activation_workers_range }}'
+
+    - name: Add eda scheduler to systemd services list
+      ansible.builtin.set_fact:
+        __services: '{{ __services | union(["automation-eda-scheduler.service"]) }}'
+
+- name: Manage automation eda containers via systemd
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    state: '{{ __systemd_state | default("started") }}'
+    enabled: '{{ __systemd_enabled | default(true) }}'
+    scope: user
+    daemon_reload: true
+  loop: '{{ __services }}'
+...

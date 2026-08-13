@@ -1,0 +1,135 @@
+---
+- name: Set hub hostname, port(s) and protocol
+  ansible.builtin.set_fact:
+    _hub_hostname: '{{ routable_hostname | default(ansible_host) }}'
+    _hub_port: '{{ (hub_nginx_disable_https | bool) | ternary(hub_nginx_http_port, hub_nginx_https_port) }}'
+    _hub_ports: ['{{ hub_nginx_http_port }}']
+    _hub_protocol: '{{ (hub_nginx_disable_https | bool) | ternary("http", "https") }}'
+    _hub_nfs: '{{ hub_shared_data_path | default("") | length > 0 }}'
+
+- name: Add https port to hub port list
+  ansible.builtin.set_fact:
+    _hub_ports: '{{ _hub_ports | union([hub_nginx_https_port]) }}'
+  when: not hub_nginx_disable_https | bool
+
+- name: Set hub IPs
+  ansible.builtin.set_fact:
+    _hub_ips: '{{ _hub_ips | default([]) | union(["IP:" + item]) }}'
+  loop: '{{ ansible_all_ipv4_addresses + ansible_all_ipv6_addresses }}'
+
+- name: Add postgresql container to requires when on the same node
+  ansible.builtin.set_fact:
+    hub_container_requires: '{{ hub_container_requires | union(["postgresql"]) }}'
+  when: inventory_hostname in groups.get('database', [])
+
+- name: Set automation hub volumes
+  ansible.builtin.set_fact:
+    _common_secrets:
+      - 'hub_database_fields,target=/etc/pulp/keys/database_fields.symmetric.key,mode=0400,uid={{ ansible_user_uid }}'
+      - 'hub_secret_key,type=env,target=PULP_SECRET_KEY'
+      - 'hub_settings,target=/etc/pulp/settings.py,mode=0400,uid={{ ansible_user_uid }}'
+      - 'hub_resource_server,type=env,target=PULP_RESOURCE_SERVER__SECRET_KEY'
+    _common_volumes:
+      - '{{ _ca_tls_dir }}/extracted:/etc/pki/ca-trust/extracted:z'
+      - '{{ _hub_nfs | ternary(hub_data_dir + ":/var/lib/pulp", "hub_data:/var/lib/pulp:U") }}'
+    _auth_volumes:
+      - '{{ hub_conf_dir }}/keys/container_auth_private_key.pem:/etc/pulp/keys/container_auth_private_key.pem:ro,z'
+      - '{{ hub_conf_dir }}/keys/container_auth_public_key.pem:/etc/pulp/keys/container_auth_public_key.pem:ro,z'
+    _redis_volumes:
+      - 'redis_run:/run/redis:U'
+    _web_volumes:
+      - '{{ hub_nginx_conf_dir }}/hub.conf:/etc/nginx/nginx.conf:ro,z'
+      - 'hub_nginx:/var/lib/nginx:U'
+
+- name: Add hub tmp volume when using NFS
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _hub_tmp }}'
+  vars:
+    _hub_tmp:
+      - 'hub_tmp:/var/tmp/pulp:U'
+  when: _hub_nfs | bool
+
+- name: Add postgresql socket directory to common automation hub volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _postgresql_volumes }}'
+  vars:
+    _postgresql_volumes:
+      - '{{ hub_pg_socket }}:{{ hub_pg_socket }}:z'
+  when: hub_pg_socket is defined
+
+- name: Add postgresql tls to automation hub volumes
+  ansible.builtin.set_fact:
+    _common_volumes: '{{ _common_volumes + _postgresql_tls_volumes }}'
+  vars:
+    _postgresql_tls_volumes:
+      - '{{ hub_conf_dir }}/postgresql.cert:/etc/pulp/keys/postgresql.cert:ro,z'
+      - '{{ hub_conf_dir }}/postgresql.key:/etc/pulp/keys/postgresql.key:ro,z'
+  when: hub_pg_cert_auth | bool
+
+- name: Set api/content/worker automation hub volumes
+  ansible.builtin.set_fact:
+    _api_volumes: '{{ _common_volumes + _auth_volumes + _redis_volumes + _redirect_volume }}'
+    _content_volumes: '{{ _common_volumes + _redis_volumes }}'
+    _worker_secrets: '{{ _common_secrets }}'
+    _worker_volumes: '{{ _common_volumes + _redis_volumes }}'
+  vars:
+    _redirect_volume:
+      - '{{ hub_nginx_conf_dir }}/redirect-page.html:/var/lib/operator/static/galaxy_ng/index.html:ro,z'
+
+- name: Add galaxy importer to worker volumes
+  ansible.builtin.set_fact:
+    _worker_volumes: '{{ _worker_volumes + _galaxy_importer }}'
+  vars:
+    _galaxy_importer:
+      - '{{ hub_conf_dir }}/galaxy-importer.cfg:/etc/galaxy-importer/galaxy-importer.cfg:ro,z'
+  when: hub_galaxy_importer is defined
+
+- name: Add tls to web automation hub volumes
+  ansible.builtin.set_fact:
+    _web_volumes: '{{ _web_volumes + _tls_volumes }}'
+  vars:
+    _tls_volumes:
+      - '{{ hub_conf_dir }}/pulp.cert:/etc/pulp/pulp.cert:ro,z'
+      - '{{ hub_conf_dir }}/pulp.key:/etc/pulp/pulp.key:ro,z'
+  when: not hub_nginx_disable_https | bool
+
+- name: Add collection volume to automation worker volumes
+  ansible.builtin.set_fact:
+    _worker_volumes: '{{ _worker_volumes + _collection_volume }}'
+  vars:
+    _collection_volume:
+      - '{{ aap_volumes_dir }}/hub/collection_sign.sh:/usr/share/pulp/collection_sign.sh:ro,z'
+  when: hub_collection_signing | bool
+
+- name: Add collection secret to automation worker secrets
+  ansible.builtin.set_fact:
+    _worker_secrets: '{{ _worker_secrets + _collection_secret }}'
+  vars:
+    _collection_secret:
+      - 'hub_collection_signing_passphrase,target=hub_collection_signing_passphrase,mode=0400,uid={{ ansible_user_uid }}'
+  when:
+    - hub_collection_signing | bool
+    - hub_collection_signing_pass is defined
+
+- name: Add container volume to automation worker volumes
+  ansible.builtin.set_fact:
+    _worker_volumes: '{{ _worker_volumes + _container_volume }}'
+  vars:
+    _container_volume:
+      - '{{ aap_volumes_dir }}/hub/container_sign.sh:/usr/share/pulp/container_sign.sh:ro,z'
+  when: hub_container_signing | bool
+
+- name: Add container secret to automation worker secrets
+  ansible.builtin.set_fact:
+    _worker_secrets: '{{ _worker_secrets + _container_secret }}'
+  vars:
+    _container_secret:
+      - 'hub_container_signing_passphrase,target=hub_container_signing_passphrase,mode=0400,uid={{ ansible_user_uid }}'
+  when:
+    - hub_container_signing | bool
+    - hub_container_signing_pass is defined
+
+- name: Set systemd requires
+  ansible.builtin.set_fact:
+    __systemd_requires: '{{ hub_container_requires | sort | product([".service"]) | map("join") | list }}'
+...

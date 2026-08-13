@@ -1,0 +1,82 @@
+---
+- name: Set facts for containers
+  ansible.builtin.set_fact:
+    __containers:
+      - automation-hub-api
+      - automation-hub-content
+      - automation-hub-web
+    _hub_nfs: '{{ hub_shared_data_path | default("") | length > 0 }}'
+
+- name: Add hub workers to containers list
+  ansible.builtin.set_fact:
+    __containers: '{{ __containers | union(["automation-hub-worker-" + item | string]) }}'
+  loop: '{{ hub_workers_range }}'
+
+- name: Set facts for systemd services
+  ansible.builtin.set_fact:
+    __services: '{{ __containers | product(["service"]) | map("join", ".") }}'
+
+- name: Set hub port list
+  ansible.builtin.set_fact:
+    _hub_ports: ['{{ hub_nginx_http_port }}']
+
+- name: Add https port to hub port list
+  ansible.builtin.set_fact:
+    _hub_ports: '{{ _hub_ports | union([hub_nginx_https_port]) }}'
+  when: not hub_nginx_disable_https | bool
+
+- name: Ensure systemd units are disabled and stopped
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    state: stopped
+    enabled: false
+    scope: user
+  failed_when: false
+  loop: '{{ __services }}'
+
+- name: Delete the containers
+  containers.podman.podman_container:
+    name: '{{ item }}'
+    state: absent
+  loop: '{{ __containers }}'
+
+- name: Delete the systemd unit files
+  ansible.builtin.file:
+    path: '{{ ansible_user_dir }}/.config/systemd/user/{{ item }}'
+    state: absent
+  loop: '{{ __services }}'
+
+- name: Unmount NFS Data directory
+  become: true
+  ansible.posix.mount:
+    path: "{{ hub_data_dir }}"
+    state: absent
+  when: _hub_nfs | bool
+
+- name: Delete the directories/files
+  ansible.builtin.file:
+    path: '{{ aap_volumes_dir }}/hub'
+    state: absent
+
+- name: Delete podman volumes
+  ansible.builtin.include_tasks: volumes.yml
+  vars:
+    __volume_state: absent
+
+- name: Delete the hub secrets
+  containers.podman.podman_secret:
+    name: '{{ item }}'
+    state: absent
+  loop:
+    - hub_collection_signing_passphrase
+    - hub_container_signing_passphrase
+    - hub_database_fields
+    - hub_resource_server
+    - hub_secret_key
+    - hub_settings
+
+- name: Delete firewalld rules
+  ansible.builtin.include_tasks: firewalld.yml
+  vars:
+    __firewalld_state: disabled
+...

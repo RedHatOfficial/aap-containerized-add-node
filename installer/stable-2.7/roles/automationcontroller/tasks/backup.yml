@@ -1,0 +1,99 @@
+---
+- name: Set automation controller backup volumes
+  ansible.builtin.set_fact:
+    _backup_volumes:
+      - '{{ ansible_user_dir }}/aap/tls/extracted:/etc/pki/ca-trust/extracted:z'
+      - '{{ controller_conf_dir }}/settings.py:/etc/tower/settings.py:ro,z'
+
+- name: Backup the PostgreSQL database
+  when: not controller_postgresql_skip_data | bool or groups.get('database', []) | length == 1
+  block:
+    - name: Add postgresql tls to automation controller backup volumes
+      ansible.builtin.set_fact:
+        _backup_volumes: '{{ _backup_volumes + _postgresql_tls_volumes }}'
+      vars:
+        _postgresql_tls_volumes:
+          - '{{ controller_conf_dir }}/postgresql.cert:/etc/tower/postgresql.cert:ro,z'
+          - '{{ controller_conf_dir }}/postgresql.key:/etc/tower/postgresql.key:ro,z'
+      when: controller_pg_cert_auth | bool
+
+    - name: Precreate automation controller database partitions
+      containers.podman.podman_container:
+        name: automation-controller-backup
+        image: '{{ _controller_image }}'
+        command: 'awx-manage precreate_partitions --count={{ controller_precreate_partition_hours }}'
+        detach: false
+        rm: true
+        log_driver: '{{ container_log_driver }}'
+        user: '{{ ansible_user_uid }}'
+        userns: keep-id
+        network: host
+        secrets:
+          - 'controller_secret_key,target=/etc/tower/SECRET_KEY,mode=0400,uid={{ ansible_user_uid }}'
+          - 'controller_postgres,target=/etc/tower/conf.d/postgres.py,mode=0400,uid={{ ansible_user_uid }}'
+        volume: '{{ _backup_volumes }}'
+      register: _precreate_partition
+      changed_when: "'Created partitions for' in _precreate_partition.stdout"
+      run_once: true
+      retries: 5
+      delay: 60
+      until: _precreate_partition is not failed
+
+    - name: Create postgresql CLI aliases
+      ansible.builtin.include_role:
+        name: postgresql
+        tasks_from: cli.yml
+      vars:
+        _postgresql_socket: '{{ controller_pg_socket | default("") }}'
+        _postgresql_cert_auth: '{{ controller_pg_cert_auth }}'
+        _postgresql_src_dir: '{{ controller_conf_dir }}'
+        _postgresql_dest_dir: /etc/tower
+
+    - name: Add postgresql TLS environment variable for certificate authentication
+      ansible.builtin.set_fact:
+        _common_pg_env: '{{ _common_pg_env | combine(_controller_pg_ssl) }}'
+      vars:
+        _controller_pg_ssl:
+          PGSSLCERT: /etc/tower/postgresql.cert
+          PGSSLKEY: /etc/tower/postgresql.key
+          PGSSLROOTCERT: '{{ ca_trust_bundle }}'
+      when: controller_pg_cert_auth | bool
+
+    - name: Backup the automation controller postgresql database
+      community.postgresql.postgresql_db:
+        name: '{{ controller_pg_database }}'
+        login_host: '{{ controller_pg_host }}'
+        login_port: '{{ controller_pg_port }}'
+        login_user: '{{ controller_pg_username }}'
+        login_password: '{{ controller_pg_password | default(omit) }}'
+        login_unix_socket: '{{ controller_pg_socket | default(omit) }}'
+        ssl_mode: '{{ controller_pg_sslmode }}'
+        target: '{{ ansible_user_dir }}/aap/backups/{{ controller_db_filename }}'
+        target_opts: '--clean --create'
+        state: dump
+      environment: '{{ _common_pg_env }}'
+      run_once: true
+
+- name: Archive the automation controller data
+  ansible.containerized_installer.archive:
+    path:
+      - '{{ ansible_user_dir }}/.local/share/containers/storage/secrets'
+      - '{{ ansible_user_dir }}/aap/backups/{{ controller_db_filename }}'
+      - '{{ ansible_user_dir }}/aap/controller/data/projects'
+      - '{{ ansible_user_dir }}/aap/controller/etc'
+      - '{{ ansible_user_dir }}/aap/controller/nginx'
+      - '{{ ansible_user_dir }}/aap/tls'
+      - '{{ metrics_data_dir }}'
+    exclusion_patterns:
+      - '*aap/controller/data/projects/*_[0-9]*__*'
+      - '*aap/controller/data/projects/.__awx_cache/*_[0-9]*__*'
+    dest: '{{ ansible_user_dir }}/aap/backups/controller.{{ controller_archive_extension }}'
+    format: '{{ controller_use_archive_compression | bool | ternary(omit, archive_decompressed_extension) }}'
+    mode: '0640'
+
+- name: Download the automation controller tarball
+  ansible.builtin.fetch:
+    src: '{{ ansible_user_dir }}/aap/backups/controller.{{ controller_archive_extension }}'
+    dest: '{{ hostvars["localhost"]["_backup_dir"] }}/controller_{{ inventory_hostname }}.{{ controller_archive_extension }}'
+    flat: true
+...

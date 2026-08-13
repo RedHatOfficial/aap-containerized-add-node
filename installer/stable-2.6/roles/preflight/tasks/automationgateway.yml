@@ -1,0 +1,73 @@
+---
+- name: Ensure a gateway node is present
+  ansible.builtin.assert:
+    that:
+      - groups.get('automationgateway', []) | length > 0
+    fail_msg: 'You must have a host set in the [automationgateway] section'
+
+- name: Ensure gateway admin password is provided
+  ansible.builtin.assert:
+    that:
+      - gateway_admin_password is defined
+      - gateway_admin_password | length
+    fail_msg: 'gateway_admin_password must be set and not empty'
+
+- name: Ensure gateway postgresql sslmode is a valid choice
+  ansible.builtin.assert:
+    that:
+      - gateway_pg_sslmode in ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full']
+    fail_msg: 'Invalid gateway postgresql sslmode value. Only disable, allow, prefer, require, verify-ca and verify-full values are allowed'
+  when: gateway_pg_sslmode is defined
+
+- name: Ensure gateway postgresql host is provided
+  ansible.builtin.assert:
+    that:
+      - gateway_pg_host is defined
+      - gateway_pg_host | length
+    fail_msg: 'gateway_pg_host must be set and not empty'
+
+- name: Ensure gateway postgresql password is provided
+  ansible.builtin.assert:
+    that:
+      - gateway_pg_password is defined
+      - gateway_pg_password | length
+    fail_msg: 'gateway_pg_password must be set and not empty'
+  when: not gateway_pg_cert_auth | default(false) | bool
+
+- name: When using postgresql TLS authentication
+  when:
+    - gateway_pg_cert_auth is defined
+    - gateway_pg_cert_auth | bool
+  block:
+    - name: Ensure using an external database
+      ansible.builtin.assert:
+        that:
+          - groups.get('database', []) | length == 0
+        fail_msg: 'Only external database topology supports postgresql TLS authentication'
+
+    - name: Ensure gateway TLS certificate/key are provided
+      ansible.builtin.assert:
+        that:
+          - gateway_pg_tls_cert is defined
+          - gateway_pg_tls_cert | length
+          - gateway_pg_tls_key is defined
+          - gateway_pg_tls_key | length
+          - custom_ca_cert is defined
+          - custom_ca_cert | length
+        fail_msg: 'gateway_pg_tls_cert, gateway_pg_tls_key and custom_ca_cert must be set and not empty'
+
+    - name: Ensure gateway TLS certificate/key are provided with postgresql authentication enabled
+      ansible.builtin.assert:
+        that:
+          - gateway_pg_sslmode is defined
+          - gateway_pg_sslmode in ['verify-ca', 'verify-full']
+        fail_msg: 'gateway_pg_sslmode must be set and using either verify-ca or verify-full value'
+
+- name: Ensure automation gateway url format when provided
+  ansible.builtin.assert:
+    that:
+      - gateway_main_url | length
+      - gateway_main_url is regex('^https?://.*')
+    fail_msg: "gateway_main_url must start with http:// or https:// prefix"
+  when: gateway_main_url is defined
+...

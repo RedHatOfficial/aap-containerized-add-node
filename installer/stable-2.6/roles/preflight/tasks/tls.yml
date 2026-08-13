@@ -1,0 +1,76 @@
+---
+- name: Ensure both TLS certificate and key are provided
+  ansible.builtin.assert:
+    that:
+      - _tls_cert is defined
+      - _tls_cert | length
+      - _tls_key is defined
+      - _tls_key | length
+    fail_msg: 'You need to provide both TLS certificate and key files'
+  when: _tls_cert is defined or _tls_key is defined
+
+- name: Ensure TLS key passphrase is not empty when provided
+  ansible.builtin.assert:
+    that:
+      - _tls_key_passphrase | length
+    fail_msg: 'The TLS key passphrase must not be empty'
+  when: _tls_key_passphrase is defined
+
+- name: Ensure TLS certificate and key match
+  ansible.builtin.assert:
+    that:
+      - _local_cert_info.public_key_data == _local_key_info.public_data
+    fail_msg: 'The TLS certificate and key do not match together'
+  vars:
+    _local_cert_info: '{{ lookup("file", _tls_cert) | community.crypto.x509_certificate_info }}'
+    _local_key_info: '{{ lookup("file", _tls_key) | community.crypto.openssl_privatekey_info }}'
+  when:
+    - _tls_cert is defined
+    - _tls_key is defined
+    - not _tls_remote | default(false) | bool
+    - _tls_key_passphrase is not defined
+
+- name: Ensure TLS certificate and key match (passphrase)
+  ansible.builtin.assert:
+    that:
+      - _local_cert_info.public_key_data == _local_key_info.public_data
+    fail_msg: 'The TLS certificate and key do not match together'
+  vars:
+    _local_cert_info: '{{ lookup("file", _tls_cert) | community.crypto.x509_certificate_info }}'
+    _local_key_info: '{{ lookup("file", _tls_key) | community.crypto.openssl_privatekey_info(passphrase=_tls_key_passphrase) }}'
+  when:
+    - _tls_cert is defined
+    - _tls_key is defined
+    - not _tls_remote | default(false) | bool
+    - _tls_key_passphrase is defined
+
+- name: When TLS certificate/key files are remote
+  when: _tls_remote | default(false) | bool
+  block:
+    - name: Install python-cryptography
+      ansible.builtin.package:
+        name: python3-cryptography
+      become: true
+
+    - name: Get x509 TLS certificate information
+      community.crypto.x509_certificate_info:
+        path: '{{ _tls_cert }}'
+      register: _remote_cert_info
+      when: _tls_cert is defined
+
+    - name: Get x509 TLS key information
+      community.crypto.openssl_privatekey_info:
+        path: '{{ _tls_key }}'
+        passphrase: '{{ _tls_key_passphrase | default(omit) }}'
+      register: _remote_key_info
+      when: _tls_key is defined
+
+    - name: Ensure TLS certificate and key match
+      ansible.builtin.assert:
+        that:
+          - _remote_cert_info.public_key_data == _remote_key_info.public_data
+        fail_msg: 'The TLS certificate and key do not match together'
+      when:
+        - _tls_cert is defined
+        - _tls_key is defined
+...

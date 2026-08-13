@@ -1,0 +1,38 @@
+---
+### container
+container_log_driver: journald
+
+### common
+aap_volumes_dir: '{{ ansible_user_dir }}/aap'
+archive_compressed_extension: tar.gz
+archive_decompressed_extension: tar
+
+### backup/restore
+mcp_use_archive_compression: '{{ use_archive_compression | default(true) }}'
+
+### nginx
+mcp_nginx_conf_dir: '{{ aap_volumes_dir }}/ansiblemcp/nginx/etc'
+mcp_nginx_disable_https: false
+mcp_nginx_disable_hsts: false
+mcp_nginx_hsts_max_age: 63072000
+mcp_nginx_http_port: 8086
+mcp_nginx_https_port: 8448
+mcp_nginx_https_protocols:
+  - TLSv1.2
+  - TLSv1.3
+mcp_nginx_client_max_body_size: 5m
+mcp_nginx_user_headers: []
+
+### ansiblemcp
+mcp_container_requires: []
+mcp_conf_dir: '{{ aap_volumes_dir }}/ansiblemcp/etc'
+mcp_firewall_zone: public
+mcp_extra_settings: []
+mcp_tls_remote: false
+mcp_public_base_url: ''
+mcp_allow_write_operations: false
+mcp_ignore_certificate_errors: false
+
+### TLS CA
+ca_trust_bundle: /etc/pki/tls/certs/ca-bundle.crt
+...

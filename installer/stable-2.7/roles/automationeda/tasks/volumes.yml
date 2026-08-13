@@ -1,0 +1,11 @@
+---
+- name: Manage the automation eda data volume
+  containers.podman.podman_volume:
+    name: eda_data
+    state: '{{ __volume_state }}'
+
+- name: Manage the automation eda nginx volume
+  containers.podman.podman_volume:
+    name: eda_nginx
+    state: '{{ __volume_state }}'
+...

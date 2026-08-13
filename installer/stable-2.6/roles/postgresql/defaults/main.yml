@@ -1,0 +1,23 @@
+---
+### container
+container_log_driver: journald
+
+### common
+archive_compressed_extension: "tar.gz"
+archive_decompressed_extension: "tar"
+
+### backup/restore
+postgresql_use_archive_compression: "{{ use_archive_compression | default(true) }}"
+
+### database
+postgresql_firewall_zone: public
+postgresql_max_connections: 1024
+postgresql_log_destination: /dev/stderr
+postgresql_port: 5432
+postgresql_keep_databases: false
+postgresql_conf_dir: '{{ ansible_user_dir }}/aap/postgresql'
+postgresql_disable_tls: false
+postgresql_password_encryption: scram-sha-256
+
+postgresql_extra_settings: []
+...

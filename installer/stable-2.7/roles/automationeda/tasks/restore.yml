@@ -1,0 +1,254 @@
+---
+- name: Set automation eda facts
+  ansible.builtin.include_tasks: facts.yml
+
+- name: Stop automation eda systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+
+- name: Unarchive the automation eda data
+  ansible.builtin.unarchive:
+    src: '{{ hostvars["localhost"]["_backup_dir"] }}/eda_{{ inventory_hostname }}.{{ eda_archive_extension }}'
+    dest: '{{ ansible_user_dir }}'
+    exclude:
+      - 'aap/tls'
+      - '.local/share/containers/storage/secrets/'
+      - 'aap/eda/nginx/etc/redirect-page.html'
+      - 'aap/eda/etc/'
+      - 'aap/eda/etc/eda.key'
+      - 'aap/eda/etc/eda.cert'
+
+- name: Set automation eda controller secret facts
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: restore_secrets.yml
+  vars:
+    backup_file: '{{ hostvars["localhost"]["_backup_dir"] }}/eda_{{ inventory_hostname }}.{{ eda_archive_extension }}'
+
+- name: Get the existing eda event persistence db password secret
+  containers.podman.podman_secret_info:
+    name: eda_event_persistence_db_password
+    showsecret: true
+  register: _eda_event_persistence_db_password
+  no_log: true
+  run_once: true
+  when:
+    - eda_event_persistence_deploy_db | bool
+    - not eda_event_persistence_pg_cert_auth | bool
+
+- name: Set the eda event persistence db password fact
+  ansible.builtin.set_fact:
+    __eda_event_persistence_db_password: >-
+      {{ _eda_event_persistence_db_password.secrets[0].SecretData |
+         default(__old_eda_event_persistence_db_password | default('') | b64decode) }}
+  no_log: true
+  run_once: true
+  when:
+    - eda_event_persistence_deploy_db | bool
+    - not eda_event_persistence_pg_cert_auth | bool
+    - _eda_event_persistence_db_password.secrets | default([]) | length > 0 or
+      __old_eda_event_persistence_db_password is defined
+
+- name: Update the relevant eda secrets
+  containers.podman.podman_secret:
+    name: "{{ item }}"
+    data: "{{ lookup('ansible.builtin.vars', '__old_' + item) | b64decode }}"
+  loop:
+    - eda_secret_key
+    - eda_resource_server
+
+- name: Reconfigure containers
+  ansible.builtin.include_tasks: containers.yml
+  vars:
+    __containers_recreate: true
+
+- name: Find the automation eda postgresql database
+  ansible.builtin.find:
+    path: '{{ ansible_user_dir }}/aap/backups'
+    patterns:
+      - '{{ eda_pg_database }}.{{ db_compressed_extension }}'
+      - '{{ eda_pg_database }}.{{ db_decompressed_extension }}'
+  register: _eda_db_file
+  run_once: true
+
+- name: Fail if the database backup file is missing and eda_postgresql_skip_data not enabled
+  ansible.builtin.assert:
+    that:
+      - eda_postgresql_skip_data | bool
+    fail_msg: "eda_postgresql_skip_data needs to be set to true when the database dump does not exist"
+  run_once: true
+  when:
+    - groups.get('database', []) | length == 0
+    - _eda_db_file.matched == 0
+
+- name: Restore the PostgreSQL database
+  when: not eda_postgresql_skip_data | bool or groups.get('database', []) | length == 1
+  block:
+    - name: Create postgresql CLI aliases
+      ansible.builtin.include_role:
+        name: postgresql
+        tasks_from: cli.yml
+      vars:
+        _postgresql_socket: '{{ eda_pg_socket | default("") }}'
+        _postgresql_cert_auth: '{{ eda_pg_cert_auth }}'
+        _postgresql_src_dir: '{{ eda_conf_dir }}'
+        _postgresql_dest_dir: /etc/eda
+        _postgresql_db_file: '{{ _eda_db_file.files[0].path }}'
+
+    - name: Add postgresql TLS environment variable for certificate authentication
+      ansible.builtin.set_fact:
+        _common_pg_env: '{{ _common_pg_env | combine(_eda_pg_ssl) }}'
+      vars:
+        _eda_pg_ssl:
+          PGSSLCERT: /etc/eda/postgresql.cert
+          PGSSLKEY: /etc/eda/postgresql.key
+          PGSSLROOTCERT: '{{ ca_trust_bundle }}'
+      when: eda_pg_cert_auth | bool
+
+    - name: Grant createdb role to the automation eda postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ eda_pg_username }}'
+        role_attr_flags: CREATEDB
+        login_host: '{{ eda_pg_host }}'
+        login_port: '{{ eda_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ eda_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+    - name: Restore the automation eda postgresql database
+      community.postgresql.postgresql_db:
+        name: template1
+        login_host: '{{ eda_pg_host }}'
+        login_port: '{{ eda_pg_port }}'
+        login_user: '{{ eda_pg_username }}'
+        login_password: '{{ eda_pg_password | default(omit) }}'
+        login_unix_socket: '{{ eda_pg_socket | default(omit) }}'
+        ssl_mode: '{{ eda_pg_sslmode }}'
+        target: '{{ _eda_db_file.files[0].path }}'
+        target_opts: '{{ (_eda_db_file.files[0].path | split(".") | last == "pgc") | ternary("--create --clean --if-exists", omit) }}'
+        state: restore
+      environment: '{{ _common_pg_env }}'
+      run_once: true
+
+    - name: Revoke createdb role to the automation eda postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ eda_pg_username }}'
+        role_attr_flags: NOCREATEDB
+        login_host: '{{ eda_pg_host }}'
+        login_port: '{{ eda_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ eda_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+- name: Find the automation eda event persistence postgresql database
+  ansible.builtin.find:
+    path: '{{ ansible_user_dir }}/aap/backups'
+    patterns:
+      - '{{ eda_event_persistence_pg_database }}.{{ db_compressed_extension }}'
+      - '{{ eda_event_persistence_pg_database }}.{{ db_decompressed_extension }}'
+  register: _eda_event_persistence_db_file
+  run_once: true
+  when: eda_event_persistence_deploy_db | bool
+
+- name: Fail if the event persistence database backup file is missing and eda_postgresql_skip_data not enabled
+  ansible.builtin.assert:
+    that:
+      - eda_postgresql_skip_data | bool
+    fail_msg: "eda_postgresql_skip_data needs to be set to true when the event persistence database dump does not exist"
+  run_once: true
+  when:
+    - eda_event_persistence_deploy_db | bool
+    - groups.get('database', []) | length == 0
+    - _eda_event_persistence_db_file.matched == 0
+
+- name: Restore the event Persistence PostgreSQL database
+  when:
+    - eda_event_persistence_deploy_db | bool
+    - not eda_postgresql_skip_data | bool or groups.get('database', []) | length == 1
+  block:
+    - name: Create postgresql CLI aliases
+      ansible.builtin.include_role:
+        name: postgresql
+        tasks_from: cli.yml
+      vars:
+        _postgresql_socket: '{{ eda_pg_socket | default("") }}'
+        _postgresql_cert_auth: '{{ eda_event_persistence_pg_cert_auth }}'
+        _postgresql_src_dir: '{{ eda_conf_dir }}'
+        _postgresql_dest_dir: /etc/eda
+        _postgresql_db_file: '{{ _eda_event_persistence_db_file.files[0].path }}'
+        _postgresql_tls_filename: postgresql_event_persistence
+
+    - name: Add event persistence postgresql TLS environment variable for certificate authentication
+      ansible.builtin.set_fact:
+        _event_persistence_pg_env: '{{ _common_pg_env | combine(_eda_event_persistence_pg_ssl) }}'
+      vars:
+        _eda_event_persistence_pg_ssl:
+          PGSSLCERT: /etc/eda/postgresql_event_persistence.cert
+          PGSSLKEY: /etc/eda/postgresql_event_persistence.key
+          PGSSLROOTCERT: '{{ ca_trust_bundle }}'
+      when: eda_event_persistence_pg_cert_auth | bool
+
+    - name: Grant createdb role to the automation eda event persistence postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ eda_event_persistence_pg_username }}'
+        role_attr_flags: CREATEDB
+        login_host: '{{ eda_pg_host }}'
+        login_port: '{{ eda_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ eda_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+    - name: Restore the automation eda event persistence postgresql database
+      community.postgresql.postgresql_db:
+        name: template1
+        login_host: '{{ eda_pg_host }}'
+        login_port: '{{ eda_pg_port }}'
+        login_user: '{{ eda_event_persistence_pg_username }}'
+        login_password: '{{ eda_event_persistence_pg_password | default(__eda_event_persistence_db_password) | default(omit) }}'
+        login_unix_socket: '{{ eda_pg_socket | default(omit) }}'
+        ssl_mode: '{{ eda_event_persistence_pg_sslmode }}'
+        target: '{{ _eda_event_persistence_db_file.files[0].path }}'
+        target_opts: '{{ (_eda_event_persistence_db_file.files[0].path | split(".") | last == "pgc") | ternary("--create --clean --if-exists", omit) }}'
+        state: restore
+      environment: '{{ _event_persistence_pg_env | default(_common_pg_env) }}'
+      run_once: true
+      when: _eda_event_persistence_db_file.files | length > 0
+
+    - name: Revoke createdb role from the automation eda event persistence postgresql user
+      community.postgresql.postgresql_user:
+        name: '{{ eda_event_persistence_pg_username }}'
+        role_attr_flags: NOCREATEDB
+        login_host: '{{ eda_pg_host }}'
+        login_port: '{{ eda_pg_port }}'
+        login_user: '{{ postgresql_admin_username | default("postgres") }}'
+        login_password: '{{ postgresql_admin_password | default(omit) }}'
+        login_db: '{{ postgresql_admin_database | default("postgres") }}'
+        login_unix_socket: '{{ eda_pg_socket | default(omit) }}'
+      run_once: true
+      when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+- name: Include create initial data task
+  ansible.builtin.include_tasks: create_initial_data.yml
+
+- name: Start automation eda systemd services
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: started
+
+- name: Add decision environments
+  ansible.builtin.include_tasks: decision_environment.yml
+  args:
+    apply:
+      run_once: true
+  when: eda_type in ['api', 'hybrid']
+...

@@ -1,0 +1,161 @@
+---
+- name: Ensure controller admin password is provided
+  ansible.builtin.assert:
+    that:
+      - controller_admin_password is defined
+      - controller_admin_password | length
+    fail_msg: 'controller_admin_password must be set and not empty'
+
+- name: Ensure controller postgresql sslmode is a valid choice
+  ansible.builtin.assert:
+    that:
+      - controller_pg_sslmode in ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full']
+    fail_msg: 'Invalid controller postgresql sslmode value. Only disable, allow, prefer, require, verify-ca and verify-full values are allowed'
+  when: controller_pg_sslmode is defined
+
+- name: Ensure controller_percent_memory_capacity valid choice
+  ansible.builtin.assert:
+    that:
+      - controller_percent_memory_capacity is float
+      - controller_percent_memory_capacity | float <= 1.0
+      - controller_percent_memory_capacity | float >= 0.01
+    fail_msg: 'Invalid controller_percent_memory_capacity defined. Provide a float beteen 0.01 and 1.0'
+  when: controller_percent_memory_capacity is defined
+
+- name: Ensure controller postgresql host is provided
+  ansible.builtin.assert:
+    that:
+      - controller_pg_host is defined
+      - controller_pg_host | length
+    fail_msg: 'controller_pg_host must be set and not empty'
+
+- name: Ensure controller postgresql password is provided
+  ansible.builtin.assert:
+    that:
+      - controller_pg_password is defined
+      - controller_pg_password | length
+    fail_msg: 'controller_pg_password must be set and not empty'
+  when: not controller_pg_cert_auth | default(false) | bool
+
+- name: When using postgresql TLS authentication
+  when:
+    - controller_pg_cert_auth is defined
+    - controller_pg_cert_auth | bool
+  block:
+    - name: Ensure using an external database
+      ansible.builtin.assert:
+        that:
+          - groups.get('database', []) | length == 0
+        fail_msg: 'Only external database topology supports postgresql TLS authentication'
+
+    - name: Ensure controller TLS certificate/key are provided
+      ansible.builtin.assert:
+        that:
+          - controller_pg_tls_cert is defined
+          - controller_pg_tls_cert | length
+          - controller_pg_tls_key is defined
+          - controller_pg_tls_key | length
+          - custom_ca_cert is defined
+          - custom_ca_cert | length
+        fail_msg: 'controller_pg_tls_cert, controller_pg_tls_key and custom_ca_cert must be set and not empty'
+
+    - name: Ensure controller TLS certificate/key are provided with postgresql authentication enabled
+      ansible.builtin.assert:
+        that:
+          - controller_pg_sslmode is defined
+          - controller_pg_sslmode in ['verify-ca', 'verify-full']
+        fail_msg: 'controller_pg_sslmode must be set and using either verify-ca or verify-full value'
+
+- name: Check the Automation Controller license file
+  when: controller_license_file is defined
+  block:
+    - name: Check the license file presence
+      ansible.builtin.stat:
+        path: '{{ controller_license_file }}'
+      register: _controller_license_file
+
+    - name: Validate that the license file exists
+      ansible.builtin.assert:
+        that:
+          - _controller_license_file.stat.exists | bool
+          - _controller_license_file.stat.isreg | bool
+        fail_msg: 'The controller license file must exist on the ansible host'
+
+- name: Check the Automation Controller postinstall
+  when: controller_postinstall | default(false) | bool
+  block:
+    - name: Ensure controller license file is provided
+      ansible.builtin.assert:
+        that:
+          - controller_license_file is defined
+          - controller_license_file | length
+        fail_msg: 'controller_license_file must be set and not empty controller_postinstall=true'
+
+    - name: Ensure controller postinstall dir is provided
+      ansible.builtin.assert:
+        that:
+          - controller_postinstall_dir is defined
+          - controller_postinstall_dir | length
+        fail_msg: 'controller_postinstall_dir must be set and not empty controller_postinstall=true'
+
+    - name: Check the controller postinstall directory
+      ansible.builtin.stat:
+        path: '{{ controller_postinstall_dir }}'
+      register: _controller_postinstall_dir
+
+    - name: Validate that the postinstall directory exists
+      ansible.builtin.assert:
+        that:
+          - _controller_postinstall_dir.stat.exists | bool
+          - _controller_postinstall_dir.stat.isdir | bool
+        fail_msg: 'The controller postinstall directory must exist on the ansible host'
+      when: controller_postinstall_repo_url is not defined
+
+- name: Check EE extra images structure
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.name | length > 0
+      - item.image is defined
+      - item.image | length > 0
+    fail_msg: 'Items in ee_extra_images need to have both name and image keys defined and not empty'
+  loop: '{{ ee_extra_images }}'
+  when:
+    - ee_extra_images is defined
+    - ee_extra_images | length > 0
+
+- name: Validate metrics-utility configuration when enabled
+  when: metrics_utility_enabled | default(false) | bool
+  block:
+    - name: Ensure metrics_utility_extra_settings is defined when metrics-utility is enabled
+      ansible.builtin.assert:
+        that:
+          - metrics_utility_extra_settings is defined
+          - metrics_utility_extra_settings | length > 0
+        fail_msg: 'metrics_utility_extra_settings must be defined and not empty when metrics_utility_enabled is true'
+
+    - name: Validate metrics_utility_extra_settings structure
+      ansible.builtin.assert:
+        that:
+          - item.setting is defined
+          - item.setting | length > 0
+          - item.value is defined
+        fail_msg: 'Each item in metrics_utility_extra_settings must have both "setting" and "value" keys defined and not empty'
+      loop: '{{ metrics_utility_extra_settings }}'
+
+    - name: Ensure essential report variables are provided
+      ansible.builtin.assert:
+        that:
+          - _metrics_utility_settings | selectattr('setting', 'equalto', 'METRICS_UTILITY_PRICE_PER_NODE') | list | length > 0
+          - _metrics_utility_settings | selectattr('setting', 'equalto', 'METRICS_UTILITY_REPORT_COMPANY_NAME') | list | length > 0
+          - _metrics_utility_settings | selectattr('setting', 'equalto', 'METRICS_UTILITY_REPORT_EMAIL') | list | length > 0
+          - _metrics_utility_settings | selectattr('setting', 'equalto', 'METRICS_UTILITY_REPORT_SKU') | list | length > 0
+          - _metrics_utility_settings | selectattr('setting', 'equalto', 'METRICS_UTILITY_REPORT_TYPE') | list | length > 0
+        fail_msg: >-
+          Essential report variables missing: METRICS_UTILITY_PRICE_PER_NODE,
+          METRICS_UTILITY_REPORT_COMPANY_NAME, METRICS_UTILITY_REPORT_EMAIL,
+          METRICS_UTILITY_REPORT_SKU, and METRICS_UTILITY_REPORT_TYPE are required
+          for report generation
+      vars:
+        _metrics_utility_settings: '{{ metrics_utility_extra_settings }}'
+...

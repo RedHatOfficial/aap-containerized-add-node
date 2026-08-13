@@ -1,0 +1,100 @@
+---
+- name: Install python-psycopg2
+  ansible.builtin.package:
+    name: python3-psycopg2
+  become: true
+  when: not ostree | bool
+
+- name: Wait for postgresql to be ready
+  community.postgresql.postgresql_ping:
+    login_host: '{{ automationmetrics_pg_host }}'
+    login_port: '{{ automationmetrics_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ automationmetrics_pg_socket | default(omit) }}'
+  register: _ping
+  retries: 30
+  delay: 10
+  until:
+    - _ping.is_available is defined
+    - _ping.is_available | bool
+
+- name: Create the automation metrics postgresql user
+  community.postgresql.postgresql_user:
+    name: '{{ automationmetrics_pg_username }}'
+    password: '{{ automationmetrics_pg_password | default(omit) }}'
+    login_host: '{{ automationmetrics_pg_host }}'
+    login_port: '{{ automationmetrics_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ automationmetrics_pg_socket | default(omit) }}'
+
+- name: Create the automation metrics postgresql database
+  community.postgresql.postgresql_db:
+    name: '{{ automationmetrics_pg_database }}'
+    owner: '{{ automationmetrics_pg_username }}'
+    login_host: '{{ automationmetrics_pg_host }}'
+    login_port: '{{ automationmetrics_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_unix_socket: '{{ automationmetrics_pg_socket | default(omit) }}'
+    maintenance_db: '{{ postgresql_admin_database | default("postgres") }}'
+
+- name: Create the metrics readonly user for Controller database access
+  community.postgresql.postgresql_user:
+    name: '{{ automationmetrics_controller_pg_username }}'
+    password: '{{ automationmetrics_controller_read_pg_password | default(omit) }}'
+    login_host: '{{ automationmetrics_controller_read_pg_host }}'
+    login_port: '{{ automationmetrics_controller_read_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ controller_pg_socket | default(omit) }}'
+  when: groups.get('automationcontroller', []) | length > 0
+
+- name: Grant automation metrics role to postgresql admin user
+  community.postgresql.postgresql_membership:
+    source_role: '{{ automationmetrics_pg_username }}'
+    target_role: '{{ postgresql_admin_username | default("postgres") }}'
+    login_host: '{{ automationmetrics_pg_host }}'
+    login_port: '{{ automationmetrics_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ automationmetrics_pg_socket | default(omit) }}'
+
+- name: Grant SELECT privileges on awx database tables
+  community.postgresql.postgresql_privs:
+    db: '{{ automationmetrics_controller_db }}'
+    role: '{{ automationmetrics_controller_pg_username }}'
+    type: table
+    objs: ALL_IN_SCHEMA
+    schema: public
+    privs: SELECT
+    state: present
+    login_host: '{{ automationmetrics_controller_read_pg_host }}'
+    login_port: '{{ automationmetrics_controller_read_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ controller_pg_socket | default(omit) }}'
+  when: groups.get('automationcontroller', []) | length > 0
+
+- name: Grant USAGE privileges on awx schema
+  community.postgresql.postgresql_privs:
+    db: '{{ automationmetrics_controller_db }}'
+    role: '{{ automationmetrics_controller_pg_username }}'
+    type: schema
+    objs: public
+    privs: USAGE
+    state: present
+    login_host: '{{ automationmetrics_controller_read_pg_host }}'
+    login_port: '{{ automationmetrics_controller_read_pg_port }}'
+    login_user: '{{ postgresql_admin_username | default("postgres") }}'
+    login_password: '{{ postgresql_admin_password | default(omit) }}'
+    login_db: '{{ postgresql_admin_database | default("postgres") }}'
+    login_unix_socket: '{{ controller_pg_socket | default(omit) }}'
+  when: groups.get('automationcontroller', []) | length > 0
+...

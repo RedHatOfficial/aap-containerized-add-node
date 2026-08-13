@@ -1,0 +1,11 @@
+---
+- name: Create the postgresql aliases for container
+  ansible.builtin.template:
+    src: cli.j2
+    dest: '{{ ansible_user_dir }}/.local/bin/{{ item }}'
+    mode: '0770'
+  loop:
+    - pg_dump
+    - pg_restore
+    - psql
+...

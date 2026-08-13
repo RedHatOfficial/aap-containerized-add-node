@@ -1,0 +1,48 @@
+---
+- name: Set maxkeys
+  ansible.builtin.set_fact:
+    host_tuning_sysctl_maxkeys: "{{ [(ansible_memtotal_mb | int // 100) + 100, 4096] | max }}"
+
+- name: Set maxbytes
+  ansible.builtin.set_fact:
+    host_tuning_sysctl_maxbytes: "{{ [(host_tuning_sysctl_maxkeys | int) * 100, 409600] | max }}"
+
+- name: Set kernel.keys.maxkeys in /etc/sysctl.d/99-aap.conf
+  ansible.posix.sysctl:
+    name: kernel.keys.maxkeys
+    value: "{{ host_tuning_sysctl_maxkeys | default(4096) | string }}"
+    sysctl_set: true
+    state: present
+    reload: true
+    sysctl_file: /etc/sysctl.d/99-aap.conf
+  become: true
+
+- name: Set kernel.keys.maxbytes in /etc/sysctl.d/99-aap.conf
+  ansible.posix.sysctl:
+    name: kernel.keys.maxbytes
+    value: "{{ host_tuning_sysctl_maxbytes | default(409600) | string }}"
+    sysctl_set: true
+    state: present
+    reload: true
+    sysctl_file: /etc/sysctl.d/99-aap.conf
+  become: true
+
+- name: Set fs.inotify.max_user_instances in /etc/sysctl.d/99-aap.conf
+  ansible.posix.sysctl:
+    name: fs.inotify.max_user_instances
+    value: "{{ host_tuning_sysctl_fs_inotify_max_user_instances | default(8192) | string }}"
+    sysctl_set: true
+    state: present
+    reload: true
+    sysctl_file: /etc/sysctl.d/99-aap.conf
+  become: true
+
+- name: Set fs.inotify.max_user_watches in /etc/sysctl.d/99-aap.conf
+  ansible.posix.sysctl:
+    name: fs.inotify.max_user_watches
+    value: "{{ host_tuning_sysctl_fs_inotify_max_user_watches | default(524288) | string }}"
+    sysctl_set: true
+    state: present
+    reload: true
+    sysctl_file: /etc/sysctl.d/99-aap.conf
+  become: true

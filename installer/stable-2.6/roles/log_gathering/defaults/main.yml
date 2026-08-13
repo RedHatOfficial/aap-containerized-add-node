@@ -1,0 +1,6 @@
+---
+# defaults file for log_gathering
+target_sos_directory: "/tmp"
+upload: false
+clean: false
+case_number: ""

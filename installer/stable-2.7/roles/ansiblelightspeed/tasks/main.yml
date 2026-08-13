@@ -1,0 +1,74 @@
+---
+- name: Set lightspeed facts
+  ansible.builtin.include_tasks: facts.yml
+
+- name: Create podman volumes
+  ansible.builtin.include_tasks: volumes.yml
+  vars:
+    __volume_state: present
+
+- name: Configure postgresql
+  ansible.builtin.include_tasks: postgresql.yml
+  args:
+    apply:
+      run_once: true
+  when: groups.get('database', []) | length == 1 or postgresql_admin_password is defined
+
+- name: Configure TLS for postgresql
+  ansible.builtin.include_tasks: tls_postgresql.yml
+  when: lightspeed_pg_cert_auth | bool
+
+- name: Configure lightspeed
+  ansible.builtin.include_tasks: config.yml
+
+- name: Configure TLS or nginx
+  ansible.builtin.include_tasks: tls.yml
+  when: not lightspeed_nginx_disable_https | bool
+
+- name: Configure lightspeed chatbot TLS
+  ansible.builtin.include_tasks: tls_chatbot.yml
+  when: not lightspeed_chatbot_disable_https | bool
+
+- name: Configure nginx
+  ansible.builtin.include_tasks: nginx.yml
+
+- name: Configure chatbot and mcp ports
+  ansible.builtin.include_tasks: chatbot_mcp.yml
+
+- name: Configure AAP OAuth for Lightspeed
+  ansible.builtin.include_tasks: aap_oauth.yml
+  args:
+    apply:
+      run_once: true
+
+- name: Configure podman secrets
+  ansible.builtin.include_tasks: secrets.yml
+
+- name: Configure Lightspeed chatbot mcp
+  ansible.builtin.include_tasks: config_mcp.yml
+
+- name: Handle container image update
+  ansible.builtin.include_tasks: update.yml
+
+- name: Configure containers
+  ansible.builtin.include_tasks: containers.yml
+  vars:
+    __containers_recreate: '{{ __lightspeed_recreate }}'
+
+- name: Initialize data
+  ansible.builtin.include_tasks: init.yml
+
+- name: Ensure ansible lightspeed containers are enabled and started
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_enabled: true
+    __systemd_state: started
+
+- name: Configure token cleanup timers
+  ansible.builtin.include_tasks: token_cleanup.yml
+
+- name: Add firewalld rules
+  ansible.builtin.include_tasks: firewalld.yml
+  vars:
+    __firewalld_state: enabled
+...

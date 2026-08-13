@@ -1,0 +1,30 @@
+---
+- name: Import event stream postgresql TLS certificate and key
+  when:
+    - eda_event_stream_pg_tls_cert is defined
+    - eda_event_stream_pg_tls_key is defined
+  block:
+    - name: Copy event stream postgresql TLS certificate
+      ansible.builtin.copy:
+        src: '{{ eda_event_stream_pg_tls_cert }}'
+        dest: '{{ eda_conf_dir }}/postgresql_event_stream.cert'
+        mode: '0640'
+        remote_src: '{{ eda_tls_remote | default(false) }}'
+      notify:
+        - Restart eda api
+        - Restart eda daphne
+        - Restart eda workers
+        - Restart eda activation workers
+
+    - name: Copy event stream postgresql TLS key
+      ansible.builtin.copy:
+        src: '{{ eda_event_stream_pg_tls_key }}'
+        dest: '{{ eda_conf_dir }}/postgresql_event_stream.key'
+        mode: '0400'
+        remote_src: '{{ eda_tls_remote | default(false) }}'
+      notify:
+        - Restart eda api
+        - Restart eda daphne
+        - Restart eda workers
+        - Restart eda activation workers
+...

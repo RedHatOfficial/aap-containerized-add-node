@@ -1,0 +1,117 @@
+---
+# Uses installer inventory: routable_hostname, receptor_type, receptor_port, receptor_peers.
+
+- name: Ensure controller task container is running
+  ansible.builtin.import_tasks: assert_controller.yml
+
+- name: Resolve instance UUID (installer-compatible)
+  ansible.builtin.import_tasks: uuid.yml
+
+- name: Register instance via awx-manage
+  vars:
+    _awx_manage_host: "{{ groups['automationcontroller'][0] }}"
+    _delegate_connection: "{{ hostvars[_awx_manage_host].ansible_connection | default('ssh') }}"
+    _hostname: "{{ routable_hostname | default(inventory_hostname) }}"
+    _node_type: "{{ receptor_type | default('execution') }}"
+    _listen_port: "{{ receptor_port | default(add_execution_nodes_listener_port) }}"
+    _peers: "{{ receptor_peers | default([]) }}"
+  block:
+    - name: Provision instance
+      ansible.builtin.command:
+        argv:
+          - podman
+          - exec
+          - "{{ add_execution_nodes_controller_container }}"
+          - awx-manage
+          - provision_instance
+          - "--hostname={{ _hostname }}"
+          - "--uuid={{ add_execution_nodes_instance_uuid }}"
+          - "--node_type={{ _node_type }}"
+      delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
+      become: false
+      register: _add_en_provision
+      changed_when: "'(changed: True)' in _add_en_provision.stdout or 'changed: True' in _add_en_provision.stdout"
+      retries: "{{ add_execution_nodes_awx_manage_retries }}"
+      delay: "{{ add_execution_nodes_awx_manage_delay }}"
+      until: _add_en_provision is not failed
+
+    - name: Add receptor address
+      ansible.builtin.command:
+        argv:
+          - podman
+          - exec
+          - "{{ add_execution_nodes_controller_container }}"
+          - awx-manage
+          - add_receptor_address
+          - "--instance={{ _hostname }}"
+          - "--address={{ _hostname }}"
+          - "--port={{ _listen_port }}"
+          - --canonical
+      delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
+      become: false
+      register: _add_en_receptor_address
+      changed_when: "'(changed: True)' in _add_en_receptor_address.stdout or 'changed: True' in _add_en_receptor_address.stdout"
+      retries: "{{ add_execution_nodes_awx_manage_retries }}"
+      delay: "{{ add_execution_nodes_awx_manage_delay }}"
+      until: _add_en_receptor_address is not failed
+
+    - name: Register peers
+      when: _peers | length > 0
+      ansible.builtin.command:
+        argv: "{{ ['podman', 'exec', add_execution_nodes_controller_container, 'awx-manage', 'register_peers', _hostname, '--exact'] + (_peers | list) }}"
+      delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
+      become: false
+      register: _add_en_register_peers
+      changed_when: not (_add_en_register_peers.stdout | regex_search('^0 peer links added'))
+      retries: "{{ add_execution_nodes_awx_manage_retries }}"
+      delay: "{{ add_execution_nodes_awx_manage_delay }}"
+      until: _add_en_register_peers is not failed
+
+    - name: Register queue default (execution nodes)
+      when: _node_type == 'execution'
+      ansible.builtin.command:
+        argv:
+          - podman
+          - exec
+          - "{{ add_execution_nodes_controller_container }}"
+          - awx-manage
+          - register_queue
+          - --queuename=default
+          - "--hostname={{ _hostname }}"
+      delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
+      become: false
+      register: _add_en_register_default
+      changed_when: "'(changed: True)' in _add_en_register_default.stdout or 'changed: True' in _add_en_register_default.stdout"
+      retries: "{{ add_execution_nodes_awx_manage_retries }}"
+      delay: "{{ add_execution_nodes_awx_manage_delay }}"
+      until: _add_en_register_default is not failed
+
+    - name: Register queue executionplane (execution nodes)
+      when: _node_type == 'execution'
+      ansible.builtin.command:
+        argv:
+          - podman
+          - exec
+          - "{{ add_execution_nodes_controller_container }}"
+          - awx-manage
+          - register_queue
+          - --queuename=executionplane
+          - "--hostname={{ _hostname }}"
+      delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
+      become: false
+      register: _add_en_register_executionplane
+      changed_when: "'(changed: True)' in _add_en_register_executionplane.stdout or 'changed: True' in _add_en_register_executionplane.stdout"
+      retries: "{{ add_execution_nodes_awx_manage_retries }}"
+      delay: "{{ add_execution_nodes_awx_manage_delay }}"
+      until: _add_en_register_executionplane is not failed
+
+- name: Discover instance groups from inventory
+  ansible.builtin.import_tasks: discover_instance_groups.yml
+
+- name: Register to custom instance groups
+  ansible.builtin.import_tasks: instance_groups.yml

@@ -1,0 +1,14 @@
+---
+- name: Cleanup vms
+  environment:
+    ANSIBLE_LOG_PATH: "{{ artifacts_dest_base_dir }}/provision_cleanup.log"
+  ansible.builtin.shell:
+    cmd: |
+      ansible-playbook aapqa.onprem_provisioner.cleanup \
+        -i provisioner_inventory_{{ provision_prefix }} \
+        -e provisioner_type=aws \
+        -e aws_user='ec2-user' \
+        -e ec2_region='us-east-1'
+    chdir: "/tmp/aapqa-provisioner"
+  changed_when: false
+...

@@ -1,0 +1,51 @@
+---
+- name: Check OSTree based system
+  when: ostree | bool
+  block:
+    - name: Get package Facts
+      ansible.builtin.package_facts:
+      become: true
+
+    - name: Verify that NFS Utils in installed on ostree based systems
+      ansible.builtin.assert:
+        that:
+          - 'nfs-utils in ansible_facts["packages"]'
+        fail_msg: 'On OSTree based system, the following package needs to be present: nfs-utils'
+
+- name: Install NFS Utils in non-ostree based systems
+  ansible.builtin.package:
+    name: nfs-utils
+  become: true
+  when: not ostree | bool
+
+- name: Mount the NFS Share
+  ansible.posix.mount:
+    src: "{{ hub_shared_data_path }}"
+    path: "{{ hub_data_dir }}"
+    opts: "{{ hub_shared_data_mount_opts }}"
+    state: mounted
+    fstype: nfs
+  become: true
+
+- name: Create automation hub subdirectories
+  ansible.builtin.file:
+    path: "{{ hub_data_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  run_once: true
+  loop:
+    - .gnupg
+    - assets
+    - media
+    - scripts
+    - tmp
+
+- name: Set gpg socket path
+  ansible.builtin.copy:
+    dest: "{{ hub_data_dir }}/.gnupg/S.gpg-agent"
+    content: |
+      %Assuan%
+      socket=/var/tmp/pulp/S.gpg-agent
+    mode: "0644"
+  run_once: true
+...

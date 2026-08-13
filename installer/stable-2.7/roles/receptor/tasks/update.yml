@@ -1,0 +1,24 @@
+---
+- name: Get receptor container information
+  containers.podman.podman_container_info:
+    name: receptor
+  register: _receptor_container_info
+
+- name: Get receptor image information
+  containers.podman.podman_image_info:
+    name: '{{ _receptor_image }}'
+  register: _receptor_image_info
+
+- name: Set receptor update fact
+  ansible.builtin.set_fact:
+    _receptor_image_update: '{{ _receptor_before | difference(_receptor_after) | length > 0 }}'
+  vars:
+    _receptor_before: '{{ _receptor_container_info.containers | map(attribute="Image") | unique }}'
+    _receptor_after: '{{ _receptor_image_info.images | map(attribute="Id") | unique }}'
+
+- name: Stop receptor service on update
+  ansible.builtin.include_tasks: systemd.yml
+  vars:
+    __systemd_state: stopped
+  when: _receptor_image_update | bool
+...

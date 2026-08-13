@@ -1,0 +1,12 @@
+---
+- name: Gather sos report
+  hosts: automationcontroller:automationeda:automationgateway:automationhub:ansiblelightspeed:ansiblemcp:automationmetrics:database:execution_nodes:redis
+  any_errors_fatal: true
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Running sos_report
+      ansible.builtin.include_role:
+        name: log_gathering
+        tasks_from: sos_report
+...

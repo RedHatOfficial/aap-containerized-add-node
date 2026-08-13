@@ -1,0 +1,126 @@
+---
+- name: Create the lightspeed container
+  containers.podman.podman_container:
+    name: ansible-lightspeed
+    image: '{{ _lightspeed_image }}'
+    command: '/usr/bin/launch-wisdom.sh'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      requires: '{{ __systemd_requires }}'
+      restart_policy: always
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/etc/ansible/tmp,U=true'
+      - 'type=tmpfs,destination=/run/daphne,U=true'
+      - 'type=tmpfs,destination=/run/nginx,U=true'
+      - 'type=tmpfs,destination=/run/supervisor,U=true'
+      - 'type=tmpfs,destination=/run/uwsgi,U=true'
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _lightspeed_volumes }}'
+    env: '{{ _lightspeed_env }}'
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  notify: Restart lightspeed
+
+- name: Create the lightspeed chatbot container
+  containers.podman.podman_container:
+    name: ansible-lightspeed-chatbot
+    image: '{{ _lightspeed_chatbot_image }}'
+    command: "/.llama/entrypoint.sh /usr/bin/python3.12"
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      restart_policy: always
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    secrets: '{{ _lightspeed_chatbot_secrets }}'
+    volume: '{{ _lightspeed_chatbot_volumes }}'
+    env: '{{ _lightspeed_chatbot_env }}'
+    stop_timeout: 30
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  notify: Restart lightspeed chatbot
+  when: lightspeed_chatbot_model_url is defined
+
+- name: Create the lightspeed mcp controller container
+  containers.podman.podman_container:
+    name: ansible-lightspeed-mcp-controller
+    image: '{{ _mcp_tools_image }}'
+    command: ["python3.12", "controller_server.py"]
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      restart_policy: always
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    env: '{{ _lightspeed_mcp_controller_env }}'
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  notify: Restart lightspeed mcp controller
+  when: lightspeed_mcp_controller_enabled | bool
+
+- name: Create the lightspeed mcp lightspeed container
+  containers.podman.podman_container:
+    name: ansible-lightspeed-mcp-lightspeed
+    image: '{{ _mcp_tools_image }}'
+    command: ["python3.12", "lightspeed_server.py"]
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      restart_policy: always
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    env: '{{ _lightspeed_mcp_lightspeed_env }}'
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  notify: Restart lightspeed mcp lightspeed
+  when: lightspeed_mcp_lightspeed_enabled | bool
+
+- name: Create the lightspeed token cleanup containers
+  containers.podman.podman_container:
+    name: 'ansible-lightspeed-{{ item.name }}'
+    image: '{{ _lightspeed_image }}'
+    command: 'wisdom-manage {{ item.command }}'
+    generate_systemd:
+      container_prefix: ''
+      path: '{{ ansible_user_dir }}/.config/systemd/user'
+      separator: ''
+      restart_policy: 'no'
+    log_driver: '{{ container_log_driver }}'
+    user: '{{ ansible_user_uid }}'
+    userns: keep-id
+    network: host
+    mount:
+      - 'type=tmpfs,destination=/etc/ansible/tmp,U=true'
+    secrets: '{{ _common_secrets }}'
+    volume: '{{ _lightspeed_volumes }}'
+    env: '{{ _lightspeed_env }}'
+    label: '{{ _autoupdate_label }}'
+    state: created
+    recreate: '{{ __containers_recreate | default(false) }}'
+  loop:
+    - name: revoke-expired-tokens
+      command: revoke_expired_refreshtokens
+    - name: cleartokens
+      command: cleartokens
+  loop_control:
+    label: '{{ item.name }}'
+...

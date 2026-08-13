@@ -16,7 +16,7 @@ Supporting documentation for SDLC decisions. User-facing docs remain in `docs/`.
 | Document | Location | Purpose |
 |----------|----------|---------|
 | [INSTALLER_PLAN.md](../../INSTALLER_PLAN.md) | root | Upstream migration plan |
-| [installer-overlay/](../../installer-overlay/) | root | Drop-in files for installer |
+| [installer/](../../installer/) | root | Vendored containerized installer |
 
 ## SDLC Cross-References
 

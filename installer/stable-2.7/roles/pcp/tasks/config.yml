@@ -1,0 +1,55 @@
+---
+- name: Check for if the pcp_archives path exists
+  ansible.builtin.stat:
+    path: '{{ aap_volumes_dir }}/pcp_archives'
+  register: _legacy_pcp_archives
+
+- name: Migrate co-pilot directory
+  when:
+    - _legacy_pcp_archives.stat.exists | bool
+    - _legacy_pcp_archives.stat.isdir | bool
+  block:
+    - name: Get the pcp_archives data volume information
+      containers.podman.podman_volume_info:
+        name: pcp_archives
+      register: _data_pcp_archives
+
+    - name: Copy bundled container images
+      ansible.builtin.copy:
+        src: '{{ _legacy_pcp_archives.stat.path }}/'
+        dest: '{{ _data_pcp_archives.volumes[0].Mountpoint }}'
+        remote_src: true
+        mode: preserve
+      become: true
+
+    - name: Remove the legacy pcp_archives path
+      ansible.builtin.file:
+        path: '{{ aap_volumes_dir }}/pcp_archives'
+        state: absent
+      become: true
+
+- name: Create the pcp config directory
+  ansible.builtin.file:
+    path: '{{ item }}'
+    mode: '0770'
+    state: directory
+  loop:
+    - '{{ pcp_conf_dir }}'
+    - '{{ pcp_conf_dir }}/openmetrics'
+    - '{{ pcp_conf_dir }}/openmetrics/config.d'
+
+- name: Configure pcp for automation controller
+  when: inventory_hostname in groups.get('automationcontroller', [])
+  block:
+    - name: Create the pcp openmetrics  NeedInstall file
+      ansible.builtin.file:
+        path: '{{ pcp_conf_dir }}/openmetrics/.NeedInstall'
+        mode: '0770'
+        state: touch
+
+    - name: Create the pcp openmetrics url file
+      ansible.builtin.template:
+        src: controller.url.j2
+        dest: '{{ pcp_conf_dir }}/openmetrics/config.d/controller.url'
+        mode: '0640'
+...

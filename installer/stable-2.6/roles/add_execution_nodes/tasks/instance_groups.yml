@@ -1,0 +1,29 @@
+---
+
+- name: Register node to each instance group
+  when: add_execution_nodes_instance_groups | default([]) | length > 0
+  vars:
+    _awx_manage_host: "{{ groups['automationcontroller'][0] }}"
+    _delegate_connection: "{{ hostvars[_awx_manage_host].ansible_connection | default('ssh') }}"
+    _hostname: "{{ routable_hostname | default(inventory_hostname) }}"
+  ansible.builtin.command:
+    argv:
+      - podman
+      - exec
+      - "{{ add_execution_nodes_controller_container }}"
+      - awx-manage
+      - register_queue
+      - --queuename={{ item }}
+      - --hostnames={{ _hostname }}
+  delegate_to: "{{ _awx_manage_host }}"
+  connection: "{{ _delegate_connection }}"
+  become: false
+  register: _add_en_register_ig
+  changed_when: "'(changed: True)' in _add_en_register_ig.stdout"
+  failed_when:
+    - _add_en_register_ig.rc != 0
+    - "'already a member' not in _add_en_register_ig.stderr"
+  loop: "{{ add_execution_nodes_instance_groups }}"
+  retries: "{{ add_execution_nodes_awx_manage_retries }}"
+  delay: 5
+  until: _add_en_register_ig is not failed

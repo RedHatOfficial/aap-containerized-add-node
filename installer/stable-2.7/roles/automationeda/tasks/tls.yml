@@ -1,0 +1,65 @@
+---
+- name: Generate TLS certificate and key
+  when:
+    - eda_tls_cert is not defined
+    - eda_tls_key is not defined
+  block:
+    - name: Install python-cryptography
+      ansible.builtin.package:
+        name: python3-cryptography
+      become: true
+      when: not ostree | bool
+
+    - name: Generate a private key for nginx
+      community.crypto.openssl_privatekey:
+        path: '{{ eda_conf_dir }}/eda.key'
+        mode: '0400'
+      notify: Restart eda web
+
+    - name: Generate a certificate signing request for nginx
+      community.crypto.openssl_csr:
+        path: '{{ eda_conf_dir }}/eda.csr'
+        privatekey_path: '{{ eda_conf_dir }}/eda.key'
+        common_name: '{{ _eda_hostname }}'
+        country_name: 'US'
+        locality_name: 'Raleigh'
+        organization_name: 'Red Hat'
+        organizational_unit_name: 'Ansible'
+        state_or_province_name: 'North Carolina'
+        subject_alt_name: '{{ [_eda_hostname | ansible.containerized_installer.subject_alt_name] | union(_eda_ips) }}'
+        mode: '0640'
+
+    - name: Generate a self signed x509 certificate for nginx
+      community.crypto.x509_certificate:
+        path: '{{ eda_conf_dir }}/eda.cert'
+        csr_path: '{{ eda_conf_dir }}/eda.csr'
+        privatekey_path: '{{ eda_conf_dir }}/eda.key'
+        provider: ownca
+        ownca_path: '{{ _ca_tls_dir }}/ca.cert'
+        ownca_privatekey_path: '{{ _ca_tls_dir }}/ca.key'
+        ownca_privatekey_passphrase: '{{ ca_tls_key_passphrase | default(omit) }}'
+        force: '{{ _ca_cert_changed | bool }}'
+        mode: '0640'
+      notify: Restart eda web
+
+- name: Import TLS certificate and key
+  when:
+    - eda_tls_cert is defined
+    - eda_tls_key is defined
+  block:
+    - name: Copy eda TLS certificate
+      ansible.builtin.copy:
+        src: '{{ eda_tls_cert }}'
+        dest: '{{ eda_conf_dir }}/eda.cert'
+        mode: '0640'
+        remote_src: '{{ eda_tls_remote | default(false) }}'
+      notify: Restart eda web
+
+    - name: Copy eda TLS key
+      ansible.builtin.copy:
+        src: '{{ eda_tls_key }}'
+        dest: '{{ eda_conf_dir }}/eda.key'
+        mode: '0400'
+        remote_src: '{{ eda_tls_remote | default(false) }}'
+      notify: Restart eda web
+...

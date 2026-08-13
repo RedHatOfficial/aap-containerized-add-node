@@ -1,0 +1,524 @@
+---
+- name: Ensure remote user is non root
+  ansible.builtin.assert:
+    that:
+      - ansible_user_uid != 0
+    fail_msg: 'the remote user should be a non root user'
+
+- name: Ensure remote nodes use supported distribution
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == 'RedHat'
+      - ansible_distribution_version is version_compare('9.6', '>=')
+    fail_msg: 'Only Red Hat Enterprise Linux 9.6+ distributions are supported'
+
+- name: Fail if this machine lacks sufficient RAM
+  ansible.builtin.assert:
+    that:
+      - ansible_memtotal_mb >= 15000
+    fail_msg: >
+      This machine does not have sufficient RAM to run Ansible Automation Platform.
+      Required RAM is 16GB but this machine only has {{ ansible_memtotal_mb }}MB.
+  when: (receptor_type | default('')) != 'hop' or group_names != ['execution_nodes']
+
+- name: Check CA TLS configuration
+  ansible.builtin.include_tasks:
+    file: tls.yml
+  vars:
+    _tls_cert: '{{ ca_tls_cert }}'
+    _tls_key: '{{ ca_tls_key }}'
+    _tls_key_passphrase: '{{ ca_tls_key_passphrase }}'
+    _tls_remote: '{{ ca_tls_remote }}'
+
+- name: Specific automation controller TLS checks
+  when: inventory_hostname in groups.get('automationcontroller', [])
+  block:
+    - name: Check automation controller TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ controller_tls_cert }}'
+        _tls_key: '{{ controller_tls_key }}'
+        _tls_remote: '{{ controller_tls_remote }}'
+
+    - name: Check automation controller postgresql TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ controller_pg_tls_cert }}'
+        _tls_key: '{{ controller_pg_tls_key }}'
+        _tls_remote: '{{ controller_tls_remote }}'
+      when:
+        - controller_pg_cert_auth is defined
+        - controller_pg_cert_auth | bool
+
+    - name: Check automation controller external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ controller_pg_host }}'
+        _postgresql_port: '{{ controller_pg_port }}'
+        _postgresql_username: '{{ controller_pg_username | default("awx") }}'
+        _postgresql_password: '{{ controller_pg_password }}'
+        _postgresql_database: '{{ controller_pg_database | default("awx") }}'
+        _postgresql_cert_auth: '{{ controller_pg_cert_auth }}'
+        _postgresql_tls_cert: '{{ controller_pg_tls_cert }}'
+        _postgresql_tls_key: '{{ controller_pg_tls_key }}'
+        _postgresql_tls_mode: '{{ controller_pg_sslmode }}'
+        _postgresql_tls_remote: '{{ controller_tls_remote }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is not defined
+        - postgresql_admin_password is not defined
+
+    - name: Check automation controller external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ controller_pg_host }}'
+        _postgresql_port: '{{ controller_pg_port }}'
+        _postgresql_username: '{{ postgresql_admin_username | default("postgres") }}'
+        _postgresql_password: '{{ postgresql_admin_password }}'
+        _postgresql_database: '{{ postgresql_admin_database | default("postgres") }}'
+        _postgresql_tls_mode: '{{ controller_pg_sslmode }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is defined
+        - postgresql_admin_password is defined
+
+- name: Specific automation hub TLS checks
+  when: inventory_hostname in groups.get('automationhub', [])
+  block:
+    - name: Check automation hub TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ hub_tls_cert }}'
+        _tls_key: '{{ hub_tls_key }}'
+        _tls_remote: '{{ hub_tls_remote }}'
+
+    - name: Check automation hub postgresql TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ hub_pg_tls_cert }}'
+        _tls_key: '{{ hub_pg_tls_key }}'
+        _tls_remote: '{{ hub_tls_remote }}'
+      when:
+        - hub_pg_cert_auth is defined
+        - hub_pg_cert_auth | bool
+
+    - name: Check automation hub external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ hub_pg_host }}'
+        _postgresql_port: '{{ hub_pg_port }}'
+        _postgresql_username: '{{ hub_pg_username | default("pulp") }}'
+        _postgresql_password: '{{ hub_pg_password }}'
+        _postgresql_database: '{{ hub_pg_database | default("pulp") }}'
+        _postgresql_cert_auth: '{{ hub_pg_cert_auth }}'
+        _postgresql_tls_cert: '{{ hub_pg_tls_cert }}'
+        _postgresql_tls_key: '{{ hub_pg_tls_key }}'
+        _postgresql_tls_mode: '{{ hub_pg_sslmode }}'
+        _postgresql_tls_remote: '{{ hub_tls_remote }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is not defined
+        - postgresql_admin_password is not defined
+
+    - name: Check automation hub external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ hub_pg_host }}'
+        _postgresql_port: '{{ hub_pg_port }}'
+        _postgresql_username: '{{ postgresql_admin_username | default("postgres") }}'
+        _postgresql_password: '{{ postgresql_admin_password }}'
+        _postgresql_database: '{{ postgresql_admin_database | default("postgres") }}'
+        _postgresql_tls_mode: '{{ hub_pg_sslmode }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is defined
+        - postgresql_admin_password is defined
+
+- name: Specific automation eda TLS checks
+  when: inventory_hostname in groups.get('automationeda', [])
+  block:
+    - name: Check automation eda TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ eda_tls_cert }}'
+        _tls_key: '{{ eda_tls_key }}'
+        _tls_remote: '{{ eda_tls_remote }}'
+
+    - name: Check automation eda redis TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ eda_redis_tls_cert }}'
+        _tls_key: '{{ eda_redis_tls_key }}'
+        _tls_remote: '{{ eda_tls_remote }}'
+
+    - name: Check automation eda postgresql TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ eda_pg_tls_cert }}'
+        _tls_key: '{{ eda_pg_tls_key }}'
+        _tls_remote: '{{ eda_tls_remote }}'
+      when:
+        - eda_pg_cert_auth is defined
+        - eda_pg_cert_auth | bool
+
+    - name: Check automation eda external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ eda_pg_host }}'
+        _postgresql_port: '{{ eda_pg_port }}'
+        _postgresql_username: '{{ eda_pg_username | default("eda") }}'
+        _postgresql_password: '{{ eda_pg_password }}'
+        _postgresql_database: '{{ eda_pg_database | default("eda") }}'
+        _postgresql_cert_auth: '{{ eda_pg_cert_auth }}'
+        _postgresql_tls_cert: '{{ eda_pg_tls_cert }}'
+        _postgresql_tls_key: '{{ eda_pg_tls_key }}'
+        _postgresql_tls_mode: '{{ eda_pg_sslmode }}'
+        _postgresql_tls_remote: '{{ eda_tls_remote }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is not defined
+        - postgresql_admin_password is not defined
+
+    - name: Check automation eda external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ eda_pg_host }}'
+        _postgresql_port: '{{ eda_pg_port }}'
+        _postgresql_username: '{{ postgresql_admin_username | default("postgres") }}'
+        _postgresql_password: '{{ postgresql_admin_password }}'
+        _postgresql_database: '{{ postgresql_admin_database | default("postgres") }}'
+        _postgresql_tls_mode: '{{ eda_pg_sslmode }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is defined
+        - postgresql_admin_password is defined
+
+- name: Specific automation metrics TLS checks
+  when: inventory_hostname in groups.get('automationmetrics', [])
+  block:
+    - name: Check automation metrics TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ automationmetrics_tls_cert }}'
+        _tls_key: '{{ automationmetrics_tls_key }}'
+        _tls_remote: '{{ automationmetrics_tls_remote }}'
+      when:
+        - automationmetrics_tls_cert is defined
+        - automationmetrics_tls_key is defined
+
+    - name: Check automation metrics postgresql TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ automationmetrics_pg_tls_cert }}'
+        _tls_key: '{{ automationmetrics_pg_tls_key }}'
+        _tls_remote: '{{ automationmetrics_tls_remote }}'
+      when:
+        - automationmetrics_pg_cert_auth is defined
+        - automationmetrics_pg_cert_auth | bool
+
+    - name: Check automation metrics external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ automationmetrics_pg_host }}'
+        _postgresql_port: '{{ automationmetrics_pg_port }}'
+        _postgresql_username: '{{ automationmetrics_pg_username | default("metrics_service") }}'
+        _postgresql_password: '{{ automationmetrics_pg_password }}'
+        _postgresql_database: '{{ automationmetrics_pg_database | default("metrics_service") }}'
+        _postgresql_cert_auth: '{{ automationmetrics_pg_cert_auth }}'
+        _postgresql_tls_cert: '{{ automationmetrics_pg_tls_cert }}'
+        _postgresql_tls_key: '{{ automationmetrics_pg_tls_key }}'
+        _postgresql_tls_mode: '{{ automationmetrics_pg_sslmode }}'
+        _postgresql_tls_remote: '{{ automationmetrics_tls_remote }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is not defined
+        - postgresql_admin_password is not defined
+
+    - name: Check automation metrics external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ automationmetrics_pg_host }}'
+        _postgresql_port: '{{ automationmetrics_pg_port }}'
+        _postgresql_username: '{{ postgresql_admin_username | default("postgres") }}'
+        _postgresql_password: '{{ postgresql_admin_password }}'
+        _postgresql_database: '{{ postgresql_admin_database | default("postgres") }}'
+        _postgresql_tls_mode: '{{ automationmetrics_pg_sslmode }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is defined
+        - postgresql_admin_password is defined
+
+- name: Specific ansible lightspeed TLS checks
+  when: inventory_hostname in groups.get('ansiblelightspeed', [])
+  block:
+    - name: Check automation lighspeed TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ lightspeed_tls_cert }}'
+        _tls_key: '{{ lightspeed_tls_key }}'
+        _tls_remote: '{{ lightspeed_tls_remote }}'
+
+    - name: Check ansible lightspeed postgresql TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ lightspeed_pg_tls_cert }}'
+        _tls_key: '{{ lightspeed_pg_tls_key }}'
+        _tls_remote: '{{ lightspeed_tls_remote }}'
+      when:
+        - lightspeed_pg_cert_auth is defined
+        - lightspeed_pg_cert_auth | bool
+
+    - name: Check ansible lightspeed external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ lightspeed_pg_host }}'
+        _postgresql_port: '{{ lightspeed_pg_port }}'
+        _postgresql_username: '{{ lightspeed_pg_username | default("lightspeed") }}'
+        _postgresql_password: '{{ lightspeed_pg_password }}'
+        _postgresql_database: '{{ lightspeed_pg_database | default("lightspeed") }}'
+        _postgresql_cert_auth: '{{ lightspeed_pg_cert_auth }}'
+        _postgresql_tls_cert: '{{ lightspeed_pg_tls_cert }}'
+        _postgresql_tls_key: '{{ lightspeed_pg_tls_key }}'
+        _postgresql_tls_mode: '{{ lightspeed_pg_sslmode }}'
+        _postgresql_tls_remote: '{{ lightspeed_tls_remote }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is not defined
+        - postgresql_admin_password is not defined
+
+    - name: Check ansible lightspeed external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ lightspeed_pg_host }}'
+        _postgresql_port: '{{ eda_pg_port }}'
+        _postgresql_username: '{{ postgresql_admin_username | default("postgres") }}'
+        _postgresql_password: '{{ postgresql_admin_password }}'
+        _postgresql_database: '{{ postgresql_admin_database | default("postgres") }}'
+        _postgresql_tls_mode: '{{ lightspeed_pg_sslmode }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is defined
+        - postgresql_admin_password is defined
+
+- name: Specific automation gateway TLS checks
+  when: inventory_hostname in groups.get('automationgateway', [])
+  block:
+    - name: Check automation gateway TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ gateway_tls_cert }}'
+        _tls_key: '{{ gateway_tls_key }}'
+        _tls_remote: '{{ gateway_tls_remote }}'
+
+    - name: Check automation gateway redis TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ gateway_redis_tls_cert }}'
+        _tls_key: '{{ gateway_redis_tls_key }}'
+        _tls_remote: '{{ gateway_tls_remote }}'
+
+    - name: Check automation gateway postgresql TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ gateway_pg_tls_cert }}'
+        _tls_key: '{{ gateway_pg_tls_key }}'
+        _tls_remote: '{{ gateway_tls_remote }}'
+      when:
+        - gateway_pg_cert_auth is defined
+        - gateway_pg_cert_auth | bool
+
+    - name: Check automation gateway external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ gateway_pg_host }}'
+        _postgresql_port: '{{ gateway_pg_port }}'
+        _postgresql_username: '{{ gateway_pg_username | default("gateway") }}'
+        _postgresql_password: '{{ gateway_pg_password }}'
+        _postgresql_database: '{{ gateway_pg_database | default("gateway") }}'
+        _postgresql_cert_auth: '{{ gateway_pg_cert_auth }}'
+        _postgresql_tls_cert: '{{ gateway_pg_tls_cert }}'
+        _postgresql_tls_key: '{{ gateway_pg_tls_key }}'
+        _postgresql_tls_mode: '{{ gateway_pg_sslmode }}'
+        _postgresql_tls_remote: '{{ gateway_tls_remote }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is not defined
+        - postgresql_admin_password is not defined
+
+    - name: Check automation gateway external postgresql configuration
+      ansible.builtin.include_tasks:
+        file: postgresql.yml
+        apply:
+          run_once: true
+      vars:
+        _postgresql_host: '{{ gateway_pg_host }}'
+        _postgresql_port: '{{ gateway_pg_port }}'
+        _postgresql_username: '{{ postgresql_admin_username | default("postgres") }}'
+        _postgresql_password: '{{ postgresql_admin_password }}'
+        _postgresql_database: '{{ postgresql_admin_database | default("postgres") }}'
+        _postgresql_tls_mode: '{{ gateway_pg_sslmode }}'
+        _postgresql_tls_ca_cert: '{{ custom_ca_cert }}'
+        _postgresql_tls_ca_remote: '{{ ca_tls_remote }}'
+      when:
+        - groups.get('database', []) | length == 0
+        - postgresql_admin_username is defined
+        - postgresql_admin_password is defined
+
+    - name: Ensure automation gateway hostname is not IPv6 when automation hub is present
+      ansible.builtin.assert:
+        that:
+          - _gateway_hostname is search("\\.")
+        fail_msg: |
+          Automation Gateway requires an FQDN or IPv4 address when Automation Hub is present, as
+          IPv6 addresses are not supported for container registry operations (OCI spec limitation)
+      vars:
+        _raw_hostname: "{{ routable_hostname | default(ansible_host) }}"
+        _gateway_url: "{{ gateway_main_url | default('https://' + (_raw_hostname | ansible.containerized_installer.ipv6_wrap) + ':443') }}"
+        _gateway_hostname: "{{ _gateway_url | urlsplit('hostname') }}"
+      when: groups.get('automationhub', []) | length > 0
+
+- name: Check redis TLS configuration
+  ansible.builtin.include_tasks:
+    file: tls.yml
+  vars:
+    _tls_cert: '{{ redis_tls_cert }}'
+    _tls_key: '{{ redis_tls_key }}'
+    _tls_remote: '{{ redis_tls_remote }}'
+  when: >
+    inventory_hostname in groups.get('redis', []) or
+    groups.get('automationgateway', []) | length > 0 and
+    inventory_hostname == groups['automationgateway'] | first
+
+- name: Check postgresql TLS configuration
+  ansible.builtin.include_tasks:
+    file: tls.yml
+  vars:
+    _tls_cert: '{{ postgresql_tls_cert }}'
+    _tls_key: '{{ postgresql_tls_key }}'
+    _tls_remote: '{{ postgresql_tls_remote }}'
+  when: inventory_hostname in groups.get('database', [])
+
+- name: Specific receptor TLS checks
+  when: >
+    inventory_hostname in groups.get('automationcontroller', []) or
+    inventory_hostname in groups.get('execution_nodes', [])
+  block:
+    - name: Check receptor TLS configuration
+      ansible.builtin.include_tasks:
+        file: tls.yml
+      vars:
+        _tls_cert: '{{ receptor_tls_cert }}'
+        _tls_key: '{{ receptor_tls_key }}'
+        _tls_remote: '{{ receptor_tls_remote }}'
+
+    - name: Ensure receptor TLS certificate uses SAN extension with OID
+      ansible.builtin.assert:
+        that:
+          - _receptor_cert_info.subject_alt_name is defined
+          - _receptor_cert_info.subject_alt_name | select('match', '^otherName:1.3.6.1.4.1.2312.19.1') | length > 0
+        fail_msg: 'Receptor x509 TLS certificate requires SAN extension with OID (1.3.6.1.4.1.2312.19.1) in otherName field.'
+      vars:
+        _receptor_cert_info: '{{ lookup("file", receptor_tls_cert) | community.crypto.x509_certificate_info }}'
+      when:
+        - receptor_tls_cert is defined
+        - not receptor_tls_remote | default(false) | bool
+
+    - name: Get receptor x509 TLS certificate information
+      community.crypto.x509_certificate_info:
+        path: '{{ receptor_tls_cert }}'
+      register: _receptor_cert_info
+      when:
+        - receptor_tls_cert is defined
+        - receptor_tls_remote | default(false) | bool
+
+    - name: Ensure receptor TLS certificate uses SAN extension with OID
+      ansible.builtin.assert:
+        that:
+          - _receptor_cert_info.subject_alt_name is defined
+          - _receptor_cert_info.subject_alt_name | select('match', '^otherName:1.3.6.1.4.1.2312.19.1') | length > 0
+        fail_msg: 'Receptor x509 TLS certificate requires SAN extension with OID (1.3.6.1.4.1.2312.19.1) in otherName field.'
+      when:
+        - receptor_tls_cert is defined
+        - receptor_tls_remote | default(false) | bool
+
+    - name: Ensure custom CA is provided when using custom receptor certificates
+      ansible.builtin.assert:
+        that:
+          - custom_ca_cert is defined
+        fail_msg: >-
+          When receptor_tls_cert is provided without ca_tls_cert,
+          custom_ca_cert must also be set to the CA certificate
+          that signed the receptor certificates.
+      when:
+        - receptor_tls_cert is defined
+        - ca_tls_cert is not defined
+...
