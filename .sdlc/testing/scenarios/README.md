@@ -7,8 +7,8 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | Scenario | TEST.md IDs (typical) | Status | Notes |
 |----------|------------------------|--------|-------|
 | [S-001](S-001-single-en.md) | T-26-AIO-EN, T-27-AIO-EN | :white_check_mark: Tested | EN → controller |
-| [S-002](S-002-single-hop.md) | T-26-AIO-HN, T-27-AIO-HN | :white_check_mark: Tested | HN → controller (also covered by EN-VIA-HN; RHEL 9 + 10) |
-| [S-003](S-003-multi-hop.md) | T-26-AIO-EN-VIA-HN, T-27-AIO-EN-VIA-HN | :white_check_mark: Tested | HN + EN via hop; RHEL 9 + RHEL 10 pairs on 2.7 |
+| [S-002](S-002-single-hop.md) | T-26-AIO-HN, T-27-AIO-HN, T-27-CLU-HN | :white_check_mark: Tested | HN → controller (AIO + HA cluster; RHEL 9 + 10) |
+| [S-003](S-003-multi-hop.md) | T-26-AIO-EN-VIA-HN, T-27-AIO-EN-VIA-HN, T-27-CLU-EN-VIA-HN | :white_check_mark: Tested | HN + EN via hop; AIO + 2.7 HA cluster (RHEL 10) |
 | S-010 (planned) | — | :white_large_square: Untested | Inbound dial / controller peers to node |
 | S-020 | — | :white_check_mark: Tested (with joins) | Covered by [checklists/preflight.md](../checklists/preflight.md) |
 | S-030 | Parallel column in TEST.md | :white_check_mark: Tested (implicit in S-003) | Multi-node serial registration |
@@ -20,7 +20,7 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | [S-062](S-062-offline-bundle-with-images.md) | — | :white_large_square: Untested | Offline bundle with container images |
 | [S-063](S-063-offline-bundle-hn-en-chain.md) | — | :white_large_square: Untested | Offline bundle - HN + EN chain |
 | [S-064](S-064-offline-hybrid-cloud.md) | — | :white_large_square: Untested | Offline hybrid cloud simulation |
-| Cluster (planned) | T-*-CLU-* | :white_large_square: Untested | Multi-controller |
+| Cluster (planned) | T-27-CLU-EN-VIA-HN, T-27-CLU-HN | :white_check_mark: Tested (2.7) | Multi-controller; RHEL 10 lab 2026-08-12 |
 
 ## Scenario index
 
@@ -40,7 +40,7 @@ Lab procedures (`S-*`). The **authoritative status and results log** live in [TE
 | [S-062](S-062-offline-bundle-with-images.md) | Offline Bundle + Images | AIO + EN airgap | P2 | :white_large_square: Untested | Yes |
 | [S-063](S-063-offline-bundle-hn-en-chain.md) | Offline Bundle - HN+EN Chain | AIO + HN + EN offline | P1 | :white_large_square: Untested | Yes |
 | [S-064](S-064-offline-hybrid-cloud.md) | Offline Hybrid Cloud | Cloud + on-prem offline | P2 | :white_large_square: Untested | Yes |
-| — | Cluster topologies | Multi-controller | P2 | :white_large_square: Untested | No — see T-*-CLU-* |
+| — | Cluster topologies | Multi-controller | P2 | :white_check_mark: Tested (2.7 RHEL 10) | EN-VIA-HN — see T-27-CLU-* |
 
 ## Creating or extending a scenario
 

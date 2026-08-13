@@ -16,6 +16,16 @@ From the **control host** (where you run `ansible-playbook`):
 
 Passwordless SSH keys (or an equivalent ansible connection plugin) must work for those users. Preflight: `assert_controller_container` runs `ping` then `podman inspect` on the first controller.
 
+### Control host is not required to be a controller
+
+You may run the playbook from a **gateway**, **execution/hop node**, **controller**, or an **external** machine (laptop, CI runner, bastion). Requirements:
+
+- SSH from that machine to `groups['automationcontroller'][0]` (for `podman exec … awx-manage`)
+- SSH to each new EN/HN in `[execution_nodes]`
+- `aap_setup_dir` visible on the control host (extracted containerized setup tree)
+
+**Gateway pitfall:** If the gateway is in inventory with `ansible_connection=local`, play-level `connection: local` is correct for the control host — but `delegate_to` a controller must still use SSH. Symptom: `podman inspect` reports `no such object: automation-controller-task` while manual SSH to the controller shows the container running (podman ran on the gateway instead). This collection sets explicit delegate `connection` on controller-targeted tasks; if you fork roles, preserve that pattern (see `vars/aap_add_node_delegate.yml`).
+
 ### Which controller container?
 
 Default: `automation-controller-task` (`aap_add_node_controller_container`).

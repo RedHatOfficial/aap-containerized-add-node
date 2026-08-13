@@ -5,11 +5,13 @@
     state: directory
     mode: '0700'
   delegate_to: localhost
+  connection: local
 
 - name: Fetch mesh material from controller when overrides unset
   vars:
     # HA: mesh CA lives on every controller under the install-user home; [0] is enough.
     _mesh_src_host: "{{ groups['automationcontroller'][0] | default('') }}"
+    _mesh_delegate_connection: "{{ hostvars[_mesh_src_host].ansible_connection | default('ssh') }}"
     # Skip CA key fetch if BYO certs provided (no signing needed)
     _byo_certs: "{{ (aap_add_node_tls_cert | default('') | length > 0) and (aap_add_node_tls_key | default('') | length > 0) }}"
     _needs_fetch: >-
@@ -38,6 +40,7 @@
           ansible.builtin.shell: echo "$HOME"
           register: _ctrl_home
           delegate_to: "{{ _mesh_src_host }}"
+          connection: "{{ _mesh_delegate_connection }}"
           become: false
           changed_when: false
 
@@ -53,6 +56,7 @@
                 dest: "{{ aap_add_node_material_dir }}/mesh-CA.crt"
                 flat: true
               delegate_to: "{{ _mesh_src_host }}"
+              connection: "{{ _mesh_delegate_connection }}"
               become: false
               when: aap_add_node_mesh_ca_cert | default('') | length == 0
 
@@ -62,6 +66,7 @@
                 dest: "{{ aap_add_node_material_dir }}/mesh-CA.key"
                 flat: true
               delegate_to: "{{ _mesh_src_host }}"
+              connection: "{{ _mesh_delegate_connection }}"
               become: false
               no_log: true
               when:
@@ -74,6 +79,7 @@
                 dest: "{{ aap_add_node_material_dir }}/work_public_key.pem"
                 flat: true
               delegate_to: "{{ _mesh_src_host }}"
+              connection: "{{ _mesh_delegate_connection }}"
               become: false
               when: aap_add_node_work_public_key | default('') | length == 0
 
@@ -83,6 +89,7 @@
         path: "{{ aap_add_node_material_dir }}/mesh-CA.key"
         mode: '0400'
       delegate_to: localhost
+      connection: local
       when:
         - aap_add_node_mesh_ca_key | default('') | length == 0
         - not _byo_certs
@@ -93,6 +100,7 @@
         path: "{{ aap_add_node_material_dir }}/mesh-CA.crt"
         mode: '0640'
       delegate_to: localhost
+      connection: local
       when: aap_add_node_mesh_ca_cert | default('') | length == 0
 
     - name: Enforce work public key permissions
@@ -100,6 +108,7 @@
         path: "{{ aap_add_node_material_dir }}/work_public_key.pem"
         mode: '0640'
       delegate_to: localhost
+      connection: local
       when: aap_add_node_work_public_key | default('') | length == 0
 
 - name: Check if BYO certs provided

@@ -4,6 +4,9 @@
 
 - name: Create/update instance groups and add node
   when: aap_add_node_instance_groups | default([]) | length > 0
+  vars:
+    _awx_manage_host: "{{ groups['automationcontroller'][0] }}"
+    _delegate_connection: "{{ hostvars[_awx_manage_host].ansible_connection | default('ssh') }}"
   block:
     - name: Register node to each instance group
       ansible.builtin.command:
@@ -16,6 +19,7 @@
           - --queuename={{ item }}
           - --hostnames={{ aap_add_node_hostname }}
       delegate_to: "{{ _awx_manage_host }}"
+      connection: "{{ _delegate_connection }}"
       become: false
       register: _register_ig
       changed_when: "'(changed: True)' in _register_ig.stdout"

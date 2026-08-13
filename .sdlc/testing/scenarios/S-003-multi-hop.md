@@ -60,3 +60,4 @@ Confirm `receptor_peers` is a **list** (`ansible-inventory --host …`).
 | 2026-08 | 2.6 AIO | RHEL 9 | RHEL 9 | Pass | T-26-AIO-EN-VIA-HN — see TEST.md |
 | 2026-08-10 | 2.7 AIO | RHEL 10.2 | RHEL 9.8 HN+EN | Pass | T-27-AIO-EN-VIA-HN; raw log local only under `.ignore/lab/runs/` |
 | 2026-08-10 | 2.7 AIO | RHEL 10.2 | RHEL 10.2 HN+EN | Pass | T-27-AIO-EN-VIA-HN; `aap27-hn-02`/`en-02`; commit `ccbcf67`; settled green |
+| 2026-08-12 | 2.7 cluster | RHEL 10.2 | RHEL 10.2 HN+EN | Pass | T-27-CLU-EN-VIA-HN; `aap27-hn01`/`en03`; 11-node HA; no downtime on existing mesh |

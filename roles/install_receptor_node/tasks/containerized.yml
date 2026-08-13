@@ -9,6 +9,7 @@
   changed_when: false
   failed_when: false
   delegate_to: localhost
+  connection: local
   become: false
 
 - name: Fail clearly when setup collections are not on the path
@@ -68,6 +69,7 @@
     _receptor_port: "{{ hostvars[item].receptor_port | default(hostvars[item].listener_port | default(aap_add_node_listener_port | default(27199))) }}"
     _receptor_protocol: "{{ hostvars[item].receptor_protocol | default('tcp') }}"
   delegate_to: "{{ item }}"
+  connection: "{{ hostvars[item].ansible_connection | default('ssh') }}"
   delegate_facts: true
   when: item in hostvars
   loop: "{{ aap_add_node_peers | default([]) }}"

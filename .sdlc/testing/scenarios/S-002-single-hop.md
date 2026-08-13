@@ -55,3 +55,4 @@ Same installer command pattern as [TEST.md](../../../TEST.md). Verify with [veri
 | 2026-08 | 2.6 AIO | RHEL 9 | Pass | T-26-AIO-HN — see TEST.md |
 | 2026-08-10 | 2.7 AIO | RHEL 9 | Pass | Covered by T-27-AIO-EN-VIA-HN (hop → `aap27.lennysh.net`) |
 | 2026-08-10 | 2.7 AIO | RHEL 10.2 | Pass | Covered by T-27-AIO-EN-VIA-HN (`aap27-hn-02` → controller) |
+| 2026-08-12 | 2.7 cluster | RHEL 10.2 | Pass | T-27-CLU-HN; `aap27-hn01` → `cn01`+`cn02`; gateway control host |

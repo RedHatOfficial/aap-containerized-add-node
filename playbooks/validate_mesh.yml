@@ -16,6 +16,7 @@
   vars:
     controller_host: "{{ groups['automationcontroller'][0] }}"
     controller_container: automation-controller-task
+    _controller_connection: "{{ hostvars[controller_host].ansible_connection | default('ssh') }}"
     demo_jt_id: 6
     # Custom IGs to test (parsed from instance_group_* in inventory)
     test_instance_groups: >-
@@ -61,6 +62,7 @@
         print(f'INSTANCE_GROUP={ig.name}')
         "
       delegate_to: "{{ controller_host }}"
+      connection: "{{ _controller_connection }}"
       register: job_results
       loop: "{{ test_instance_groups }}"
       changed_when: false
@@ -106,4 +108,5 @@
         print('Demo JT instance groups cleared (will use default)')
         "
       delegate_to: "{{ controller_host }}"
+      connection: "{{ _controller_connection }}"
       changed_when: false

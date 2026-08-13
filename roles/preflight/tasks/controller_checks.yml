@@ -10,18 +10,24 @@
 # Preflight runs with gather_facts: false on localhost; pull user facts on the
 # controller so ansible_user_dir is defined for the delegated slurp.
 - name: Gather controller user facts for receptor path
+  vars:
+    _ctrl_host: "{{ groups['automationcontroller'][0] }}"
+    _ctrl_connection: "{{ hostvars[_ctrl_host].ansible_connection | default('ssh') }}"
   ansible.builtin.setup:
     gather_subset:
       - user
-  delegate_to: "{{ groups['automationcontroller'][0] }}"
-  connection: ssh
+  delegate_to: "{{ _ctrl_host }}"
+  connection: "{{ _ctrl_connection }}"
   delegate_facts: true
 
 - name: Get controller receptor.conf
+  vars:
+    _ctrl_host: "{{ groups['automationcontroller'][0] }}"
+    _ctrl_connection: "{{ hostvars[_ctrl_host].ansible_connection | default('ssh') }}"
   ansible.builtin.slurp:
-    src: "{{ hostvars[groups['automationcontroller'][0]].ansible_user_dir }}/aap/receptor/etc/receptor.conf"
-  delegate_to: "{{ groups['automationcontroller'][0] }}"
-  connection: ssh
+    src: "{{ hostvars[_ctrl_host].ansible_user_dir }}/aap/receptor/etc/receptor.conf"
+  delegate_to: "{{ _ctrl_host }}"
+  connection: "{{ _ctrl_connection }}"
   become: false
   register: _receptor_conf_raw
   ignore_errors: true
