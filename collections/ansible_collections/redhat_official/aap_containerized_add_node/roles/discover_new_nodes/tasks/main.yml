@@ -1,0 +1,108 @@
+---
+- name: Require execution_nodes inventory group
+  ansible.builtin.assert:
+    that:
+      - aap_add_node_inventory_group in groups
+      - groups[aap_add_node_inventory_group] | length > 0
+    fail_msg: >
+      Inventory group '{{ aap_add_node_inventory_group }}' must exist with at least one host.
+
+- name: List registered instances via awx-manage on controller
+  ansible.builtin.include_role:
+    name: redhat_official.aap_containerized_add_node.list_instances
+
+# Skip only nodes that look healthy (heartbeat present). Hostname alone is not
+# enough: a prior run may have provision_instance'd the node then failed before
+# receptor came online — those must be re-targeted, not skipped.
+# Build a YAML list then from_yaml so the fact stays a real list (not a string).
+- name: Publish discovery result
+  ansible.builtin.set_fact:
+    aap_add_node_new_inventory_hosts: "{{ _hosts }}"
+    aap_add_node_has_work: "{{ (_hosts | default([], true) | length) > 0 }}"
+  vars:
+    _hosts_yaml: |
+      {% for h in groups[aap_add_node_inventory_group] %}
+      {% if (hostvars[h].routable_hostname | default(h))
+           not in (aap_add_node_ready_hostnames | default([])) %}
+      - {{ h | to_json }}
+      {% endif %}
+      {% endfor %}
+    # from_yaml returns None for empty input; coerce to []
+    _hosts: "{{ ((_hosts_yaml | trim | length > 0) | ternary(_hosts_yaml | from_yaml, [])) | default([], true) }}"
+
+- name: Report discovery result
+  ansible.builtin.debug:
+    msg:
+      - "Registered instances: {{ aap_add_node_existing_hostnames | length }}"
+      - "Ready (heartbeat) instances: {{ aap_add_node_ready_hostnames | default([]) }}"
+      - "Hosts to add or finish: {{ aap_add_node_new_inventory_hosts }}"
+
+- name: Update control host with discovery result
+  ansible.builtin.add_host:
+    name: aap_add_node_control
+    groups: aap_add_node_control
+    aap_add_node_has_work: "{{ aap_add_node_has_work }}"
+    aap_add_node_new_inventory_hosts: "{{ aap_add_node_new_inventory_hosts }}"
+
+- name: Nothing to do
+  ansible.builtin.debug:
+    msg: All execution_nodes already show a heartbeat in list_instances. Remaining plays will no-op.
+  when: not (aap_add_node_has_work | bool)
+
+# receptor_peers must be a real list (same as containerized installer).
+# INI:  receptor_peers='["peer.example.com"]'  — Ansible parses JSON → list (OK)
+# YAML: receptor_peers: [peer.example.com]     — real list (OK)
+# INI bare: receptor_peers=peer.example.com    — string (REJECT; installer → hostvars['a'])
+# INI fake: receptor_peers=['peer.example.com'] — still a string (REJECT; installer → hostvars['['])
+- name: Parse and require list-typed peers per new host
+  when: aap_add_node_has_work | bool
+  block:
+    - name: Resolve raw peers from inventory
+      ansible.builtin.set_fact:
+        aap_add_node_peers_by_host: "{{ (aap_add_node_peers_by_host | default({})) | combine({item: _normalized}) }}"
+      loop: "{{ aap_add_node_new_inventory_hosts }}"
+      vars:
+        _peers_raw: "{{ hostvars[item].aap_add_node_peers | default(hostvars[item].receptor_peers | default([])) }}"
+        _as_yaml: "{{ _peers_raw | string | regex_replace(\"'\", '\"') }}"
+        _parsed: "{{ _as_yaml | from_yaml if (_peers_raw is string) else _peers_raw }}"
+        _normalized: >-
+          {{
+            _parsed
+            if (_parsed is sequence and _parsed is not string)
+            else []
+          }}
+
+    - name: Require receptor_peers / aap_add_node_peers to be a list
+      ansible.builtin.assert:
+        that:
+          - aap_add_node_peers_by_host[item] is sequence
+          - aap_add_node_peers_by_host[item] is not string
+          # Bare hostname / fake-list INI strings parse to a scalar via from_yaml → empty
+          # _normalized while the raw inventory value is still a non-empty string. Reject that.
+          - not (_bare_hostname_string | bool)
+        fail_msg: >-
+          Host '{{ item }}': receptor_peers (or aap_add_node_peers) must be a real list.
+          INI: receptor_peers='["peer.example.com"]'  (JSON array in quotes).
+          YAML: receptor_peers: [peer.example.com].
+          Do not use receptor_peers=peer… or receptor_peers=['peer…'] (those stay strings and
+          break ansible.containerized_installer.install with hostvars['a'] / hostvars['[']).
+          Got: {{ _peers_raw | to_json }}
+      loop: "{{ aap_add_node_new_inventory_hosts }}"
+      vars:
+        _peers_raw: "{{ hostvars[item].aap_add_node_peers | default(hostvars[item].receptor_peers | default([])) }}"
+        _bare_hostname_string: "{{ (_peers_raw is string) and ((_peers_raw | length) > 0) and ((aap_add_node_peers_by_host[item] | length) == 0) }}"
+
+- name: Add new hosts to dynamic target group
+  ansible.builtin.add_host:
+    name: "{{ item }}"
+    groups: "{{ aap_add_node_target_group }}"
+    # Receptor hostname must be the node id, not ansible_host (IP)
+    aap_add_node_hostname: "{{ hostvars[item].routable_hostname | default(item) }}"
+    routable_hostname: "{{ hostvars[item].routable_hostname | default(item) }}"
+    aap_add_node_type: "{{ 'hop' if _raw_type == 'hop' else 'execution' }}"
+    aap_add_node_listener_port: "{{ hostvars[item].receptor_port | default(hostvars[item].listener_port | default(aap_add_node_listener_port | default(27199))) }}"
+    aap_add_node_peers: "{{ aap_add_node_peers_by_host[item] | default([]) }}"
+  loop: "{{ aap_add_node_new_inventory_hosts }}"
+  when: aap_add_node_has_work | bool
+  vars:
+    _raw_type: "{{ hostvars[item].node_type | default(hostvars[item].receptor_type | default('execution')) }}"

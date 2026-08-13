@@ -1,0 +1,31 @@
+---
+# Match containerized install.yml: run installer `common` on the new EN,
+# then receptor (minted certs applied in install_receptor_node).
+# Entry vars validated by meta/argument_specs.yml.
+
+- name: Ensure non-root install user (containerized requirement)
+  ansible.builtin.assert:
+    that:
+      - ansible_user_uid | int != 0
+    fail_msg: Containerized AAP nodes must be managed as a non-root user.
+
+- name: Decide whether to skip installer image copy/load
+  ansible.builtin.include_tasks: image_skip.yml
+
+# Import cluster platform CA (do not generate a new CA on the EN)
+- name: Set installer common vars for this node
+  ansible.builtin.set_fact:
+    # When skipping images: leave offline bundle path and avoid registry pulls.
+    # common still configures podman/tls/firewalld.
+    bundle_install: "{{ false if (aap_add_node_skip_image_load_effective | bool) else (aap_add_node_bundle_install | default(true)) }}"
+    bundle_dir: "{{ aap_setup_dir }}/bundle"
+    ca_tls_cert: "{{ aap_add_node_mesh_ca_cert }}"
+    ca_tls_key: "{{ aap_add_node_mesh_ca_key }}"
+    registry_ns_aap: "{{ registry_ns_aap | default(aap_add_node_default_registry_ns_aap) | default('ansible-automation-platform-26') }}"
+    receptor_image: "{{ receptor_image | default(aap_add_node_default_receptor_image) | default('receptor-rhel9:latest') }}"
+    container_pull_images: "{{ false if (aap_add_node_skip_image_load_effective | bool) else (container_pull_images | default(true)) }}"
+    registry_auth: "{{ false if (aap_add_node_skip_image_load_effective | bool) else (registry_auth | default(true)) }}"
+
+- name: Run containerized installer common role (same as install.yml for execution_nodes)
+  ansible.builtin.include_role:
+    name: ansible.containerized_installer.common

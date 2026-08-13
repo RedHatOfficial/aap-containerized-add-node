@@ -1,0 +1,10 @@
+---
+removed_features:
+  - Dropped RPM installer support. This collection targets containerized AAP 2.6+ only
+    (``ansible.containerized_installer`` via ``aap_setup_dir``).
+  - Removed unused ``trust_platform_ca`` role (was for gateway HTTPS trust; discover/register
+    use ``awx-manage`` over SSH instead).
+minor_changes:
+  - Removed ``aap_add_node_flavor`` branching; mesh material paths and ``awx-manage``
+    always use the containerized controller layout.
+  - Dropped ``ansible.receptor`` collection dependency (RPM install path only).

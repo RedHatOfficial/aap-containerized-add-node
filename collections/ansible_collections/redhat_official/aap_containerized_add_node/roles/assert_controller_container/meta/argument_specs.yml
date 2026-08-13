@@ -1,0 +1,9 @@
+---
+argument_specs:
+  main:
+    short_description: Preflight SSH and running controller task container for awx-manage.
+    options:
+      aap_add_node_controller_container:
+        description: Podman name of the controller task container.
+        type: str
+        default: automation-controller-task

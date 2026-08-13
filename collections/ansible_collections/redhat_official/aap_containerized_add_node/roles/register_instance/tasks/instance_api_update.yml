@@ -1,0 +1,33 @@
+---
+# Optional: Update instance via ansible.controller.instance API
+# Called after awx-manage registration if API credentials available
+#
+# Uses ansible.controller.instance to:
+# - Ensure instance is enabled
+# - Set capacity_adjustment if specified
+# - Update managed_by_policy setting
+
+- name: Update instance via API
+  when:
+    - aap_add_node_controller_host is defined
+    - aap_add_node_controller_username is defined
+    - aap_add_node_controller_password is defined
+  block:
+    - name: Update instance settings
+      ansible.controller.instance:
+        hostname: "{{ aap_add_node_hostname }}"
+        enabled: "{{ aap_add_node_enabled | default(true) }}"
+        capacity_adjustment: "{{ aap_add_node_capacity_adjustment | default(omit) }}"
+        managed_by_policy: "{{ aap_add_node_managed_by_policy | default(omit) }}"
+        controller_host: "{{ aap_add_node_controller_host }}"
+        controller_username: "{{ aap_add_node_controller_username }}"
+        controller_password: "{{ aap_add_node_controller_password }}"
+        validate_certs: "{{ aap_add_node_validate_certs | default(true) }}"
+      delegate_to: localhost
+      no_log: "{{ aap_add_node_no_log | default(true) }}"
+      register: _instance_update
+
+    - name: Report instance update
+      ansible.builtin.debug:
+        msg: "Instance {{ aap_add_node_hostname }} updated via API (id={{ _instance_update.id }})"
+      when: _instance_update.changed

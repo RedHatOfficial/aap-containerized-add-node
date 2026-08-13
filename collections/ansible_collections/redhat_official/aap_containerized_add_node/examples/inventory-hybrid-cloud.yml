@@ -1,0 +1,64 @@
+---
+# Hybrid Cloud: On-Prem ENs dialing to Cloud Controller
+#
+# Topology: On-Prem EN → On-Prem Hop → Cloud Controller
+# Use case: Controller in cloud, ENs on-premises, firewall allows outbound only
+#
+# ┌──────────────────────────────────────────────┐
+# │                    CLOUD                      │
+# │  Controller ◄── outbound dial ──┐            │
+# │  [listener]                     │            │
+# └─────────────────────────────────│────────────┘
+#                                   │
+#           ═══════ FIREWALL: on-prem → cloud ONLY ═══════
+#                                   │
+# ┌─────────────────────────────────│────────────┐
+# │                  ON-PREM        │            │
+# │                          ┌─────┴─────┐      │
+# │               ┌─────────►│    Hop    │      │
+# │               │          │[dials out]│      │
+# │               │          └───────────┘      │
+# │        ┌──────┴──────┐                      │
+# │        │     EN      │                      │
+# │        │ [dials out] │                      │
+# │        └─────────────┘                      │
+# └─────────────────────────────────────────────┘
+#
+# Key points:
+# - Uses outbound dial (Pattern 1) - on-prem initiates to cloud
+# - Hop node optional if ENs can reach cloud directly
+# - Installation requires temporary SSH access to all nodes
+
+all:
+  children:
+    automationcontroller:
+      hosts:
+        # Cloud controller - reachable from on-prem via external IP/DNS
+        aap-controller.cloud.example.com:
+          ansible_host: 35.x.x.x
+
+    execution_nodes:
+      hosts:
+        # Hop node on-prem - peers to cloud controller
+        hop-onprem.example.com:
+          receptor_type: hop
+          receptor_peers:
+            - aap-controller.cloud.example.com
+          routable_hostname: hop-onprem.example.com
+
+        # ENs on-prem - peer to hop (or direct to cloud if allowed)
+        exec-onprem-01.example.com:
+          receptor_type: execution
+          receptor_peers:
+            - hop-onprem.example.com
+          routable_hostname: exec-onprem-01.example.com
+
+        exec-onprem-02.example.com:
+          receptor_type: execution
+          receptor_peers:
+            - hop-onprem.example.com
+          routable_hostname: exec-onprem-02.example.com
+
+  vars:
+    ansible_user: ansible
+    aap_setup_dir: /path/to/ansible-automation-platform-containerized-setup-2.x
