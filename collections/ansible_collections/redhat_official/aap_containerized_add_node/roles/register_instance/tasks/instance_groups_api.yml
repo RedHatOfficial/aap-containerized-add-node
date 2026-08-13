@@ -29,10 +29,39 @@
             - aap_add_node_controller_password: Admin password
           Or use instance_groups.yml (awx-manage mode) instead.
 
-    - name: Create/update instance groups with node
+    - name: Fetch current instance group members
+      ansible.builtin.uri:
+        url: "{{ aap_add_node_controller_host }}/api/v2/instance_groups/?name={{ item }}"
+        method: GET
+        user: "{{ aap_add_node_controller_username }}"
+        password: "{{ aap_add_node_controller_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ aap_add_node_validate_certs | default(true) }}"
+        return_content: true
+      loop: "{{ aap_add_node_instance_groups }}"
+      delegate_to: localhost
+      register: _ig_current
+      no_log: "{{ aap_add_node_no_log | default(true) }}"
+
+    - name: Build merged instance lists
+      ansible.builtin.set_fact:
+        _ig_merged: >-
+          {{
+            _ig_merged | default({}) | combine({
+              item.item: (
+                (item.json.results[0].related.instances | default([]) | map('basename') | list)
+                + [aap_add_node_hostname]
+              ) | unique
+            })
+          }}
+      loop: "{{ _ig_current.results }}"
+      when: item.json.results | length > 0
+      no_log: "{{ aap_add_node_no_log | default(true) }}"
+
+    - name: Create/update instance groups with merged members
       ansible.controller.instance_group:
         name: "{{ item }}"
-        instances: "{{ [aap_add_node_hostname] }}"
+        instances: "{{ _ig_merged[item] | default([aap_add_node_hostname]) }}"
         state: present
         controller_host: "{{ aap_add_node_controller_host }}"
         controller_username: "{{ aap_add_node_controller_username }}"
