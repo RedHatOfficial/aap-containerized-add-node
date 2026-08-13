@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - "update_controller_peers - Fail fast if tcp-listener not present in receptor.conf (issue #19)."
+  - "register_instance - Remove --exact from register_peers to preserve existing peer links on re-run (issue #16)."

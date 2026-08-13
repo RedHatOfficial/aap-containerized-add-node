@@ -26,6 +26,23 @@
       Running jobs may fail if mid-execution.
       ========================================
 
+- name: Check tcp-listener exists in receptor.conf
+  ansible.builtin.command:
+    cmd: grep -q "^- tcp-listener:" "{{ aap_add_node_receptor_config_dir }}/receptor.conf"
+  register: _tcp_listener_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if tcp-listener not present
+  ansible.builtin.fail:
+    msg: |
+      Controller receptor.conf has no tcp-listener block.
+      Inbound dial requires enable_controller_listener to run first.
+      Either:
+        1. Set aap_add_node_enable_controller_listener=true, or
+        2. Manually add a tcp-listener to receptor.conf
+  when: _tcp_listener_check.rc != 0
+
 - name: Create backup directory
   ansible.builtin.file:
     path: "{{ playbook_dir }}/backups"

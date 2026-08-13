@@ -54,7 +54,8 @@
     - name: Register peers
       when: aap_add_node_peers | default([]) | length > 0
       ansible.builtin.command:
-        argv: "{{ ['podman', 'exec', aap_add_node_controller_container, 'awx-manage', 'register_peers', aap_add_node_hostname, '--exact'] + (aap_add_node_peers | list) }}"
+        # Note: --exact intentionally omitted to preserve existing peer links on re-run
+        argv: "{{ ['podman', 'exec', aap_add_node_controller_container, 'awx-manage', 'register_peers', aap_add_node_hostname] + (aap_add_node_peers | list) }}"
       delegate_to: "{{ _awx_manage_host }}"
       become: false
       register: _register_peers
