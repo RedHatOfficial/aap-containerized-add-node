@@ -1,0 +1,72 @@
+---
+name: Bug Report
+description: Report a bug or unexpected behavior
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Run '...'
+        2. See error '...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen
+    validations:
+      required: true
+
+  - type: input
+    id: aap-version
+    attributes:
+      label: AAP Version
+      description: What version of AAP are you using?
+      placeholder: "2.6-8"
+    validations:
+      required: true
+
+  - type: input
+    id: collection-version
+    attributes:
+      label: Collection Version
+      description: What version of this collection?
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Target OS
+      options:
+        - RHEL 9
+        - RHEL 10
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please paste any relevant log output (redact secrets!)
+      render: shell

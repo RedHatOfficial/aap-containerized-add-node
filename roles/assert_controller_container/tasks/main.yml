@@ -18,6 +18,7 @@
     - name: Verify SSH access to controller
       ansible.builtin.ping:
       delegate_to: "{{ _awx_manage_host }}"
+      connection: ssh
       become: false
       register: _aap_add_node_ctrl_ping
       ignore_errors: true
@@ -43,6 +44,7 @@
           - "{{ '{{.State.Status}}' }}"
           - "{{ aap_add_node_controller_container }}"
       delegate_to: "{{ _awx_manage_host }}"
+      connection: ssh
       become: false
       register: _aap_add_node_ctr_inspect
       changed_when: false

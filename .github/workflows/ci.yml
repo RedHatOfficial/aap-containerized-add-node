@@ -15,6 +15,21 @@ env:
   FORCE_COLOR: "1"
 
 jobs:
+  gitleaks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz | tar xz
+          chmod +x gitleaks
+
+      - name: Run gitleaks
+        run: ./gitleaks detect --source . --verbose
+
   changelog:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
