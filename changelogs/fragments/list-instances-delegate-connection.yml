@@ -1,0 +1,7 @@
+---
+bugfixes:
+  - >-
+    list_instances - Delegate ``awx-manage list_instances`` to the controller
+    with explicit ``connection`` so discovery and verify work when the control
+    host is a gateway or other non-controller node (raw localhost SSH ran
+    podman on the control host instead of the controller).
