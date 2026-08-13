@@ -146,22 +146,29 @@ en-01.example.com ansible_host=... receptor_type=execution \
 
 ## 4. Required containerized installer code changes (minimal set)
 
-1. **Split registration from full controller init**  
+1. **Split registration from full controller init**
    Move EN/HN `awx-manage` steps out of (or behind a flag in) `automationcontroller/tasks/init.yml` so the additive playbook does not run migrate, preload, or inventory-diff **deprovision**.
 
-2. **Peer policy for zero-downtime growth**  
+2. **Peer policy for zero-downtime growth**
    Prefer requiring `receptor_peers` on new nodes (outbound dial). Avoid the growth path that auto-adds new ENs to controller peer lists in `receptor/tasks/facts.yml`—that rewrites and restarts controller receptor. Document outbound dial as the supported additive topology.
 
-3. **Host limiting**  
+3. **Host limiting**
    Ensure the additive playbook never applies `common` / `receptor` to gateway, hub, EDA, redis, or existing controllers (except the optional AIO listener helper).
 
-4. **Idempotency**  
+4. **Idempotency**
    Same rule as this collection’s `discover_new_nodes`: heartbeat ⇒ skip; registered but no heartbeat ⇒ re-run join; `provision_instance` remains idempotent.
 
-5. **Docs in the setup tree**  
-   - Inventory examples (EN→controller, EN→hop→controller)  
-   - Disk sizing for EE image load on new nodes (lab: ~9 GB roots failed on `ee-supported`; ≥32–64 GB recommended)  
+5. **Docs in the setup tree**
+   - Inventory examples (EN→controller, EN→hop→controller)
+   - Disk sizing for EE image load on new nodes (lab: ~9 GB roots failed on `ee-supported`; ≥32–64 GB recommended)
    - Expect a short settle time before instances show green heartbeats / capacity
+
+6. **Platform CA before `common` on new nodes**
+   Copy the mesh/platform CA **public** cert to `~/aap/tls/ca.cert` before `import_role: common`.
+   Do not pass `ca_tls_cert` without `ca_tls_key` — installer `tls.yml` imports only when
+   **both** are set and generates only when **neither** is set; cert-only skips both and
+   breaks `update-ca-trust` on clean hosts. Mesh CA private key stays on the control host
+   for signing (this collection: `fetch_or_mint_certs`).
 
 ---
 

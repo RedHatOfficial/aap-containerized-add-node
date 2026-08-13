@@ -1,0 +1,6 @@
+---
+bugfixes:
+  - >-
+    host_prep - Pre-seed cluster platform CA public cert before installer common;
+    do not pass ca_tls_cert alone (installer tls.yml requires cert and key together
+    or neither, which broke update-ca-trust on clean nodes).
