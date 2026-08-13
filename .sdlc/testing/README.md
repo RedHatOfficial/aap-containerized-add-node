@@ -19,15 +19,18 @@ Do **not** commit lab hostnames/IPs/passwords or full ansible stdout dumps. Reco
 
 1. Read [TEST.md](../../TEST.md) Lab prerequisites + pick a `T-*` (or matching `S-*`) that is Untested or needs re-validation.
 2. Copy `examples/add_node.secrets.yml` → local `.ignore/lab/secrets.<lab>.yml` (never commit).
-3. Run from an control host that can SSH to controller + nodes as the install user; capture stdout locally:
+3. Run from a control host that can SSH to controller + nodes as the install user; capture stdout locally.
+
+   **Collection** (`playbooks/add_node.yml`):
 
    ```bash
    # Optional helper (local only; under .ignore if present):
    # .ignore/lab/runs/capture_add_node.sh aap27 T-27-AIO-EN-VIA-HN
 
    SETUP=/path/to/containerized-setup
-   export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
-   ansible-playbook playbooks/add_node.yml \
+   COL=/path/to/aap-containerized-add-node
+   export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${COL}:${ANSIBLE_COLLECTIONS_PATH}"
+   ansible-playbook "${COL}/playbooks/add_node.yml" \
      -i "${SETUP}/inventory-growth" \
      -e aap_setup_dir="${SETUP}" \
      -e @.ignore/lab/secrets.<lab>.yml \
@@ -35,12 +38,25 @@ Do **not** commit lab hostnames/IPs/passwords or full ansible stdout dumps. Reco
      | tee "/tmp/add-node-$(date -u +%Y%m%dT%H%MZ).log"
    ```
 
+   **Installer** (`ansible.containerized_installer.add_execution_nodes`) — when upstream ships it:
+
+   ```bash
+   SETUP=/path/to/containerized-setup
+   export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
+   ansible-playbook -i "${SETUP}/inventory-growth" \
+     ansible.containerized_installer.add_execution_nodes \
+     -e add_execution_nodes_skip_image_load_if_present=true \
+     | tee "/tmp/add-execution-nodes-$(date -u +%Y%m%dT%H%MZ).log"
+   ```
+
+   Porting spec: [INSTALLER_PLAN.md](../../INSTALLER_PLAN.md). Full commands: [TEST.md](../../TEST.md).
+
 4. Verify with [checklists/verification.md](checklists/verification.md).
 5. **Update shared docs** in the same PR (or a follow-up docs PR):
-   - Append a row to [TEST.md](../../TEST.md) Results log
+   - Append a row to [TEST.md](../../TEST.md) Results log (`Playbook`: `collection` or `installer`)
    - Flip Status in the TEST.md matrix
    - Append to the matching scenario Results Log (if the `S-*` file exists)
-   - Note AAP version, controller OS, **node OS**, topology, collection ref/commit
+   - Note AAP version, controller OS, **node OS**, topology, branch/commit ref
 
 ## Test types
 

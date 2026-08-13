@@ -1,8 +1,0 @@
----
-# Defaults for the additive add_execution_nodes helper role (overlay-only).
-# After rsync into a setup tree, these apply when the role is imported.
-
-add_execution_nodes_inventory_group: execution_nodes
-add_execution_nodes_target_group: execution_nodes_new
-add_execution_nodes_controller_container: automation-controller-task
-add_execution_nodes_listener_port: 27199

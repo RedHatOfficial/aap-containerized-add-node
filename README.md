@@ -93,7 +93,8 @@ End-to-end roles are implemented and driven by `aap_setup_dir` for version align
 
 Each role has a `roles/<name>/README.md`. Flow overview: [docs/COLLECTION_MAP.md](docs/COLLECTION_MAP.md).
 
-Upstream path to fold this into the containerized installer: [INSTALLER_PLAN.md](INSTALLER_PLAN.md). Drop-in file tree for local installer experiments: [installer-overlay/](installer-overlay/).
+Upstream path to fold this into the containerized installer: [INSTALLER_PLAN.md](INSTALLER_PLAN.md)
+(agent-maintained porting spec; reference implementation is this collection).
 
 See [CHANGELOG.rst](CHANGELOG.rst) for release notes (fragments under `changelogs/fragments/`). Contribution and release process: [CONTRIBUTING.md](CONTRIBUTING.md).
 
