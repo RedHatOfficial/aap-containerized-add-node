@@ -24,3 +24,5 @@ ignore:
   - .git/
   - collections/
   - site/
+  - installer/
+  - installer-overlay/
