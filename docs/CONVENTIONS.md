@@ -32,6 +32,11 @@ Variables specific to this collection use `aap_add_node_` prefix to avoid confli
 | `aap_add_node_awx_manage_retries` | `5` | Retry count for awx-manage commands |
 | `aap_add_node_instance_groups` | `[]` | Custom instance groups to add node to |
 
+Instance **capacity** and **policy** settings (`capacity_adjustment`, `enabled`,
+`managed_by_policy`) are **not** applied by this collection. The containerized installer
+does not set them at join either. Configure them in the Gateway/Controller UI or via
+the Controller API after the node is registered.
+
 ## Registration (awx-manage only)
 
 Instance join matches the containerized installer: `awx-manage` via `podman exec` on the

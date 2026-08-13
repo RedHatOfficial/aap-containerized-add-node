@@ -5,3 +5,7 @@ removed_features:
     via ``ansible.controller.instance_group`` and instance updates via
     ``ansible.controller.instance``). Custom instance groups now always use
     ``awx-manage register_queue``, matching the containerized installer.
+  - >-
+    Removed optional post-join instance tuning (``capacity_adjustment``, ``enabled``,
+    ``managed_by_policy``). There is no ``awx-manage`` equivalent; configure these
+    via the Gateway/Controller UI or the Controller API after join if needed.
