@@ -28,6 +28,7 @@ issues: https://github.com/RedHatOfficial/aap-containerized-add-node/issues
 documentation: https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/README.md
 homepage: https://github.com/RedHatOfficial/aap-containerized-add-node
 build_ignore:
+  # Tooling / CI / VCS
   - .ansible
   - .ansible-lint
   - .black.cfg
@@ -37,6 +38,7 @@ build_ignore:
   - .github
   - .gitignore
   - .git
+  - .gitleaks.toml
   - .hypothesis
   - .isort.cfg
   - .markdownlint.yml
@@ -54,16 +56,36 @@ build_ignore:
   - "*.pem"
   - "*.crt"
   - "*.key"
-  - bundles
-  - changelogs/
-  - docs
-  - ignore
-  - lab
   - pyproject.toml
   - test-requirements.txt
-  - tests/*
   - tox-ansible.ini
+  # Local dev / lab (never ship)
+  - .ignore
+  - bundles
+  - lab
+  # Contributor / SDLC / agent tooling
+  - .agents
+  - .sdlc
+  - AGENTS.md
+  - CLAUDE.md
+  - .claudeignore
+  - INSTALLER_PLAN.md
+  - TEST.md
+  - ansible.cfg
+  # Docs site source (published separately)
+  - docs
+  - docs_site
+  - docs-requirements.txt
+  - mkdocs.yml
+  # Installer upstream scaffold
+  - installer-overlay
+  # Changelog build artifacts
+  - changelogs
   - CHANGELOG.md
+  - CHANGELOG.rst
+  # Repo meta (not collection content)
   - CODE_OF_CONDUCT.md
   - CONTRIBUTING.md
   - SECURITY.md
+  # Tests
+  - tests
