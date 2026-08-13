@@ -1,0 +1,7 @@
+---
+bugfixes:
+  - >-
+    preflight, generate_bundle, register_instance - Use explicit delegate
+    ``connection`` on remaining controller-targeted tasks (machine-id check,
+    bundle pre-register) and honor ``aap_add_node_controller_target`` for HA
+    controller selection.

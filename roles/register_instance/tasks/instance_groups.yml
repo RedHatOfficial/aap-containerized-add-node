@@ -5,7 +5,7 @@
 - name: Create/update instance groups and add node
   when: aap_add_node_instance_groups | default([]) | length > 0
   vars:
-    _awx_manage_host: "{{ groups['automationcontroller'][0] }}"
+    _awx_manage_host: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
     _delegate_connection: "{{ hostvars[_awx_manage_host].ansible_connection | default('ssh') }}"
   block:
     - name: Register node to each instance group

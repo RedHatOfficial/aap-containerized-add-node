@@ -7,10 +7,10 @@
   ansible.builtin.include_role:
     name: redhat_official.aap_containerized_add_node.assert_controller_container
 
-# Same stable target as assert_controller_container (inventory order [0]).
+# Same stable target as assert_controller_container.
 - name: Register instance via awx-manage
   vars:
-    _awx_manage_host: "{{ groups['automationcontroller'][0] }}"
+    _awx_manage_host: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
     _delegate_connection: "{{ hostvars[_awx_manage_host].ansible_connection | default('ssh') }}"
   block:
     - name: Provision instance
