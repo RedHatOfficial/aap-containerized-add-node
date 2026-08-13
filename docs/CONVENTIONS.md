@@ -32,42 +32,25 @@ Variables specific to this collection use `aap_add_node_` prefix to avoid confli
 | `aap_add_node_awx_manage_retries` | `5` | Retry count for awx-manage commands |
 | `aap_add_node_instance_groups` | `[]` | Custom instance groups to add node to |
 
-### API Mode Variables
+Instance **capacity** and **policy** settings (`capacity_adjustment`, `enabled`,
+`managed_by_policy`) are **not** applied by this collection. The containerized installer
+does not set them at join either. Configure them in the Gateway/Controller UI or via
+the Controller API after the node is registered.
 
-For API-based instance group management (instead of awx-manage):
+## Registration (awx-manage only)
 
-| Variable | Description |
-|----------|-------------|
-| `aap_add_node_controller_host` | AAP URL (e.g., `https://controller.example.com`) |
-| `aap_add_node_controller_username` | Admin username |
-| `aap_add_node_controller_password` | Admin password |
-| `aap_add_node_validate_certs` | Validate TLS certs (default: `true`) |
+Instance join matches the containerized installer: `awx-manage` via `podman exec` on the
+controller task container. There is no Controller API path for provisioning, receptor address,
+or peer registration.
 
-## Platform Collections Usage
+| Step | Mechanism |
+|------|-----------|
+| Provision instance | `awx-manage provision_instance` |
+| Register receptor address | `awx-manage add_receptor_address` |
+| Register peers | `awx-manage register_peers` |
+| Register queues / instance groups | `awx-manage register_queue` |
 
-### Prefer Platform Collections
-
-Use official platform collections where possible:
-
-| Task | Collection | Module | Status |
-|------|------------|--------|--------|
-| Create Instance Groups | `ansible.controller` | `instance_group` | ✅ Used (API mode) |
-| Update instance settings | `ansible.controller` | `instance` | ✅ Used (API mode) |
-| Provision instance | N/A | N/A | ❌ Not available - use awx-manage |
-| Register receptor address | N/A | N/A | ❌ Not available - use awx-manage |
-| Register peers | N/A | N/A | ❌ Not available - use awx-manage |
-| Gateway tokens | `ansible.platform` | `token` | ⚠️ Does NOT work with controller API |
-
-### When to Use awx-manage
-
-Use `awx-manage` via podman exec when:
-
-1. **Instance provisioning** - `ansible.controller.instance` cannot create new instances
-2. **Receptor address registration** - No API equivalent
-3. **Peer registration** - No API equivalent
-4. **No API credentials** - Running from controller without network API access
-
-### awx-manage Commands (match installer)
+### awx-manage commands (match installer)
 
 ```bash
 # Provision instance (create in DB)
@@ -93,14 +76,7 @@ exec1.example.com
 exec2.example.com
 ```
 
-Groups with `instance_group_` prefix are parsed and created automatically.
-
-### API vs awx-manage
-
-| Mode | When Used | Collection |
-|------|-----------|------------|
-| API | `aap_add_node_controller_host` + credentials set | `ansible.controller.instance_group` |
-| awx-manage | Default (no API credentials) | None (podman exec) |
+Groups with `instance_group_` prefix are parsed and assigned via `awx-manage register_queue`.
 
 ## File/Directory Conventions
 
@@ -148,8 +124,6 @@ Guidelines for `argument_specs.yml`:
 
 ## Notes
 
-- Gateway tokens (`ansible.platform.token`) do NOT work with controller API
-- Controller API requires basic auth or controller-specific OAuth tokens
 - Always test with `--check --diff` before full runs
 - Run `playbooks/preflight.yml` before add_node.yml in change windows
 

@@ -1,0 +1,7 @@
+---
+major_changes:
+  - >-
+    ``register_instance`` uses ``awx-manage`` only (no optional Controller API paths).
+    Custom instance groups use ``register_queue``; post-join instance tuning
+    (``capacity_adjustment``, ``enabled``, ``managed_by_policy``) is not applied
+    at join — configure via Gateway/Controller UI or API after registration if needed.
