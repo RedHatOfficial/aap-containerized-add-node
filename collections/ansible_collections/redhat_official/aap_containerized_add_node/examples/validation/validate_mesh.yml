@@ -1,13 +1,20 @@
 ---
-# Mesh Node Validation Test
-# Runs Demo Job Template on each custom instance group to verify mesh connectivity
+# Mesh Node Validation Test (LAB USE ONLY)
+#
+# WARNING: This playbook modifies Job Template instance group assignments.
+# Do NOT run against production without understanding the impact.
+#
+# What it does:
+# - Temporarily assigns each custom IG to Demo Job Template
+# - Launches jobs to verify mesh connectivity
+# - Clears IG assignments when done (does NOT restore original)
 #
 # Prerequisites:
 # - Nodes registered via add_node.yml
 # - Instance groups created (instance_group_* in inventory)
 # - Demo Job Template exists (ID 6)
 #
-# Usage: ansible-playbook -i inventory.aap27 validate_mesh.yml
+# Usage: ansible-playbook -i inventory examples/validation/validate_mesh.yml
 
 - name: Validate mesh node connectivity via job execution
   hosts: localhost

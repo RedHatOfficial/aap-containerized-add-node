@@ -13,7 +13,9 @@ aap_add_node_default_receptor_image: receptor-rhel9:latest
 aap_add_node_skip_image_load: false
 # When true (default), auto-skip the same path if receptor + EE images already exist.
 aap_add_node_skip_image_load_if_present: true
-aap_add_node_check_version_skew: true
+# Version skew warning (prints expected image, does not validate)
+# Default false to avoid false confidence - enable explicitly if wanted
+aap_add_node_check_version_skew: false
 aap_add_node_fail_on_version_skew: false
 receptor_user: awx
 receptor_group: awx
