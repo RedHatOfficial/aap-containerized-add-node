@@ -1,0 +1,7 @@
+---
+removed_features:
+  - >-
+    Removed optional Controller API paths from ``register_instance`` (instance groups
+    via ``ansible.controller.instance_group`` and instance updates via
+    ``ansible.controller.instance``). Custom instance groups now always use
+    ``awx-manage register_queue``, matching the containerized installer.
