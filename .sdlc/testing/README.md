@@ -38,17 +38,10 @@ Do **not** commit lab hostnames/IPs/passwords or full ansible stdout dumps. Reco
      | tee "/tmp/add-node-$(date -u +%Y%m%dT%H%MZ).log"
    ```
 
-   **Installer** (`ansible.containerized_installer.add_execution_nodes`):
+   **Installer** (`ansible.containerized_installer.add_execution_nodes`) — when upstream ships it:
 
    ```bash
    SETUP=/path/to/containerized-setup
-   REPO=/path/to/aap-containerized-add-node
-   BRANCH=stable-2.7   # stable-2.6 for 2.6 labs
-
-   rsync -a --delete --exclude='collections/' \
-     "${REPO}/installer/${BRANCH}/" \
-     "${SETUP}/collections/ansible_collections/ansible/containerized_installer/"
-
    export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
    ansible-playbook -i "${SETUP}/inventory-growth" \
      ansible.containerized_installer.add_execution_nodes \
@@ -56,8 +49,7 @@ Do **not** commit lab hostnames/IPs/passwords or full ansible stdout dumps. Reco
      | tee "/tmp/add-execution-nodes-$(date -u +%Y%m%dT%H%MZ).log"
    ```
 
-   Full commands and variable mapping: [TEST.md](../../TEST.md). Installer source:
-   [installer/README.md](../../installer/README.md).
+   Porting spec: [INSTALLER_PLAN.md](../../INSTALLER_PLAN.md). Full commands: [TEST.md](../../TEST.md).
 
 4. Verify with [checklists/verification.md](checklists/verification.md).
 5. **Update shared docs** in the same PR (or a follow-up docs PR):

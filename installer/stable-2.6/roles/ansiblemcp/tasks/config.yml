@@ -1,7 +1,0 @@
----
-- name: Create the ansiblemcp directories
-  ansible.builtin.file:
-    path: '{{ mcp_conf_dir }}'
-    mode: '0770'
-    state: directory
-...

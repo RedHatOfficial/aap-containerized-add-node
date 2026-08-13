@@ -1,7 +1,0 @@
----
-archive_extension: "{{ use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
-eda_archive_extension: "{{ eda_use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
-eda_db_filename: '{{ eda_pg_database }}.{{ eda_use_db_compression | bool | ternary(db_compressed_extension, db_decompressed_extension) }}'
-eda_workers_range: '{{ range(1, eda_workers | int + 1, 1) | list }}'
-eda_activation_workers_range: '{{ range(1, eda_activation_workers | int + 1, 1) | list }}'
-...

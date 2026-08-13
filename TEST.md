@@ -3,7 +3,7 @@
 Reusable checklist for validating join scenarios against containerized AAP using either:
 
 - **Collection:** `redhat_official.aap_containerized_add_node` (`playbooks/add_node.yml`)
-- **Installer:** `ansible.containerized_installer` with `add_execution_nodes` ([installer/](installer/))
+- **Installer:** `ansible.containerized_installer.add_execution_nodes` (see [INSTALLER_PLAN.md](INSTALLER_PLAN.md); not yet validated in lab)
 
 Update the **Status** column and the per-scenario **Last result** notes when you re-run.
 Record which playbook you used in the **Results log** (`Playbook` column).
@@ -41,48 +41,23 @@ Lab secrets (gitignored under `.ignore/lab/`) are per cluster, e.g.
 `.ignore/lab/secrets.aap26.yml` / `.ignore/lab/secrets.aap27.yml`.
 Copy them to the control host or pass with `-e @…` as needed.
 
-### Installer command pattern
+### Installer command pattern (future)
 
-Deploy the vendored installer tree into the setup tree (once per refresh), then run by
-collection FQCN — same as upstream `ansible.containerized_installer.install`:
+When `add_execution_nodes` lands in `ansible.containerized_installer`, run from the
+containerized setup tree (same inventory as collection tests):
 
 ```bash
 SETUP=/path/to/ansible-automation-platform-containerized-setup-2.7
-REPO=/path/to/aap-containerized-add-node
-BRANCH=stable-2.7   # or stable-2.6 for 2.6 labs
-
-# Overlay add_execution_nodes onto the setup tree's containerized_installer collection
-rsync -a --delete \
-  --exclude='collections/' \
-  "${REPO}/installer/${BRANCH}/" \
-  "${SETUP}/collections/ansible_collections/ansible/containerized_installer/"
-
 export ANSIBLE_COLLECTIONS_PATH="${SETUP}/collections:${ANSIBLE_COLLECTIONS_PATH}"
 
-# Same inventory as collection tests; bundle_dir/registry_* live in inventory [all:vars]
 ansible-playbook -i "${SETUP}/inventory-growth" \
   ansible.containerized_installer.add_execution_nodes \
   -e add_execution_nodes_skip_image_load_if_present=true \
   | tee "/tmp/add-execution-nodes-$(date -u +%Y%m%dT%H%MZ).log"
 ```
 
-**Local dev** (without rsync into `${SETUP}`): from `installer/${BRANCH}/`, run
-`ansible-galaxy collection install -r requirements.yml -p ./collections` and
-`ansible-galaxy collection install . -p ./collections`, then set
-`ANSIBLE_COLLECTIONS_PATH` to that `collections/` directory.
-
-Do **not** run `playbooks/add_execution_nodes.yml` by file path — roles are resolved via the
-installed collection (same as upstream `install.yml`).
-
-| Collection extra var | Installer extra var |
-|----------------------|---------------------|
-| `aap_setup_dir` | Not used — `bundle_dir` in inventory |
-| `aap_add_node_skip_image_load_if_present` | `add_execution_nodes_skip_image_load_if_present` (default `true`) |
-| `aap_add_node_preflight_enabled=false` | `add_execution_nodes_preflight_enabled=false` |
-| `aap_add_node_enable_controller_peer` | `add_execution_nodes_enable_controller_peer` |
-
-Secrets files that only set `aap_add_node_*` keys are ignored by the installer playbook.
-Variable reference: [installer/CHANGES.md](installer/CHANGES.md).
+Porting spec, play order, variable mapping, and open items: [INSTALLER_PLAN.md](INSTALLER_PLAN.md).
+Until upstream ships the playbook, validate join behaviour with the **collection** command pattern above.
 
 ### Pass criteria (all join scenarios)
 

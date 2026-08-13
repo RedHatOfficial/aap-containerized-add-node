@@ -1,7 +1,0 @@
-# Automation Controller Defaults to 4 worker,
-# but if we have more CPU's we can have more workers
-{% if ansible_processor_vcpus is defined and ansible_processor_vcpus | int > controller_event_workers | int %}
-JOB_EVENT_WORKERS = {{ ansible_processor_vcpus }}
-{% else %}
-JOB_EVENT_WORKERS = {{ controller_event_workers }}
-{% endif %}

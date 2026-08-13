@@ -1,5 +1,0 @@
----
-archive_extension: '{{ use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}'
-lightspeed_archive_extension: '{{ lightspeed_use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}'
-lightspeed_db_filename: '{{ lightspeed_pg_database }}.{{ lightspeed_use_db_compression | bool | ternary(db_compressed_extension, db_decompressed_extension) }}'
-...

@@ -1,5 +1,0 @@
-{%- if receptor_tls_cert is defined and custom_ca_cert is defined %}
-{{ _custom_ca_cert.content | b64decode }}
-{%- else %}
-{{ _internal_ca_cert.content | b64decode }}
-{%- endif %}

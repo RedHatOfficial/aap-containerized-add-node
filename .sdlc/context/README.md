@@ -11,12 +11,14 @@ Supporting documentation for SDLC decisions. User-facing docs remain in `docs/`.
 | [CONVENTIONS.md](../../docs/CONVENTIONS.md) | docs/ | Variable naming, inventory format |
 | [COLLECTION_MAP.md](../../docs/COLLECTION_MAP.md) | docs/ | Role and playbook flow |
 
-## Installer Context
+## Installer context
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| [INSTALLER_PLAN.md](../../INSTALLER_PLAN.md) | root | Upstream migration plan |
-| [installer/](../../installer/) | root | Vendored containerized installer |
+| [INSTALLER_PLAN.md](../../INSTALLER_PLAN.md) | root | **Agent-maintained** porting spec for `ansible.containerized_installer.add_execution_nodes` |
+
+Implementation reference: this collection (`playbooks/add_node.yml`, `roles/*`). Do not depend on
+vendored installer snapshots in this repo.
 
 ## SDLC Cross-References
 

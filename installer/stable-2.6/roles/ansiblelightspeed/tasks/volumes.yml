@@ -1,9 +1,0 @@
----
-- name: Manage the lightspeed nginx volume
-  containers.podman.podman_volume:
-    name: '{{ item }}'
-    state: '{{ __volume_state }}'
-  loop:
-    - lightspeed_nginx
-    - lightspeed_static_console
-...

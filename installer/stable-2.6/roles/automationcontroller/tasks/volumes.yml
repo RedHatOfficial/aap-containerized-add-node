@@ -1,6 +1,0 @@
----
-- name: Manage the Automation Controller nginx volume
-  containers.podman.podman_volume:
-    name: controller_nginx
-    state: '{{ __volume_state }}'
-...

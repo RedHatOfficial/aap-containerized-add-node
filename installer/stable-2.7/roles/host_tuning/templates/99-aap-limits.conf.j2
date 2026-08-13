@@ -1,3 +1,0 @@
-# Set file descriptor limits for the user that runs aap containerized services
-{{ ansible_user_id }} soft nofile {{ host_tuning_nofile_limit_soft }}
-{{ ansible_user_id }} hard nofile {{ host_tuning_nofile_limit_hard }}

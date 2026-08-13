@@ -68,6 +68,9 @@ Full workflow: `.agents/skills/workflow/SKILL.md`
 - **Role README required** — every `roles/<name>/` must have `README.md`
 - **Role argument_specs required** — new roles must include `meta/argument_specs.yml`
   (no Jinja in argspec defaults/descriptions; resolve fact-dependent values in tasks)
+- **Keep [INSTALLER_PLAN.md](INSTALLER_PLAN.md) current** — update the installer porting
+  spec in the same PR when join playbooks, roles, variables, ADRs, or lab scenarios change
+  (see § Agent maintenance contract in that file)
 - Do NOT modify files outside task scope
 - Do NOT add features not in requirements
 - Ask for clarification if specs are ambiguous
@@ -96,6 +99,7 @@ Before completing any task:
 - [ ] `ansible-playbook --syntax-check` passes
 - [ ] New/changed roles include `README.md` and `meta/argument_specs.yml`
 - [ ] Documentation updated (if applicable)
+- [ ] [INSTALLER_PLAN.md](INSTALLER_PLAN.md) updated when join behaviour or porting spec changes
 - [ ] ADR added (if architectural decision)
 
 ## Supported Platforms
@@ -118,5 +122,6 @@ Before completing any task:
 - [README.md](README.md) — Quick start and usage
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — System architecture
 - [docs/TOPOLOGY.md](docs/TOPOLOGY.md) — Mesh topology patterns
+- [INSTALLER_PLAN.md](INSTALLER_PLAN.md) — Upstream installer porting spec (agent-maintained)
 - [.sdlc/README.md](.sdlc/README.md) — SDLC framework
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Development workflow

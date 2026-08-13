@@ -1,9 +1,0 @@
----
-- name: Manage receptor container via systemd
-  ansible.builtin.systemd:
-    name: receptor.service
-    state: '{{ __systemd_state | default("started") }}'
-    enabled: '{{ __systemd_enabled | default(true) }}'
-    scope: user
-    daemon_reload: true
-...

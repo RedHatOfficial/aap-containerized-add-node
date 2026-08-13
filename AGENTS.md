@@ -64,10 +64,15 @@ write an ADR first.
     restart any existing services. Only inbound dial (opt-in) causes controller receptor
     restart.
 
-11. **Every role has a README.md**. New and existing roles under `roles/<name>/` must
+11. **Keep [INSTALLER_PLAN.md](INSTALLER_PLAN.md) current**. Any change to join playbooks,
+    roles, variables, ADRs, or lab scenarios that affects an upstream installer port MUST
+    update the matching section in `INSTALLER_PLAN.md` in the same PR (see § Agent maintenance
+    contract in that file). Do not record upstream repo paths there.
+
+12. **Every role has a README.md**. New and existing roles under `roles/<name>/` must
     include `README.md` (purpose, variables, examples). No exceptions.
 
-12. **Every role has argument_specs where possible**. New roles must ship
+13. **Every role has argument_specs where possible**. New roles must ship
     `meta/argument_specs.yml` for entry variables. Avoid Jinja in argspec defaults or
     descriptions (it is templated during validation and breaks without facts). Prefer
     static defaults in the argspec; resolve fact-dependent paths in tasks.

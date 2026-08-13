@@ -1,1 +1,0 @@
-user {{ gateway_redis_username | default('gateway') }} on #{{ hostvars["localhost"]["_gateway_redis_password"] | hash('sha256') }} ~gateway:* resetchannels +@all

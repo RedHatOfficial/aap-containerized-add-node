@@ -1,7 +1,0 @@
----
-- name: Restart redis
-  ansible.builtin.systemd:
-    name: 'redis-{{ _redis_suffix }}.service'
-    scope: user
-    state: restarted
-...

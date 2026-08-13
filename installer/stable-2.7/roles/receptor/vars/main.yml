@@ -1,4 +1,0 @@
----
-archive_extension: "{{ use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
-receptor_archive_extension: "{{ receptor_use_archive_compression | bool | ternary(archive_compressed_extension, archive_decompressed_extension) }}"
-...

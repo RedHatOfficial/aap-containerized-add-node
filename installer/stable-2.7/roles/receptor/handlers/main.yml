@@ -1,7 +1,0 @@
----
-- name: Restart receptor
-  ansible.builtin.systemd:
-    name: receptor.service
-    scope: user
-    state: restarted
-...

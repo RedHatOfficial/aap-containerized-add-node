@@ -1,5 +1,0 @@
----
-# Registration entry point — logic lives in roles/add_execution_nodes/tasks/register.yml.
-
-- name: Register via add_execution_nodes role
-  ansible.builtin.import_tasks: ../../add_execution_nodes/tasks/register.yml

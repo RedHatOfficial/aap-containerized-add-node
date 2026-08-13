@@ -1,8 +1,0 @@
----
-# Sysctl settings
-host_tuning_sysctl_fs_inotify_max_user_instances: 8192
-host_tuning_sysctl_fs_inotify_max_user_watches: 524288
-
-# Ulimit settings
-host_tuning_nofile_limit_soft: 524288
-host_tuning_nofile_limit_hard: 524288
