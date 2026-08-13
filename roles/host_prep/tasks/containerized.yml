@@ -20,7 +20,7 @@
     bundle_install: "{{ false if (aap_add_node_skip_image_load_effective | bool) else (aap_add_node_bundle_install | default(true)) }}"
     bundle_dir: "{{ aap_setup_dir }}/bundle"
     ca_tls_cert: "{{ aap_add_node_mesh_ca_cert }}"
-    ca_tls_key: "{{ aap_add_node_mesh_ca_key }}"
+    # ca_tls_key intentionally NOT distributed to EN/HN — mesh CA private key stays on control host
     registry_ns_aap: "{{ registry_ns_aap | default(aap_add_node_default_registry_ns_aap) | default('ansible-automation-platform-26') }}"
     receptor_image: "{{ receptor_image | default(aap_add_node_default_receptor_image) | default('receptor-rhel9:latest') }}"
     container_pull_images: "{{ false if (aap_add_node_skip_image_load_effective | bool) else (container_pull_images | default(true)) }}"
