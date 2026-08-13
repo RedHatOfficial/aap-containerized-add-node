@@ -9,18 +9,19 @@ Two installation methods:
 === "Online (SSH to targets)"
 
     ```bash
-    # Install collection
-    ansible-galaxy collection install /path/to/aap_add_node-1.0.0.tar.gz -p ./collections
-    export ANSIBLE_COLLECTIONS_PATH=./aap-setup-2.7-1/collections:./collections
+    # Install collection (from clone or extracted source tree)
+    ansible-galaxy collection install -r requirements.yml
+    ansible-galaxy collection install --force --no-deps .
+    export ANSIBLE_COLLECTIONS_PATH=./aap-setup-2.7-1/collections:${ANSIBLE_COLLECTIONS_PATH}
 
     # Run preflight checks
     ansible-playbook -i inventory.yml \
-      collections/ansible_collections/redhat_official/aap_containerized_add_node/playbooks/preflight.yml \
+      playbooks/preflight.yml \
       -e aap_setup_dir=/path/to/installer
 
     # Add nodes
     ansible-playbook -i inventory.yml \
-      collections/ansible_collections/redhat_official/aap_containerized_add_node/playbooks/add_node.yml \
+      playbooks/add_node.yml \
       -e aap_setup_dir=/path/to/installer
     ```
 

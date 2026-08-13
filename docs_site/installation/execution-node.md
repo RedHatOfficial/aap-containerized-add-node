@@ -50,7 +50,7 @@ ansible_user=aapuser
 
 ```bash
 ansible-playbook -i inventory.yml \
-  collections/ansible_collections/redhat_official/aap_containerized_add_node/playbooks/add_node.yml \
+  playbooks/add_node.yml \
   -e aap_setup_dir=/path/to/ansible-automation-platform-containerized-setup-2.7-1 \
   -e aap_add_node_hostname=exec1.example.com \
   -e aap_add_node_type=execution \

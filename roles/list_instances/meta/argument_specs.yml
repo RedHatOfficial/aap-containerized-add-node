@@ -7,3 +7,7 @@ argument_specs:
         description: Podman name of the controller task container.
         type: str
         default: automation-controller-task
+      aap_add_node_controller_target:
+        description: Override controller host for awx-manage (default automationcontroller[0]).
+        type: str
+        default: ''

@@ -284,14 +284,19 @@ registry_password=your_rhn_password
 - `routable_hostname` should be the FQDN the controller uses to reach the node
 - Registry credentials are required for pulling images from registry.redhat.io
 
-### Step 2: Set Up Collections Path
+### Step 2: Install Collection and Set Up Collections Path
 
 ```bash
-cd ~/aap
+cd /path/to/aap-containerized-add-node
 
-# Set collections path to include both installer and add_node collections
-export ANSIBLE_COLLECTIONS_PATH=./ansible-automation-platform-containerized-setup-2.7-1/collections:./collections
+ansible-galaxy collection install -r requirements.yml
+ansible-galaxy collection install --force --no-deps .
+
+# Installer collections for image/role parity (adjust setup path)
+export ANSIBLE_COLLECTIONS_PATH=./ansible-automation-platform-containerized-setup-2.7-1/collections:${ANSIBLE_COLLECTIONS_PATH}
 ```
+
+Run `playbooks/*.yml` from the collection source tree (this repository root after clone or extract).
 
 ### Step 2.5: Run Preflight Checks (Recommended)
 
@@ -299,7 +304,7 @@ Run preflight validation before the actual install to catch issues early:
 
 ```bash
 ansible-playbook -i add_nodes.ini \
-  collections/ansible_collections/redhat_official/aap_containerized_add_node/playbooks/preflight.yml \
+  playbooks/preflight.yml \
   -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-2.7-1
 ```
 
@@ -318,13 +323,13 @@ This validates:
 ```bash
 # Dry run first (check mode)
 ansible-playbook -i add_nodes.ini \
-  collections/ansible_collections/redhat_official/aap_containerized_add_node/playbooks/add_node.yml \
+  playbooks/add_node.yml \
   -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-2.7-1 \
   --check --diff
 
 # Add all nodes (registration is serialized automatically)
 ansible-playbook -i add_nodes.ini \
-  collections/ansible_collections/redhat_official/aap_containerized_add_node/playbooks/add_node.yml \
+  playbooks/add_node.yml \
   -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-2.7-1
 ```
 
@@ -384,7 +389,7 @@ Expected output:
 
 ```bash
 ansible-playbook -i add_nodes.ini \
-  collections/ansible_collections/redhat_official/aap_containerized_add_node/playbooks/validate_mesh.yml
+  playbooks/validate_mesh.yml
 ```
 
 This playbook:

@@ -167,6 +167,18 @@ Use `connection: local` only for `delegate_to: localhost` tasks that must touch 
 
 Reference: `vars/aap_add_node_delegate.yml` in this collection.
 
+## Controller target (HA)
+
+Optional `aap_add_node_controller_target` overrides `groups['automationcontroller'][0]` for
+`awx-manage`, mesh material fetch, preflight checks, and bundle pre-registration. Use when
+the first controller in inventory is down or unreachable but another controller is healthy.
+
+```yaml
+-e aap_add_node_controller_target=cn02.example.com
+```
+
+Default is empty (use inventory order). Defined in `roles/list_instances/defaults/main.yml`.
+
 ## Peer Topology
 
 See [TOPOLOGY.md](TOPOLOGY.md) for detailed peer direction documentation.
