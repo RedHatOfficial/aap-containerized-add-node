@@ -1,0 +1,15 @@
+---
+# Scaffold: AIO local-only → tcp-listener (see redhat_official.aap_containerized_add_node.enable_controller_listener).
+#
+# Intended behavior:
+# 1. Locate ~/aap/receptor/etc/receptor.conf on this controller
+# 2. If local-only and no tcp-listener, backup, replace with tcp-listener on receptor_port
+# 3. Open firewalld if needed; restart receptor user service
+# Skip when already listening or when disabled by var.
+
+- name: Controller listener helper is not implemented yet
+  ansible.builtin.fail:
+    msg: >-
+      installer-overlay scaffold: implement
+      roles/add_execution_nodes/tasks/enable_controller_listener.yml
+      (reference: redhat_official.aap_containerized_add_node roles/enable_controller_listener).

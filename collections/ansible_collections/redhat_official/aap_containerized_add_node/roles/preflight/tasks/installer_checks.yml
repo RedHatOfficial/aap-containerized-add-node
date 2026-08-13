@@ -1,0 +1,29 @@
+---
+# Installer-side preflight checks (run on localhost)
+
+# P1: Collections path validation
+- name: Check ansible.containerized_installer is importable
+  ansible.builtin.command:
+    cmd: ansible-doc -t module ansible.containerized_installer.common --json
+  changed_when: false
+  failed_when: false
+  register: _ctr_installer_check
+
+- name: Assert containerized_installer collection available
+  ansible.builtin.assert:
+    that:
+      - _ctr_installer_check.rc == 0
+    fail_msg: >-
+      Collection ansible.containerized_installer not found.
+      Set: export ANSIBLE_COLLECTIONS_PATH={{ aap_setup_dir }}/collections:$ANSIBLE_COLLECTIONS_PATH
+
+# P6: Registry credentials (when not bundle mode)
+- name: Check registry credentials when online install
+  ansible.builtin.assert:
+    that:
+      - (registry_username | default('')) | length > 0
+      - (registry_password | default('')) | length > 0
+    fail_msg: >-
+      Registry credentials required for online install.
+      Set registry_username and registry_password in inventory [all:vars].
+  when: not (aap_add_node_bundle_install | default(false) | bool)

@@ -1,0 +1,24 @@
+---
+argument_specs:
+  main:
+    short_description: >-
+      Opt-in inbound dial — add tcp-peer entries on the controller receptor
+      for new nodes (restarts receptor; causes brief mesh disruption).
+    options:
+      aap_add_node_enable_controller_peer:
+        description: >-
+          When true, update controller receptor.conf to dial new nodes.
+          Default false (outbound dial). Causes receptor restart.
+        type: bool
+        default: false
+      aap_add_node_listener_port:
+        description: Default receptor listener port for peer addresses.
+        type: int
+        default: 27199
+      aap_add_node_receptor_config_dir:
+        description: >-
+          Directory containing receptor.conf on the controller host.
+          When empty or omitted, tasks resolve it under the remote user
+          home aap/receptor/etc path (requires gathered facts).
+        type: path
+        default: ''

@@ -1,0 +1,28 @@
+---
+# Variables for offline bundle install
+# Generated: {{ ansible_date_time.iso8601 }}
+
+# Instance identity (pre-registered on controller)
+target_hostname: {{ _target_hostname }}
+target_type: {{ _target_type | default('execution') }}
+instance_uuid: {{ _bundle_instance_uuid }}
+
+# Receptor configuration
+receptor_port: {{ _receptor_port }}
+receptor_peers:
+{% for peer in _parsed_peers %}
+  - {{ peer }}
+{% endfor %}
+
+# Paths (relative to bundle)
+receptor_conf: receptor/receptor.conf
+receptor_tls_cert: receptor/tls/receptor.crt
+receptor_tls_key: receptor/tls/receptor.key
+receptor_ca_cert: receptor/tls/ca/mesh-CA.crt
+{% if _target_type | default('execution') == 'execution' %}
+receptor_work_public_key: receptor/work_public_key.pem
+{% endif %}
+
+# Systemd service
+receptor_service_name: receptor
+receptor_service_user: {{ ansible_user_id | default('aap') }}

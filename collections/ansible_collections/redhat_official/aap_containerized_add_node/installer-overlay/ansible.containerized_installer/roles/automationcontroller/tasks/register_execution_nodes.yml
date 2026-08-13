@@ -1,0 +1,26 @@
+---
+# Scaffold: EN/HN registration only — extract from automationcontroller/tasks/init.yml.
+#
+# MUST include (for hosts in groups['execution_nodes_new']):
+#   awx-manage provision_instance
+#   awx-manage add_receptor_address
+#   awx-manage register_peers --exact
+#   awx-manage register_queue (execution: default + executionplane)
+#
+# MUST NOT include:
+#   migrate / preload / full controller init
+#   inventory-diff deprovision_instance (end of init.yml)
+#
+# Prefer mapping peer inventory names through hostvars[p]._receptor_hostname
+# like init.yml does, so register_peers matches mesh node ids.
+#
+# Reference: redhat_official.aap_containerized_add_node roles/register_instance/tasks/containerized.yml
+# and ansible.containerized_installer roles/automationcontroller/tasks/init.yml
+
+- name: Additive registration is not implemented yet
+  ansible.builtin.fail:
+    msg: >-
+      installer-overlay scaffold: implement
+      roles/automationcontroller/tasks/register_execution_nodes.yml by extracting the
+      EN/HN awx-manage block from init.yml (exclude migrate and deprovision).
+  when: (groups['execution_nodes_new'] | default([])) | length > 0

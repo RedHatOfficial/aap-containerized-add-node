@@ -1,0 +1,124 @@
+---
+- name: Ensure local material directory
+  ansible.builtin.file:
+    path: "{{ aap_add_node_material_dir }}"
+    state: directory
+    mode: '0700'
+  delegate_to: localhost
+
+- name: Fetch mesh material from controller when overrides unset
+  vars:
+    # HA: mesh CA lives on every controller under the install-user home; [0] is enough.
+    _mesh_src_host: "{{ groups['automationcontroller'][0] | default('') }}"
+    # Skip CA key fetch if BYO certs provided (no signing needed)
+    _byo_certs: "{{ (aap_add_node_tls_cert | default('') | length > 0) and (aap_add_node_tls_key | default('') | length > 0) }}"
+    _needs_fetch: >-
+      {{
+        (aap_add_node_mesh_ca_cert | default('') | length == 0)
+        or ((aap_add_node_mesh_ca_key | default('') | length == 0) and not _byo_certs)
+        or (aap_add_node_work_public_key | default('') | length == 0)
+      }}
+  block:
+    - name: Require automationcontroller in inventory when fetching material
+      ansible.builtin.assert:
+        that:
+          - _mesh_src_host | length > 0
+        fail_msg: >
+          Inventory must include [automationcontroller] so mesh CA / work
+          signing public key can be fetched (or set aap_add_node_mesh_ca_* paths).
+      when: >
+        (aap_add_node_mesh_ca_cert | default('') | length == 0) or
+        (aap_add_node_mesh_ca_key | default('') | length == 0)
+
+    # Do not use ~ with become:true (expands to /root). Resolve the install user's home.
+    - name: Resolve controller install-user home and fetch material
+      when: _needs_fetch | bool
+      block:
+        - name: Query remote install-user home
+          ansible.builtin.shell: echo "$HOME"
+          register: _ctrl_home
+          delegate_to: "{{ _mesh_src_host }}"
+          become: false
+          changed_when: false
+
+        - name: Fetch mesh material paths from controller
+          vars:
+            _remote_ca_cert: "{{ _ctrl_home.stdout }}/{{ aap_add_node_remote_mesh_ca_cert }}"
+            _remote_ca_key: "{{ _ctrl_home.stdout }}/{{ aap_add_node_remote_mesh_ca_key }}"
+            _remote_work_pub: "{{ _ctrl_home.stdout }}/{{ aap_add_node_remote_work_public_key }}"
+          block:
+            - name: Fetch mesh CA certificate from controller
+              ansible.builtin.fetch:
+                src: "{{ _remote_ca_cert }}"
+                dest: "{{ aap_add_node_material_dir }}/mesh-CA.crt"
+                flat: true
+              delegate_to: "{{ _mesh_src_host }}"
+              become: false
+              when: aap_add_node_mesh_ca_cert | default('') | length == 0
+
+            - name: Fetch mesh CA key from controller
+              ansible.builtin.fetch:
+                src: "{{ _remote_ca_key }}"
+                dest: "{{ aap_add_node_material_dir }}/mesh-CA.key"
+                flat: true
+              delegate_to: "{{ _mesh_src_host }}"
+              become: false
+              no_log: true
+              when:
+                - aap_add_node_mesh_ca_key | default('') | length == 0
+                - not _byo_certs
+
+            - name: Fetch work signing public key from controller
+              ansible.builtin.fetch:
+                src: "{{ _remote_work_pub }}"
+                dest: "{{ aap_add_node_material_dir }}/work_public_key.pem"
+                flat: true
+              delegate_to: "{{ _mesh_src_host }}"
+              become: false
+              when: aap_add_node_work_public_key | default('') | length == 0
+
+    # Match ansible.containerized_installer common/tls.yml (ca.key mode: '0400').
+    - name: Enforce mesh CA key permissions
+      ansible.builtin.file:
+        path: "{{ aap_add_node_material_dir }}/mesh-CA.key"
+        mode: '0400'
+      delegate_to: localhost
+      when:
+        - aap_add_node_mesh_ca_key | default('') | length == 0
+        - not _byo_certs
+
+    # Match installer ca.cert / public material mode ('0640').
+    - name: Enforce mesh CA cert permissions
+      ansible.builtin.file:
+        path: "{{ aap_add_node_material_dir }}/mesh-CA.crt"
+        mode: '0640'
+      delegate_to: localhost
+      when: aap_add_node_mesh_ca_cert | default('') | length == 0
+
+    - name: Enforce work public key permissions
+      ansible.builtin.file:
+        path: "{{ aap_add_node_material_dir }}/work_public_key.pem"
+        mode: '0640'
+      delegate_to: localhost
+      when: aap_add_node_work_public_key | default('') | length == 0
+
+- name: Check if BYO certs provided
+  ansible.builtin.set_fact:
+    _byo_certs: "{{ (aap_add_node_tls_cert | default('') | length > 0) and (aap_add_node_tls_key | default('') | length > 0) }}"
+
+- name: Set local material paths
+  ansible.builtin.set_fact:
+    aap_add_node_mesh_ca_cert: "{{ aap_add_node_mesh_ca_cert if (aap_add_node_mesh_ca_cert | default('') | length) else aap_add_node_material_dir ~ '/mesh-CA.crt' }}"
+    # CA key not needed when BYO certs provided
+    aap_add_node_mesh_ca_key: "{{ aap_add_node_mesh_ca_key if (aap_add_node_mesh_ca_key | default('') | length) else ('' if _byo_certs else aap_add_node_material_dir ~ '/mesh-CA.key') }}"
+    aap_add_node_work_public_key: "{{ aap_add_node_work_public_key if (aap_add_node_work_public_key | default('') | length) else aap_add_node_material_dir ~ '/work_public_key.pem' }}"
+
+- name: Publish mesh material paths on control host
+  ansible.builtin.add_host:
+    name: aap_add_node_control
+    groups: aap_add_node_control
+    aap_add_node_mesh_ca_cert: "{{ aap_add_node_mesh_ca_cert }}"
+    aap_add_node_mesh_ca_key: "{{ aap_add_node_mesh_ca_key }}"
+    aap_add_node_work_public_key: "{{ aap_add_node_work_public_key }}"
+    aap_add_node_tls_cert: "{{ aap_add_node_tls_cert | default('') }}"
+    aap_add_node_tls_key: "{{ aap_add_node_tls_key | default('') }}"

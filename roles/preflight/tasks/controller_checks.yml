@@ -4,7 +4,7 @@
 
 - name: Validate controller access and container state
   ansible.builtin.include_role:
-    name: redhat_official.aap_containerized_add_node.assert_controller_container
+    name: assert_controller_container
 
 # Check AIO local-only status (disruption warning).
 # Preflight runs with gather_facts: false on localhost; pull user facts on the

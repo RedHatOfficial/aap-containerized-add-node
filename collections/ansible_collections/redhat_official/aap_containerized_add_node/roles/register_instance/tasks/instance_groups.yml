@@ -1,0 +1,32 @@
+---
+# Register instance to custom instance groups via awx-manage register_queue
+# Creates the IG if it doesn't exist, adds the node to it
+
+- name: Create/update instance groups and add node
+  when: aap_add_node_instance_groups | default([]) | length > 0
+  block:
+    - name: Register node to each instance group
+      ansible.builtin.command:
+        argv:
+          - podman
+          - exec
+          - "{{ aap_add_node_controller_container }}"
+          - awx-manage
+          - register_queue
+          - --queuename={{ item }}
+          - --hostnames={{ aap_add_node_hostname }}
+      delegate_to: "{{ _awx_manage_host }}"
+      become: false
+      register: _register_ig
+      changed_when: "'(changed: True)' in _register_ig.stdout"
+      failed_when:
+        - _register_ig.rc != 0
+        - "'already a member' not in _register_ig.stderr"
+      loop: "{{ aap_add_node_instance_groups }}"
+      retries: "{{ aap_add_node_awx_manage_retries | default(5) }}"
+      delay: 5
+      until: _register_ig is not failed
+
+    - name: Report instance groups registered
+      ansible.builtin.debug:
+        msg: "Node {{ aap_add_node_hostname }} added to instance groups: {{ aap_add_node_instance_groups | join(', ') }}"

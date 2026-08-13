@@ -1,0 +1,4 @@
+---
+aap_add_node_inventory_group: execution_nodes
+aap_add_node_target_group: aap_add_node_targets
+aap_add_node_listener_port: 27199

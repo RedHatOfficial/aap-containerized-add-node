@@ -1,0 +1,319 @@
+---
+# Generate Offline Join Bundle
+#
+# Creates self-contained bundle for air-gapped execution node provisioning.
+# Requires SSH to controller only (not to target EN).
+#
+# Usage:
+#   ansible-playbook playbooks/generate_bundle.yml \
+#     -i inventory.yml \
+#     -e aap_setup_dir=/path/to/setup \
+#     -e _target_hostname=exec1.example.com \
+#     -e _receptor_peers='["controller.example.com"]'
+#
+# Optional:
+#   -e _target_type=hop           # Default: execution
+#   -e aap_add_node_bundle_include_images=true # Include receptor image (~500MB)
+#   -e aap_add_node_bundle_format=zip         # Default: tar.gz
+#
+# Output:
+#   offline-bundles/offline-bundle-<hostname>-<date>.tar.gz
+
+- name: Validate setup directory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: validate_setup_dir
+
+- name: Preflight checks (controller-side only)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Skip preflight when disabled
+      ansible.builtin.meta: end_host
+      when: not (aap_add_node_preflight_enabled | default(true) | bool)
+
+    - name: Run installer-side checks
+      ansible.builtin.include_role:
+        name: preflight
+        tasks_from: installer_checks.yml
+      vars:
+        aap_add_node_bundle_install: true
+
+    - name: Run controller checks
+      ansible.builtin.include_role:
+        name: preflight
+        tasks_from: controller_checks.yml
+
+    - name: Validate target hostname provided
+      ansible.builtin.assert:
+        that:
+          - _target_hostname is defined
+          - _target_hostname | length > 0
+        fail_msg: "_target_hostname required. Pass via -e _target_hostname=exec1.example.com"
+
+    - name: Validate receptor peers provided
+      ansible.builtin.assert:
+        that:
+          - _receptor_peers is defined
+          - (_receptor_peers | type_debug) in ['list'] or (_receptor_peers is string and _receptor_peers | from_json | length > 0)
+        fail_msg: "_receptor_peers required. Pass via -e _receptor_peers='[\"controller.example.com\"]'"
+
+    - name: Preflight summary
+      ansible.builtin.debug:
+        msg: "Preflight passed for offline bundle generation (target: {{ _target_hostname }})"
+
+- name: Fetch mesh material from controller
+  hosts: automationcontroller[0]
+  gather_facts: false
+  vars:
+    aap_add_node_material_dir: "{{ playbook_dir }}/../bundles/_mesh_material"
+  roles:
+    - role: fetch_mesh_material
+
+- name: Pre-register instance on controller
+  hosts: automationcontroller[0]
+  gather_facts: false
+  tasks:
+    - name: Ensure controller task container is running
+      ansible.builtin.include_role:
+        name: assert_controller_container
+
+    - name: Generate instance UUID for bundle target
+      ansible.builtin.set_fact:
+        _bundle_instance_uuid: "{{ 9999999999999 | random | to_uuid }}"
+
+    - name: Provision instance
+      ansible.builtin.command:
+        argv:
+          - podman
+          - exec
+          - automation-controller-task
+          - awx-manage
+          - provision_instance
+          - "--hostname={{ _target_hostname }}"
+          - "--uuid={{ _bundle_instance_uuid }}"
+          - "--node_type={{ _target_type | default('execution') }}"
+      register: _provision_instance
+      changed_when: "'(changed: True)' in _provision_instance.stdout"
+
+    - name: Add receptor address
+      ansible.builtin.command:
+        argv:
+          - podman
+          - exec
+          - automation-controller-task
+          - awx-manage
+          - add_receptor_address
+          - "--instance={{ _target_hostname }}"
+          - "--address={{ _target_hostname }}"
+          - "--port={{ _receptor_port | default(27199) }}"
+          - --canonical
+      register: _add_receptor_address
+      changed_when: "'(changed: True)' in _add_receptor_address.stdout"
+
+    - name: Parse receptor peers if string
+      ansible.builtin.set_fact:
+        _parsed_peers: "{{ _receptor_peers if _receptor_peers is not string else (_receptor_peers | from_json) }}"
+
+    - name: Register peers
+      ansible.builtin.command:
+        argv: "{{ ['podman', 'exec', 'automation-controller-task', 'awx-manage', 'register_peers', _target_hostname, '--exact'] + (_parsed_peers | list) }}"
+      register: _register_peers
+      changed_when: not (_register_peers.stdout | regex_search('^0 peer links added'))
+
+    - name: Register queue default (execution nodes)
+      when: (_target_type | default('execution')) == 'execution'
+      ansible.builtin.command:
+        argv:
+          - podman
+          - exec
+          - automation-controller-task
+          - awx-manage
+          - register_queue
+          - --queuename=default
+          - "--hostname={{ _target_hostname }}"
+      register: _register_default
+      changed_when: "'(changed: True)' in _register_default.stdout"
+
+    - name: Register queue executionplane (execution nodes)
+      when: (_target_type | default('execution')) == 'execution'
+      ansible.builtin.command:
+        argv:
+          - podman
+          - exec
+          - automation-controller-task
+          - awx-manage
+          - register_queue
+          - --queuename=executionplane
+          - "--hostname={{ _target_hostname }}"
+      register: _register_executionplane
+      changed_when: "'(changed: True)' in _register_executionplane.stdout"
+
+    - name: Save UUID for bundle
+      ansible.builtin.set_fact:
+        bundle_instance_uuid: "{{ _bundle_instance_uuid }}"
+      delegate_to: localhost
+      delegate_facts: true
+
+- name: Create offline bundle
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    aap_add_node_mesh_ca_cert: "{{ playbook_dir }}/../bundles/_mesh_material/mesh-CA.crt"
+    aap_add_node_mesh_ca_key: "{{ playbook_dir }}/../bundles/_mesh_material/mesh-CA.key"
+    aap_add_node_work_public_key: "{{ playbook_dir }}/../bundles/_mesh_material/work_public_key.pem"
+    aap_add_node_bundle_output_dir: "{{ playbook_dir }}/../offline-bundles"
+    aap_add_node_tls_bits: 4096
+    _bundle_instance_uuid: "{{ hostvars['localhost']['bundle_instance_uuid'] }}"
+  tasks:
+    - name: Set defaults for bundle vars
+      ansible.builtin.set_fact:
+        _receptor_port: "{{ _receptor_port | default(27199) }}"
+        _target_type: "{{ _target_type | default('execution') }}"
+        _parsed_peers: "{{ _receptor_peers if _receptor_peers is not string else (_receptor_peers | from_json) }}"
+
+    - name: Set bundle paths
+      ansible.builtin.set_fact:
+        _bundle_name: "offline-bundle-{{ _target_hostname }}-{{ ansible_date_time.date }}"
+        _bundle_work_dir: "{{ aap_add_node_bundle_output_dir }}/.work/{{ _target_hostname }}"
+        _bundle_final_dir: "{{ aap_add_node_bundle_output_dir }}"
+
+    - name: Create bundle working directory
+      ansible.builtin.file:
+        path: "{{ _bundle_work_dir }}/receptor/tls/ca"
+        state: directory
+        mode: '0700'
+
+    - name: Generate TLS certificate and key
+      when:
+        - aap_add_node_tls_cert is not defined
+        - aap_add_node_tls_key is not defined
+      block:
+        - name: Generate node private key
+          community.crypto.openssl_privatekey:
+            path: "{{ _bundle_work_dir }}/receptor/tls/receptor.key"
+            size: "{{ aap_add_node_tls_bits | int }}"
+            type: RSA
+            mode: '0400'
+
+        - name: Generate node CSR with receptor node-id SAN OID
+          community.crypto.openssl_csr:
+            path: "{{ _bundle_work_dir }}/receptor/tls/receptor.csr"
+            privatekey_path: "{{ _bundle_work_dir }}/receptor/tls/receptor.key"
+            common_name: "{{ _target_hostname }}"
+            subject_alt_name:
+              - "DNS:{{ _target_hostname }}"
+              - "otherName:1.3.6.1.4.1.2312.19.1;UTF8:{{ _target_hostname }}"
+            subject_alt_name_critical: false
+
+        - name: Sign node certificate with mesh CA
+          community.crypto.x509_certificate:
+            path: "{{ _bundle_work_dir }}/receptor/tls/receptor.crt"
+            csr_path: "{{ _bundle_work_dir }}/receptor/tls/receptor.csr"
+            ownca_path: "{{ aap_add_node_mesh_ca_cert }}"
+            ownca_privatekey_path: "{{ aap_add_node_mesh_ca_key }}"
+            provider: ownca
+            mode: '0640'
+
+    - name: Import TLS certificate and key
+      when:
+        - aap_add_node_tls_cert is defined
+        - aap_add_node_tls_key is defined
+      block:
+        - name: Copy provided TLS certificate
+          ansible.builtin.copy:
+            src: "{{ aap_add_node_tls_cert }}"
+            dest: "{{ _bundle_work_dir }}/receptor/tls/receptor.crt"
+            mode: '0640'
+
+        - name: Copy provided TLS key
+          ansible.builtin.copy:
+            src: "{{ aap_add_node_tls_key }}"
+            dest: "{{ _bundle_work_dir }}/receptor/tls/receptor.key"
+            mode: '0400'
+
+    - name: Copy mesh CA certificate into bundle
+      ansible.builtin.copy:
+        src: "{{ aap_add_node_mesh_ca_cert }}"
+        dest: "{{ _bundle_work_dir }}/receptor/tls/ca/mesh-CA.crt"
+        mode: '0640'
+
+    - name: Copy work signing public key into bundle
+      ansible.builtin.copy:
+        src: "{{ aap_add_node_work_public_key }}"
+        dest: "{{ _bundle_work_dir }}/receptor/work_public_key.pem"
+        mode: '0640'
+      when: _target_type | default('execution') == 'execution'
+
+    - name: Remove CSR (not needed in bundle)
+      ansible.builtin.file:
+        path: "{{ _bundle_work_dir }}/receptor/tls/receptor.csr"
+        state: absent
+
+    - name: Generate receptor.conf
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/generate_bundle/templates/receptor.conf.j2"
+        dest: "{{ _bundle_work_dir }}/receptor/receptor.conf"
+        mode: '0640'
+
+    - name: Generate install playbook
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/generate_bundle/templates/install.yml.j2"
+        dest: "{{ _bundle_work_dir }}/install.yml"
+        mode: '0644'
+
+    - name: Generate install variables
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/generate_bundle/templates/vars.yml.j2"
+        dest: "{{ _bundle_work_dir }}/vars.yml"
+        mode: '0640'
+
+    - name: Generate README
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/generate_bundle/templates/README.md.j2"
+        dest: "{{ _bundle_work_dir }}/README.md"
+        mode: '0644'
+
+    - name: Ensure output directory exists
+      ansible.builtin.file:
+        path: "{{ _bundle_final_dir }}"
+        state: directory
+        mode: '0750'
+
+    - name: Create tar.gz bundle
+      community.general.archive:
+        path: "{{ _bundle_work_dir }}"
+        dest: "{{ _bundle_final_dir }}/{{ _bundle_name }}.tar.gz"
+        format: gz
+        mode: '0640'
+
+    - name: Clean up working directory
+      ansible.builtin.file:
+        path: "{{ _bundle_work_dir }}"
+        state: absent
+
+    - name: Report bundle location
+      ansible.builtin.debug:
+        msg: |
+
+          ═══════════════════════════════════════════════════════════════════
+          OFFLINE BUNDLE GENERATED
+          ═══════════════════════════════════════════════════════════════════
+
+          Bundle:   {{ _bundle_final_dir }}/{{ _bundle_name }}.tar.gz
+          Target:   {{ _target_hostname }}
+          Type:     {{ _target_type | default('execution') }}
+          Peers:    {{ _receptor_peers | join(', ') }}
+
+          NEXT STEPS:
+          1. Transfer bundle to target node via secure channel
+          2. Extract: tar -xzf {{ _bundle_name }}.tar.gz
+          3. Read README.md for prerequisites
+          4. Run: ansible-playbook -c local install.yml
+
+          ⚠️  SECURITY: Bundle contains TLS private keys. Handle securely.
+          ═══════════════════════════════════════════════════════════════════
