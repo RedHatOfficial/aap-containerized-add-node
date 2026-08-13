@@ -48,7 +48,7 @@
     insertafter: "^- tcp-listener:"
     block: |
       - tcp-peer:
-          address: {{ hostvars[item].routable_hostname | default(item) }}:{{ hostvars[item].receptor_port | default(aap_add_node_listener_port) }}
+          address: {{ hostvars[item].aap_add_node_hostname | default(hostvars[item].routable_hostname | default(item)) }}:{{ hostvars[item].receptor_port | default(aap_add_node_listener_port) }}
   loop: "{{ groups['aap_add_node_targets'] | default([]) }}"
   register: _receptor_conf_changed
   notify: restart receptor

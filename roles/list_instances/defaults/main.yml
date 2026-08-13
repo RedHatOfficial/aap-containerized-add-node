@@ -1,2 +1,5 @@
 ---
 aap_add_node_controller_container: automation-controller-task
+# Override to target specific controller (default: automationcontroller[0])
+# Useful when first controller is down but others are healthy
+aap_add_node_controller_target: ''

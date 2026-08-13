@@ -9,8 +9,8 @@
 
 - name: Fetch mesh material from controller when overrides unset
   vars:
-    # HA: mesh CA lives on every controller under the install-user home; [0] is enough.
-    _mesh_src_host: "{{ groups['automationcontroller'][0] | default('') }}"
+    # Use override if set, otherwise default to first controller.
+    _mesh_src_host: "{{ aap_add_node_controller_target | default(groups['automationcontroller'][0], true) }}"
     _mesh_delegate_connection: "{{ hostvars[_mesh_src_host].ansible_connection | default('ssh') }}"
     # Skip CA key fetch if BYO certs provided (no signing needed)
     _byo_certs: "{{ (aap_add_node_tls_cert | default('') | length > 0) and (aap_add_node_tls_key | default('') | length > 0) }}"
