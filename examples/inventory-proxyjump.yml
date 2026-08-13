@@ -1,0 +1,40 @@
+---
+# ProxyJump / Bastion Topology
+#
+# Use when control host cannot directly SSH to controller or execution nodes.
+# All SSH traffic routes through a jumpbox/bastion host.
+#
+# Topology:
+#   Control Host --> Jumpbox --> Controller
+#                          \--> Execution Node
+#
+# Requirements:
+#   - Control host can SSH to jumpbox
+#   - Jumpbox can SSH to controller and execution nodes
+#   - Receptor port (27199) open between EN and controller (direct, not via jumpbox)
+#
+# Tested: 2026-08-12 with macOS control host, RHEL9 jumpbox
+
+all:
+  vars:
+    ansible_user: ansible
+    # Registry credentials for online install
+    registry_username: "{{ lookup('env', 'REGISTRY_USERNAME') }}"
+    registry_password: "{{ lookup('env', 'REGISTRY_PASSWORD') }}"
+
+  children:
+    automationcontroller:
+      hosts:
+        controller.example.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@jumpbox.example.com'
+          # Required if remote Python differs from Ansible default
+          ansible_python_interpreter: /usr/bin/python3
+
+    execution_nodes:
+      hosts:
+        exec1.example.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@jumpbox.example.com'
+          receptor_peers:
+            - controller.example.com
+          # Optional: use if EN hostname differs from inventory hostname
+          routable_hostname: exec1.example.com

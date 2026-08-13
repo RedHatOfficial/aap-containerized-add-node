@@ -5,6 +5,7 @@ Two installation methods available. Pick based on your network access:
 | Method | Use When | Control Host Needs |
 |--------|----------|-------------------|
 | **Online** | SSH access from control host to target nodes | SSH to controller + SSH to ENs |
+| **Online + ProxyJump** | SSH via bastion/jumpbox | SSH to jumpbox (routes to targets) |
 | **Offline** | No SSH to target nodes (air-gap, policy, hybrid cloud) | SSH to controller only |
 
 ---
@@ -90,6 +91,25 @@ Controller ◄── Hop1 ◄── Hop2 ◄── EN
 ```
 
 See [examples/inventory-multi-hop-chain.yml](../examples/inventory-multi-hop-chain.yml).
+
+### ProxyJump / Bastion
+
+Control host cannot SSH directly — routes through jumpbox:
+
+```
+Control Host ──SSH──► Jumpbox ──SSH──► Controller
+                            ──SSH──► Execution Node
+```
+
+```bash
+ansible-playbook playbooks/add_node.yml \
+  -i examples/inventory-proxyjump.yml \
+  -e aap_setup_dir=/path/to/setup
+```
+
+See [examples/inventory-proxyjump.yml](../examples/inventory-proxyjump.yml).
+
+**Note:** SSH routes via jumpbox; receptor mesh (27199) is direct between EN and controller.
 
 ---
 

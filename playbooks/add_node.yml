@@ -93,6 +93,7 @@
 
 - name: Install and configure receptor on new nodes
   hosts: aap_add_node_targets
+  serial: "{{ aap_add_node_serial_receptor | default(1) }}"  # Serial by default for chain topologies
   become: false
   gather_facts: true
   vars:

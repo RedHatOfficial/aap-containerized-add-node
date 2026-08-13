@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - "host_prep - Remove mesh CA private key distribution to execution/hop nodes (security fix)."

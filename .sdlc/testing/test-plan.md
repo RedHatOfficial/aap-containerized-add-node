@@ -52,10 +52,10 @@ Test results: [results/RESULTS.md](results/RESULTS.md)
 | Single EN (RHEL 9) | — | — | EN | — | P1 | Tested |
 | Single EN (RHEL 10) | — | — | — | EN | P1 | Tested |
 | Parallel 2 ENs | — | — | EN | EN | P1 | Tested |
-| Parallel 4 ENs | EN | EN | EN | EN | P2 | Untested |
+| Parallel 4 ENs | EN | EN | EN | EN | P2 | Tested (2026-08-12) |
 | RHEL 9 HN + EN | HN | — | EN behind | — | P1 | Tested (2026-08-11) |
 | RHEL 10 HN + EN | — | HN | — | EN behind | P1 | Tested (2026-08-11) |
-| Chain HN→HN→EN | HN | HN | EN behind | — | P2 | Untested |
+| Chain HN→HN→EN | HN | HN | EN behind | — | P2 | Tested (2026-08-12) - workaround |
 | Cluster + EN | — | — | EN | — | P2 | Untested |
 | Cluster + HN + EN | HN | — | EN behind | — | P2 | Tested (T-27-CLU-EN-VIA-HN, 2026-08-12) |
 
@@ -64,26 +64,26 @@ Test results: [results/RESULTS.md](results/RESULTS.md)
 | Feature | Scenario | Priority | Status |
 |---------|----------|----------|--------|
 | Outbound dial | S-001, S-002, S-003 | P1 | Tested |
-| Inbound dial | S-010 | P2 | Untested |
+| Inbound dial | S-010 | P2 | Tested (2026-08-12) |
 | Preflight checks | S-020 | P1 | Tested |
 | Serial registration | S-030 | P1 | Tested |
 | Re-run after failure | S-040 | P1 | Tested |
 | Deprovision/rejoin | S-041 | P1 | Tested |
 | Full upgrade after join | S-050 | P2 | Tested |
-| Offline bundle generation | S-060 | P1 | Untested |
-| Offline bundle install | S-061 | P1 | Untested |
-| Offline bundle with images | S-062 | P2 | Untested |
-| Offline hybrid cloud | S-063 | P2 | Untested |
+| Offline bundle generation | S-060 | P1 | Tested (2026-08-12) |
+| Offline bundle install | S-061 | P1 | Tested (2026-08-12) |
+| Offline bundle with images | S-062 | P2 | Tested (2026-08-12) |
+| Offline hybrid cloud | S-064 | P2 | Tested (2026-08-12) |
 
 ### Offline Bundle Test Matrix
 
 | Scenario | Target Type | Include Images | Transfer Method | Priority | Status |
 |----------|-------------|----------------|-----------------|----------|--------|
-| S-060: Single EN bundle | execution | No | Local | P1 | Untested |
-| S-061: Single HN bundle | hop | No | Local | P1 | Untested |
-| S-062: EN with images | execution | Yes | Local | P2 | Untested |
-| S-063: HN + EN chain | hop + execution | No | Local | P1 | Untested |
-| S-064: Hybrid cloud sim | execution | No | Simulated airgap | P2 | Untested |
+| S-060: Single EN bundle | execution | No | Local | P1 | Tested (S-080B) |
+| S-061: Single HN bundle | hop | No | Local | P1 | Tested (S-064) |
+| S-062: EN with images | execution | Yes | Local | P2 | Tested |
+| S-063: HN + EN chain | hop + execution | No | Local | P1 | Tested (S-064) |
+| S-064: Hybrid cloud sim | execution | No | Simulated airgap | P2 | Tested |
 
 ## Test Levels
 
@@ -156,3 +156,9 @@ End-to-end lab validation:
 3. **No molecule / ansible-test integration yet** — CI is lint/build/changelog
 4. **Dual IDs** — Lab matrix uses `T-*` in TEST.md; procedures use `S-*` — see [scenarios/README.md](scenarios/README.md#mapping-to-testmd)
 5. **Flex hosts required** — aap-flex1-rhel9 and aap-flex1-rhel10 must be provisioned for HN testing
+
+## Known Issues (Upstream)
+
+1. **Chain topology: IP vs hostname in receptor.conf** — When nodes peer to other NEW nodes (not controller), upstream installer resolves peer hostname to IP for receptor.conf tcp-peer address. But certificates only have hostname SANs, causing TLS verification failure. **Workaround**: Edit receptor.conf to use hostname instead of IP, then restart receptor.
+
+2. **Port conflict on re-run** — If previous receptor process still holds port 27199, new receptor fails to start. **Fix**: `fuser -k 27199/tcp` then `systemctl --user restart receptor`

@@ -238,15 +238,34 @@ Control Host ──► Jumpbox A ──► Controller (Network A)
 
 ### Option 1: ProxyJump Inventory
 
-If control host can reach both jumpboxes:
+If control host can reach jumpbox(es) that can reach target nodes:
 
-```ini
-[automationcontroller]
-controller.networkA.com ansible_ssh_common_args='-o ProxyJump=jumpboxA'
+```yaml
+# inventory-proxyjump.yml
+all:
+  vars:
+    ansible_user: ansible
+    registry_username: "{{ lookup('env', 'REGISTRY_USERNAME') }}"
+    registry_password: "{{ lookup('env', 'REGISTRY_PASSWORD') }}"
 
-[execution_nodes]
-exec1.networkB.com ansible_ssh_common_args='-o ProxyJump=jumpboxB' receptor_peers='["controller.networkA.com"]'
+  children:
+    automationcontroller:
+      hosts:
+        controller.networkA.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@jumpboxA'
+          ansible_python_interpreter: /usr/bin/python3
+
+    execution_nodes:
+      hosts:
+        exec1.networkB.com:
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyJump=ansible@jumpboxB'
+          receptor_peers:
+            - controller.networkA.com
 ```
+
+**Tested:** 2026-08-12 with macOS control host, RHEL9 jumpbox.
+
+**See also:** [examples/inventory-proxyjump.yml](../examples/inventory-proxyjump.yml)
 
 ### Option 2: Offline Bundle (Recommended)
 
