@@ -1,0 +1,24 @@
+---
+# Create final bundle archive
+
+- name: Ensure output directory exists
+  ansible.builtin.file:
+    path: "{{ _bundle_final_dir }}"
+    state: directory
+    mode: '0750'
+
+- name: Create tar.gz bundle
+  when: aap_add_node_bundle_format == 'tar.gz'
+  community.general.archive:
+    path: "{{ _bundle_work_dir }}"
+    dest: "{{ _bundle_final_dir }}/{{ _bundle_name }}.tar.gz"
+    format: gz
+    mode: '0640'
+
+- name: Create zip bundle
+  when: aap_add_node_bundle_format == 'zip'
+  community.general.archive:
+    path: "{{ _bundle_work_dir }}"
+    dest: "{{ _bundle_final_dir }}/{{ _bundle_name }}.zip"
+    format: zip
+    mode: '0640'

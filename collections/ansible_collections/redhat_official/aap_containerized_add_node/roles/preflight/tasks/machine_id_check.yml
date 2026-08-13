@@ -1,0 +1,37 @@
+---
+# Validate machine-id uniqueness across all execution nodes
+# Cloned VMs often have duplicate /etc/machine-id which causes UUID collision
+# when registering multiple nodes - second node overwrites first in DB
+
+- name: Check for duplicate machine-ids
+  ansible.builtin.set_fact:
+    _duplicate_machine_ids: >-
+      {%- set seen = {} -%}
+      {%- set duplicates = [] -%}
+      {%- for host, mid in (_preflight_machine_ids | default({})).items() -%}
+        {%- if mid in seen -%}
+          {%- set _ = duplicates.append({'host': host, 'duplicate_of': seen[mid], 'machine_id': mid}) -%}
+        {%- else -%}
+          {%- set _ = seen.update({mid: host}) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ duplicates }}
+
+- name: Assert no duplicate machine-ids
+  ansible.builtin.assert:
+    that:
+      - _duplicate_machine_ids | length == 0
+    fail_msg: |
+      DUPLICATE MACHINE-ID DETECTED - This will cause node registration to fail!
+
+      The following nodes share the same /etc/machine-id (common with cloned VMs):
+      {% for dup in _duplicate_machine_ids %}
+        - {{ dup.host }} duplicates {{ dup.duplicate_of }} (machine-id: {{ dup.machine_id }})
+      {% endfor %}
+
+      Fix by regenerating unique machine-id on each duplicate node:
+        sudo rm /etc/machine-id && sudo systemd-machine-id-setup
+
+      Then reboot or restart dbus:
+        sudo systemctl restart dbus
+  when: (_preflight_machine_ids | default({})) | length > 1

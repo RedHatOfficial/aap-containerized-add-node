@@ -1,0 +1,22 @@
+---
+# Test: RHEL 9 HN + EN (multi-hop)
+# Topology: carmaap1 ← aap-flex1-rhel9 (HN) ← aap-exec1-rhel9 (EN)
+
+all:
+  children:
+    automationcontroller:
+      hosts:
+        carmaap1.lan:
+    execution_nodes:
+      hosts:
+        aap-flex1-rhel9:
+          receptor_type: hop
+          receptor_peers:
+            - carmaap1.lan
+        aap-exec1-rhel9:
+          receptor_type: execution
+          receptor_peers:
+            - aap-flex1-rhel9
+  vars:
+    ansible_user: pgriffit
+    aap_setup_dir: /home/pgriffit/aap/ansible-automation-platform-containerized-setup-2.6-8

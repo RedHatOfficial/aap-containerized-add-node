@@ -1,0 +1,39 @@
+---
+# aap_setup_dir is required (see meta/argument_specs.yml); no empty default.
+
+# Inventory group that holds EN/HN candidates
+aap_add_node_inventory_group: execution_nodes
+
+# Dynamic group created for hosts that need joining
+aap_add_node_target_group: aap_add_node_targets
+
+# Mesh / instance defaults
+aap_add_node_listener_port: 27199
+aap_add_node_enabled: true
+
+# Mesh material — leave empty to fetch from first automationcontroller host
+aap_add_node_mesh_ca_cert: ''
+aap_add_node_mesh_ca_key: ''
+aap_add_node_work_public_key: ''
+
+# Paths under the controller install-user home (containerized)
+# mesh-CA.crt = trust bundle (internal CA + custom CA if present)
+# ca.key = signing key for minting new certs
+aap_add_node_remote_mesh_ca_cert: aap/receptor/etc/mesh-CA.crt
+aap_add_node_remote_mesh_ca_key: aap/tls/ca.key
+aap_add_node_remote_work_public_key: aap/receptor/etc/signing_public.pem
+
+aap_add_node_bundle_root: '{{ playbook_dir }}/../../bundles'
+aap_add_node_tls_bits: 4096
+
+receptor_user: awx
+receptor_group: awx
+receptor_port: "{{ aap_add_node_listener_port }}"
+receptor_protocol: tcp
+receptor_listener: true
+receptor_tls: true
+
+aap_add_node_teardown_repos: true
+# Soft-check image skew vs an existing execution node (warn only by default)
+aap_add_node_check_version_skew: true
+aap_add_node_fail_on_version_skew: false

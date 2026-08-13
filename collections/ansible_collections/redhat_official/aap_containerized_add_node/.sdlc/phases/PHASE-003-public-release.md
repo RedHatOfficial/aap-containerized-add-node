@@ -1,0 +1,144 @@
+# PHASE-003: Public Release
+
+## Status
+
+Future
+
+## Timeline
+
+- **Target Start**: TBD
+- **Target Complete**: TBD
+
+---
+
+## Objective
+
+Open the repository to public access and establish support model.
+
+## Goals
+
+1. Make repository publicly accessible on GitHub
+2. Document support model and Red Hat Support Exception requirement
+3. Establish contribution guidelines for external contributors
+4. Ship releases via GitHub Release tarball for **manual** customer distribution (Galaxy/Automation Hub out of scope)
+
+## Support Model
+
+**IMPORTANT:** This collection is not part of the official AAP product.
+
+For customers to use this in a **fully supported** fashion:
+- Must have an approved **Red Hat Support Exception (SE)**
+- Exception covers use of this collection alongside supported AAP installation
+- Without exception, collection is provided as-is (community support only)
+
+### Red Hat Support Exception Process
+
+1. **Customer requests SE** via their TAM or account team
+2. **SE references this collection** and specific use case (adding execution nodes without full installer re-run)
+3. **Red Hat Support reviews** and approves/denies based on customer environment
+4. **If approved**: Customer can open support cases referencing the SE number
+5. **If denied**: Customer can still use collection but without Red Hat Support coverage
+
+### SE Documentation Required
+
+- SE number must be referenced in any support cases
+- Customer must document which nodes were added via this collection
+- Customer must maintain inventory of collection-managed vs installer-managed nodes
+
+### Repository Documentation
+
+Documentation must clearly state:
+1. Collection is **not officially supported** by Red Hat
+2. Supported usage **requires Red Hat Support Exception**
+3. Link to SE request process (internal Red Hat portal or TAM contact)
+4. What the exception covers (collection usage) and doesn't cover (bugs in collection code)
+
+### README Banner (Required)
+
+Add prominent banner at top of README:
+
+```markdown
+> **Support Notice:** This collection is not part of the official AAP product.
+> For supported usage, customers must have an approved Red Hat Support Exception.
+> Contact your TAM or account team to request an SE.
+> Without an SE, this collection is provided as-is without Red Hat Support coverage.
+```
+
+## Distribution Model
+
+**Decision: GitHub Releases only** — Keep it simple.
+
+### How It Works
+
+1. Tag a release (e.g., `git tag v1.0.0 && git push --tags`)
+2. `release.yml` workflow builds collection tarball
+3. Tarball attached to GitHub Release page
+4. Customer downloads and installs
+
+### Installation Methods
+
+```bash
+# Option 1: Direct from GitHub Release URL
+ansible-galaxy collection install \
+  https://github.com/RedHatOfficial/aap-containerized-add-node/releases/download/v1.0.0/redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+
+# Option 2: Download then install
+curl -LO https://github.com/RedHatOfficial/aap-containerized-add-node/releases/download/v1.0.0/redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+ansible-galaxy collection install ./redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+```
+
+## Deliverables
+
+| Artifact | Description |
+|----------|-------------|
+| Public repo | Change visibility to public |
+| SUPPORT.md | Support model documentation |
+| README update | Add support disclaimer prominently |
+| GitHub Release workflow | `release.yml` builds and attaches collection tarball on tag |
+| Installation docs | Document download + install steps |
+| CONTRIBUTING.md update | External contributor guidelines |
+| Branch protection | Enable for main and devel branches |
+| CodeQL | Enable GitHub Advanced Security code scanning |
+
+### Post-Public Tasks
+
+These require public repo (free tier doesn't support on private):
+
+1. **Branch Protection** (Settings → Branches)
+   - Require PR reviews before merge
+   - Require status checks (gitleaks, lint, syntax-check, build, changelog)
+   - Block force pushes
+   - See `docs/BRANCH_PROTECTION.md` for full config
+
+2. **CodeQL / GHAS** (Settings → Security)
+   - Re-enable `.github/workflows/codeql.yml`
+   - Enable Dependabot alerts
+   - Enable secret scanning
+
+**Out of scope:** Ansible Galaxy and Automation Hub publish — this collection is distributed manually under the Support Exception model.
+
+## Prerequisites
+
+- PHASE-001 complete ✓
+- PHASE-002 complete (or deferred)
+- Legal/product approval for public release
+- Support Exception template approved
+
+## Success Criteria
+
+- [ ] Repository publicly accessible
+- [ ] Support model clearly documented in SUPPORT.md
+- [ ] README includes SE banner at top
+- [ ] SE request process documented (TAM/account team contact)
+- [ ] Installation docs updated (GitHub Release download + install)
+- [ ] GitHub Release tested (tag triggers tarball build)
+- [ ] Contribution process documented for external contributors
+- [ ] Branch protection enabled on main and devel
+- [ ] CodeQL code scanning enabled
+- [ ] Dependabot alerts enabled
+
+## Notes
+
+Upstream migration to `ansible.containerized_installer` (original PHASE-003 scope) is a separate track — that would make this capability officially supported without exception. This phase covers the interim public release.
+
+Galaxy/Automation Hub publishing remains deferred/out of scope while distribution is manual customer handoff of the GitHub Release artifact.

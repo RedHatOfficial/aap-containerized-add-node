@@ -1,0 +1,109 @@
+---
+# Mesh Node Validation Test
+# Runs Demo Job Template on each custom instance group to verify mesh connectivity
+#
+# Prerequisites:
+# - Nodes registered via add_node.yml
+# - Instance groups created (instance_group_* in inventory)
+# - Demo Job Template exists (ID 6)
+#
+# Usage: ansible-playbook -i inventory.aap27 validate_mesh.yml
+
+- name: Validate mesh node connectivity via job execution
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    controller_host: "{{ groups['automationcontroller'][0] }}"
+    controller_container: automation-controller-task
+    demo_jt_id: 6
+    # Custom IGs to test (parsed from instance_group_* in inventory)
+    test_instance_groups: >-
+      {{
+        groups.keys()
+        | select('match', '^instance_group_')
+        | map('regex_replace', '^instance_group_', '')
+        | list
+      }}
+
+  tasks:
+    - name: Report test plan
+      ansible.builtin.debug:
+        msg: "Testing instance groups: {{ test_instance_groups }}"
+
+    - name: Run job on each instance group
+      ansible.builtin.shell: |
+        podman exec {{ controller_container }} awx-manage shell -c "
+        from awx.main.models import JobTemplate, InstanceGroup, Job
+        import time
+
+        jt = JobTemplate.objects.get(id={{ demo_jt_id }})
+        ig = InstanceGroup.objects.get(name='{{ item }}')
+
+        # Assign IG to JT
+        jt.instance_groups.clear()
+        jt.instance_groups.add(ig)
+
+        # Launch job
+        job = jt.create_unified_job()
+        job.signal_start()
+
+        # Wait for completion (max 60s)
+        for _ in range(12):
+            time.sleep(5)
+            job.refresh_from_db()
+            if job.status in ('successful', 'failed', 'error', 'canceled'):
+                break
+
+        print(f'JOB_ID={job.id}')
+        print(f'STATUS={job.status}')
+        print(f'EXECUTION_NODE={job.execution_node}')
+        print(f'INSTANCE_GROUP={ig.name}')
+        "
+      delegate_to: "{{ controller_host }}"
+      register: job_results
+      loop: "{{ test_instance_groups }}"
+      changed_when: false
+
+    - name: Parse job results
+      ansible.builtin.set_fact:
+        test_results: "{{ test_results | default([]) + [_parsed] }}"
+      loop: "{{ job_results.results }}"
+      vars:
+        _stdout: "{{ item.stdout }}"
+        _parsed:
+          instance_group: "{{ item.item }}"
+          job_id: "{{ _stdout | regex_search('JOB_ID=(\\d+)', '\\1') | first | default('N/A') }}"
+          status: "{{ _stdout | regex_search('STATUS=(\\w+)', '\\1') | first | default('N/A') }}"
+          execution_node: "{{ _stdout | regex_search('EXECUTION_NODE=([\\w.-]+)', '\\1') | first | default('N/A') }}"
+
+    - name: Display test results
+      ansible.builtin.debug:
+        msg: |
+
+          ╔══════════════════════════════════════════════════════════════╗
+          ║                    MESH VALIDATION RESULTS                   ║
+          ╠══════════════════════════════════════════════════════════════╣
+          {% for r in test_results %}
+          ║ {{ '%-15s' | format(r.instance_group) }} │ Job {{ '%-4s' | format(r.job_id) }} │ {{ '%-10s' | format(r.status) }} │ {{ r.execution_node }}
+          {% endfor %}
+          ╚══════════════════════════════════════════════════════════════╝
+
+    - name: Verify all jobs successful
+      ansible.builtin.assert:
+        that:
+          - item.status == 'successful'
+        fail_msg: "Job {{ item.job_id }} on {{ item.instance_group }} failed with status: {{ item.status }}"
+        success_msg: "Job {{ item.job_id }} on {{ item.instance_group }} completed successfully on {{ item.execution_node }}"
+      loop: "{{ test_results }}"
+
+    - name: Restore Demo JT to default IG
+      ansible.builtin.shell: |
+        podman exec {{ controller_container }} awx-manage shell -c "
+        from awx.main.models import JobTemplate, InstanceGroup
+        jt = JobTemplate.objects.get(id={{ demo_jt_id }})
+        jt.instance_groups.clear()
+        print('Demo JT instance groups cleared (will use default)')
+        "
+      delegate_to: "{{ controller_host }}"
+      changed_when: false
