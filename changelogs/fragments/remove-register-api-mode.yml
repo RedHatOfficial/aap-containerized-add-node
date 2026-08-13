@@ -1,11 +1,7 @@
 ---
-removed_features:
+major_changes:
   - >-
-    Removed optional Controller API paths from ``register_instance`` (instance groups
-    via ``ansible.controller.instance_group`` and instance updates via
-    ``ansible.controller.instance``). Custom instance groups now always use
-    ``awx-manage register_queue``, matching the containerized installer.
-  - >-
-    Removed optional post-join instance tuning (``capacity_adjustment``, ``enabled``,
-    ``managed_by_policy``). There is no ``awx-manage`` equivalent; configure these
-    via the Gateway/Controller UI or the Controller API after join if needed.
+    ``register_instance`` uses ``awx-manage`` only (no optional Controller API paths).
+    Custom instance groups use ``register_queue``; post-join instance tuning
+    (``capacity_adjustment``, ``enabled``, ``managed_by_policy``) is not applied
+    at join — configure via Gateway/Controller UI or API after registration if needed.
