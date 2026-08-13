@@ -9,7 +9,7 @@
 
 ## Description
 
-After nodes were joined with this collection, confirm a later **full** containerized install/upgrade (`ansible.containerized_installer.install`) succeeds against the **same** mesh inventory. This proves inventory compatibility (especially `receptor_peers` as a real list) — not the `installer-overlay` playbook.
+After nodes were joined with this collection, confirm a later **full** containerized install/upgrade (`ansible.containerized_installer.install`) succeeds against the **same** mesh inventory. This proves inventory compatibility (especially `receptor_peers` as a real list) — not the `installer` playbook.
 
 ## Prerequisites
 

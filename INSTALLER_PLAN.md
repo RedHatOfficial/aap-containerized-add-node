@@ -1,34 +1,66 @@
-# Plan: fold additive EN/HN join into the containerized installer
+# Installer migration plan (`ansible.containerized_installer.add_execution_nodes`)
 
-Upstream-oriented design note. This collection (`redhat_official.aap_containerized_add_node`) is a **reference implementation** of additive execution/hop node join for containerized AAP. The long-term home for that capability should be the **containerized installer** (`ansible.containerized_installer` in the containerized setup tree).
+**Authoritative porting spec** for folding additive execution/hop node join from this collection
+into the **containerized installer** (`ansible.containerized_installer`).
 
-**Scope: containerized installer only.** RPM and OpenShift are out of scope for this migration.
+| | |
+|--|--|
+| **Reference implementation** | This repo — `playbooks/add_node.yml` and `roles/*` |
+| **Target playbook** | `ansible.containerized_installer.add_execution_nodes` |
+| **Scope** | Containerized AAP **2.7** first, then **2.6** backport |
+| **Out of scope** | RPM installer, OpenShift/operator, AAP 2.5 and earlier |
 
-**Version targets**
+Related: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/COLLECTION_MAP.md](docs/COLLECTION_MAP.md),
+[docs/FINDINGS.md](docs/FINDINGS.md), [TEST.md](TEST.md), [`.sdlc/adrs/README.md`](.sdlc/adrs/README.md).
 
-| Priority | AAP / containerized setup | Notes |
-|----------|---------------------------|--------|
-| 1st | **2.7** | First installer landing target |
-| 2nd | **2.6** | Backport / follow-on after 2.7 |
-| Out of scope | **2.5 and earlier** | Not a target for this collection or installer migration |
+---
 
-This collection is a stopgap for **2.6/2.7** labs until the upstream additive playbook lands; do not plan 2.5 support.
+## Agent maintenance contract
 
-**Working tree in this repo:** [installer-overlay/](installer-overlay/) mirrors `ansible.containerized_installer` paths so you can `rsync` into an extracted setup tree and run `ansible.containerized_installer.add_execution_nodes`. The Galaxy collection at the repo root remains the standalone reference. See [installer-overlay/README.md](installer-overlay/README.md).
+**All AI agents MUST keep this file current.** It is the single handoff document for a future
+installer implementation. Do not rely on vendored installer trees or external repo paths in this
+plan — those change per release train.
 
-Related: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/FINDINGS.md](docs/FINDINGS.md), [docs/COLLECTION_MAP.md](docs/COLLECTION_MAP.md), [TEST.md](TEST.md).
+### Update this plan when you change
+
+| Trigger | What to update in this file |
+|---------|----------------------------|
+| `playbooks/add_node.yml` play order or gates | § Play order, § Playbook structure |
+| Any `roles/*` join logic (discover, register, mesh, listener, verify) | § Role porting map, § Behavioural spec |
+| New/changed `aap_add_node_*` or installer `add_execution_nodes_*` variables | § Variable mapping |
+| ADR affecting join (dial direction, serial, preflight, role reuse) | § ADR alignment |
+| New lab scenario or pass criteria | § Validation |
+| Resolved open item or new known gap | § Open items |
+| Collection feature intentionally **not** ported | § Out of scope for installer |
+
+### Update procedure
+
+1. Edit the affected section(s) in the same PR as the code change (or a docs-only follow-up in the same branch).
+2. Bump **Plan revision** at the bottom of this file.
+3. If behaviour is architectural, add or reference an ADR — do not encode policy only in this plan.
+
+### Do not put in this plan
+
+- Paths to upstream installer git repos, branches, or clone locations
+- Vendored snapshot directories (none are required to understand the port)
+- Lab hostnames, IPs, or secrets
+
+---
 
 ## Thesis
 
-Almost all join mechanics already live in `ansible.containerized_installer`. This collection exists because **orchestration is missing**: there is no first-class playbook that runs **only** the EN/HN path.
+Almost all join mechanics already exist in `ansible.containerized_installer` (`common`, `receptor`,
+controller `init.yml` registration). This collection exists because **orchestration is missing**:
+there is no first-class playbook that runs **only** the EN/HN growth path.
 
-Migration is a thin additive playbook plus small role extractionsits—not a rewrite of receptor, TLS, image load, or `awx-manage`.
+Migration is a **thin additive playbook** plus **small task extractions** — not a rewrite of
+receptor, TLS, image load, or `awx-manage`.
 
 ```mermaid
 flowchart LR
   subgraph today [Today]
     Full["ansible.containerized_installer.install"]
-    Col[redhat_official.aap_containerized_add_node]
+    Col["redhat_official.aap_containerized_add_node"]
   end
   subgraph target [Target]
     AddPB["ansible.containerized_installer.add_execution_nodes"]
@@ -44,126 +76,255 @@ flowchart LR
 
 ---
 
-## 1. Problem and goal
+## Problem and goal
 
-### Today
+### Today (full install hazard)
 
-1. Admin adds hosts under `[execution_nodes]` in the containerized installer inventory (`receptor_type`, `receptor_peers`, etc.).
-2. Admin re-runs the full install from the setup tree:
+1. Admin adds hosts under `[execution_nodes]` in the containerized installer inventory.
+2. Admin re-runs full install: `ansible-playbook -i inventory ansible.containerized_installer.install`
+3. The playbook walks the **entire** platform; config rewrites notify restarts across the stack.
+4. Controller `init` can run migrate/provision/**deprovision** for DB hostnames missing from inventory.
 
-   ```bash
-   ansible-playbook -i inventory ansible.containerized_installer.install
-   ```
+### Goal (additive playbook)
 
-3. That playbook walks the **entire** platform: preflight, `common` on all groups, redis, gateway, controller, hub, EDA, receptor on controllers **and** all execution nodes, controller init, postinstall, and so on.
-4. Config rewrites notify Restart handlers across the stack. Receptor on existing controllers is often rewritten (AIO `local-only` → `tcp-listener`, and/or auto-peering new ENs from controllers).
-5. `automationcontroller` init re-runs migrate/provision/register and can **`deprovision_instance`** for DB hostnames missing from the current inventory.
+Ship `ansible.containerized_installer.add_execution_nodes` that:
 
-That blast radius is why adding a node requires a maintenance window—even though the new host only needs host prep, receptor, and DB registration.
-
-### Goal
-
-Ship a first-class **add execution / hop nodes** path in the containerized installer that:
-
-- Targets **net-new** (or incomplete) hosts only
-- Prefers **outbound peer dial** (new node → existing hop/controller listener) so existing `receptor.conf` files stay untouched
+- Targets **net-new** or **incomplete** hosts only (heartbeat-based discovery)
+- Defaults to **outbound peer dial** (`receptor_peers` on new nodes) — existing `receptor.conf` untouched
 - Reuses the **existing mesh CA** (no cluster CA regeneration)
 - Runs `awx-manage` registration **without** full controller init or inventory-diff deprovision
-- Avoids restarting gateway / controller / hub / EDA / redis
+- Avoids restarting gateway / controller / hub / EDA / redis (except optional AIO listener flip)
+
+### Admin commands
+
+| Mode | Command |
+|------|---------|
+| Greenfield (unchanged) | `ansible-playbook -i inventory ansible.containerized_installer.install` |
+| Additive (target) | `ansible-playbook -i inventory ansible.containerized_installer.add_execution_nodes` |
+
+Invoke by **collection FQCN** (same as `install`). Do not assume file-path playbook execution
+without the collection on `ANSIBLE_COLLECTIONS_PATH`.
 
 ---
 
-## 2. Reuse map (collection → containerized installer)
+## Playbook structure
 
-| Collection concern | Already in `ansible.containerized_installer` | Migration action |
-|--------------------|----------------------------------------------|------------------|
-| Host prep / images | `roles/common` (+ `images.yml`) | Call only on net-new hosts |
-| Receptor install / TLS | `roles/receptor` | Call only on net-new hosts; reuse mesh CA |
-| `awx-manage` register | `roles/automationcontroller/tasks/init.yml` | **Extract** EN/HN `provision_instance` → `add_receptor_address` → `register_peers` → `register_queue` into a dedicated task file; **exclude** migrate, preload, and **deprovision** |
-| AIO listener flip | `receptor.conf.j2` `local-only` logic | Small dedicated task (same idea as this collection’s `enable_controller_listener`) |
-| Discovery vs heartbeat | *(none)* | Thin tasks: `list_instances` + inventory diff |
-| Cert mint on ansible control host | Installer signs on-node during full run | Prefer the installer’s on-node TLS path from `receptor`; drop control-host-side mint if redundant |
-| Verify | *(none / UI)* | Optional `list_instances` assert at end of the additive playbook |
-
-**Do not reimplement** in the installer: podman linger, bundle image copy/load, receptor containers/systemd, or the `provision_instance` CLI sequence—those already exist.
-
-This collection’s `host_prep` and `install_receptor_node` are thin wrappers around `common` and `receptor` from `aap_setup_dir`. Upstream should call those roles directly.
-
----
-
-## 3. Proposed installer shape
-
-Same invocation style as greenfield install. Suggested collection playbook (name illustrative):
+Mirror `playbooks/add_node.yml` in the installer collection. Suggested installer artifacts:
 
 | Artifact | Purpose |
 |----------|---------|
-| `playbooks/add_execution_nodes.yml` in `ansible.containerized_installer` | Additive join only |
-| Admin command | `ansible-playbook -i inventory ansible.containerized_installer.add_execution_nodes` |
-
-Scaffold of these paths (for local drop-in / upstream drafting) lives in [installer-overlay/](installer-overlay/).
-
-Greenfield (unchanged):
-
-```bash
-ansible-playbook -i inventory ansible.containerized_installer.install
-```
-
-Additive (proposed):
-
-```bash
-ansible-playbook -i inventory ansible.containerized_installer.add_execution_nodes
-```
+| `playbooks/add_execution_nodes.yml` | Additive join orchestration |
+| `roles/add_execution_nodes/` | Growth-only tasks (preflight, discover, mesh fetch, register wrapper, verify) |
+| `roles/automationcontroller/tasks/register_execution_nodes.yml` | Thin include of shared registration tasks (optional; see § Required installer changes) |
 
 ### Play order
 
-1. **Preflight** — containerized inventory present; `automationcontroller[0]` reachable; controller task container running.
-2. **Discover** — build dynamic group `execution_nodes_new`: hosts in `[execution_nodes]` that do **not** yet show a **heartbeat** in `awx-manage list_instances` (skip healthy; re-target provisioned-but-incomplete).
-3. **AIO listener (optional)** — if controller receptor is still `local-only`, swap to `tcp-listener` and reload receptor on the controller only (needed for the first outbound peer into a single-node mesh).
-4. **`import_role: common`** — hosts: `execution_nodes_new` only (images, linger, firewall as today).
-5. **`import_role: receptor`** — hosts: `execution_nodes_new` only; sign/install against the **existing** mesh CA.
-6. **Register** — on `automationcontroller[0]`, include the extracted EN/HN registration tasks for those hostnames only.
-7. **Verify** — `list_instances`; document that capacity / `ansible-runner` version may lag a few minutes before instances go green.
+| Step | Collection source | Installer target | Hosts | Notes |
+|------|-------------------|------------------|-------|-------|
+| 1 | `validate_setup_dir` | **Omit** or minimal inventory assert | localhost | Installer runs from setup tree; `bundle_dir` in inventory replaces `aap_setup_dir` |
+| 2 | `preflight` | `add_execution_nodes` → `preflight.yml` | localhost | ADR-005; disable via `add_execution_nodes_preflight_enabled=false` |
+| 3 | `discover_new_nodes` | `add_execution_nodes` → `discover.yml` | localhost | Builds dynamic group (see § Discovery) |
+| 4 | `fetch_mesh_material` | `add_execution_nodes` → `fetch_mesh_material.yml` | localhost | When `add_execution_nodes_has_work` |
+| 5 | `enable_controller_listener` | `add_execution_nodes` → `enable_controller_listener.yml` | `automationcontroller` | AIO `local-only` → `tcp-listener`; ~5–10s disruption |
+| 6 | `host_prep` | `add_execution_nodes` → `host_prep.yml` → `import_role: common` | `execution_nodes_new` | Images, linger, firewall |
+| 7 | `fetch_or_mint_certs` | `add_execution_nodes` → `mint_certs.yml` | `execution_nodes_new` (delegate localhost) | Per-node TLS with mesh CA |
+| 8 | `register_instance` | `add_execution_nodes` → `register.yml` | `execution_nodes_new` | **`serial: 1`** (ADR-002) |
+| 9 | `install_receptor_node` | `add_execution_nodes` → `install_receptor.yml` → `import_role: receptor` | `execution_nodes_new` | Default `serial: 1` for chain topologies |
+| 10 | `update_controller_peers` | `add_execution_nodes` → `update_controller_peers.yml` | `automationcontroller` | **Opt-in only** — inbound dial (ADR-003) |
+| 11 | `verify_mesh` | `add_execution_nodes` → `verify.yml` | localhost | `list_instances` assert |
 
-### Inventory (unchanged model)
-
-Source of truth remains the containerized installer inventory. Example peer topologies:
-
-```ini
-# EN dials controller (outbound)
-[execution_nodes]
-en-01.example.com ansible_host=... receptor_type=execution \
-  receptor_peers='["controller.example.com"]' routable_hostname=en-01.example.com
-
-# Hop dials controller; EN dials hop
-[execution_nodes]
-hn-01.example.com ansible_host=... receptor_type=hop \
-  receptor_peers='["controller.example.com"]' routable_hostname=hn-01.example.com
-en-01.example.com ansible_host=... receptor_type=execution \
-  receptor_peers='["hn-01.example.com"]' routable_hostname=en-01.example.com
-```
+Synthetic control host: collection uses `aap_add_node_control`; installer uses `add_execution_nodes_control`
+for runtime facts (`has_work`, mesh material, bundle paths).
 
 ---
 
-## 4. Required containerized installer code changes (minimal set)
+## Role porting map
 
-1. **Split registration from full controller init**
-   Move EN/HN `awx-manage` steps out of (or behind a flag in) `automationcontroller/tasks/init.yml` so the additive playbook does not run migrate, preload, or inventory-diff **deprovision**.
+**Source of truth:** this collection's `roles/` directory. Port behaviour, not prose.
 
-2. **Peer policy for zero-downtime growth**
-   Prefer requiring `receptor_peers` on new nodes (outbound dial). Avoid the growth path that auto-adds new ENs to controller peer lists in `receptor/tasks/facts.yml`—that rewrites and restarts controller receptor. Document outbound dial as the supported additive topology.
+| Collection role | Installer home | Port action |
+|-----------------|----------------|-------------|
+| `validate_setup_dir` | — | **Drop** — setup tree is implicit; keep inventory/`bundle_dir` checks in preflight |
+| `preflight` | `add_execution_nodes/tasks/preflight.yml` | Port + call `assert_controller.yml`, `execution_node_checks.yml` |
+| `assert_controller_container` | `add_execution_nodes/tasks/assert_controller.yml` | SSH ping + `podman inspect` task container |
+| `list_instances` | `add_execution_nodes/tasks/list_instances.yml` | `awx-manage list_instances` via `podman exec`; ANSI strip + regex parse |
+| `discover_new_nodes` | `add_execution_nodes/tasks/discover.yml` | Heartbeat diff → dynamic group |
+| `fetch_mesh_material` | `add_execution_nodes/tasks/fetch_mesh_material.yml` | Slurp mesh CA + work pubkey from controller install user home |
+| `enable_controller_listener` | `add_execution_nodes/tasks/enable_controller_listener.yml` | Patch `receptor.conf`, reload receptor on controller only |
+| `host_prep` | `add_execution_nodes/tasks/host_prep.yml` | Set vars → `import_role: common` |
+| `fetch_or_mint_certs` | `add_execution_nodes/tasks/mint_certs.yml` | CSR/sign per hostname on ansible control host |
+| `register_instance` | `add_execution_nodes/tasks/register.yml` | `provision_instance` → `add_receptor_address` → `register_peers` → `register_queue` |
+| `install_receptor_node` | `add_execution_nodes/tasks/install_receptor.yml` | Wire minted TLS paths → `import_role: receptor` |
+| `update_controller_peers` | `add_execution_nodes/tasks/update_controller_peers.yml` | Opt-in inbound `tcp-peer` on controller |
+| `verify_mesh` | `add_execution_nodes/tasks/verify.yml` | Re-list and assert new hostnames |
+| `generate_bundle` | — | **Not in scope** — separate offline workflow |
 
-3. **Host limiting**
-   Ensure the additive playbook never applies `common` / `receptor` to gateway, hub, EDA, redis, or existing controllers (except the optional AIO listener helper).
+### Installer roles to reuse (do not reimplement)
 
-4. **Idempotency**
-   Same rule as this collection’s `discover_new_nodes`: heartbeat ⇒ skip; registered but no heartbeat ⇒ re-run join; `provision_instance` remains idempotent.
+| Installer role | Used for |
+|----------------|----------|
+| `common` | Host prep, bundle/online images on **new hosts only** |
+| `receptor` | Receptor install, systemd, TLS paths on **new hosts only** |
+| `automationcontroller` (partial) | Extract EN/HN registration from `init.yml` — **exclude** migrate, preload, deprovision |
 
-5. **Docs in the setup tree**
+---
+
+## Behavioural spec (implementation details)
+
+### Discovery and idempotency
+
+- Inventory group: `[execution_nodes]` (override: `add_execution_nodes_inventory_group`).
+- Dynamic target group: `execution_nodes_new` (collection: `aap_add_node_targets`).
+- **Skip rule:** hostname has **`heartbeat=`** in `list_instances` and line is not `[DISABLED]`.
+- **Re-target:** provisioned but no heartbeat (capacity=0, no heartbeat) — must re-run join.
+- `receptor_peers` must be a **real list** — never a bare INI string (breaks full install with `hostvars['a']`).
+- INI: `receptor_peers='["peer.example.com"]'`; YAML: `receptor_peers: [peer.example.com]`.
+
+### `list_instances` parsing
+
+- Set `NO_COLOR=1`, `TERM=dumb`, `PY_COLORS=0` on `podman exec` to avoid ANSI in hostnames.
+- Strip CSI sequences before regex.
+- Hostname regex: `(?m)^\s*(?:\[DISABLED\]\s+)?(\S+)\s+(?:capacity=\d+\s+)?node_type=`
+- Ready regex: `(?m)^\s+(?!\[DISABLED\])(\S+)\s+.*\bheartbeat=`
+
+### Registration (`awx-manage`)
+
+Run inside `automation-controller-task` via `podman exec`. Use **argv lists** (not shell strings).
+
+Sequence (execution nodes; hop omits `register_queue`):
+
+1. `provision_instance --hostname=… --uuid=… --node_type=hop|execution`
+2. `add_receptor_address --instance=… --address=… --port=… --canonical`
+3. `register_peers <hostname> --exact` + peer list (when peers non-empty)
+4. `register_queue --queuename=default --hostname=…` (execution only)
+5. `register_queue --queuename=executionplane --hostname=…` (execution only)
+
+Optional: custom instance groups from `instance_group_*` inventory groups (see
+`roles/register_instance/tasks/discover_instance_groups.yml`).
+
+**Retries:** `aap_add_node_awx_manage_retries` / `delay` (default 5 / 15s).
+
+**Not applied at join:** capacity adjustment, `enabled`, `managed_by_policy` — no `awx-manage`
+equivalent; configure post-join via UI/API if needed.
+
+### Controller target (HA / gateway control host)
+
+Collection supports `aap_add_node_controller_target` on `list_instances` and `register_instance`
+(falls back to `groups['automationcontroller'][0]`). **Installer port must wire this everywhere**
+tasks delegate to the controller (list, register, fetch mesh, execution_node_checks, instance_groups).
+
+### Mesh material paths (on controller, install user)
+
+| Material | Relative path under install user home |
+|----------|--------------------------------------|
+| Mesh CA cert | `aap/receptor/etc/mesh-CA.crt` |
+| Mesh CA key | `aap/tls/ca.key` |
+| Work public key (execution signing) | `aap/receptor/etc/signing_public.pem` |
+
+### AIO listener enablement
+
+When controller `receptor.conf` contains `local-only`, growth playbook flips to `tcp-listener` so
+the first EN/HN can dial out. Controlled by `add_execution_nodes_enable_controller_listener`
+(default `true`). Safe no-op if already listening.
+
+### Downtime profile (outbound dial default)
+
+| Action | Disruption |
+|--------|------------|
+| Preflight / discover / fetch mesh | None |
+| AIO listener flip | ~5–10s on controller receptor |
+| `common` / `receptor` on new nodes | None on existing stack |
+| `awx-manage` register | None on mesh |
+| `update_controller_peers` (opt-in) | **Yes** — controller receptor restart |
+
+---
+
+## Variable mapping
+
+### Inventory (reuse as-is from greenfield install)
+
+| Variable | Purpose |
+|----------|---------|
+| `receptor_type` | `execution` or `hop` |
+| `receptor_peers` | **List** of peer hostnames (outbound dial) |
+| `receptor_port` / `listener_port` | Receptor listen/dial port (default 27199) |
+| `receptor_protocol` | TCP/TLS for listener enablement |
+| `receptor_firewall_zone` | firewalld zone when opening listener |
+| `routable_hostname` | TLS SAN + `awx-manage` hostname when `ansible_host` is IP |
+| `receptor_address` | Optional peer dial address override |
+| `bundle_install`, `bundle_dir` | Bundle image load via `common` |
+| `registry_*`, `container_pull_images`, `registry_auth` | Online install |
+| `receptor_image`, `ee_*_image` | Image skip probes |
+| `instance_group_*` groups | Optional custom instance groups |
+
+Example:
+
+```ini
+[execution_nodes]
+en-01.example.com ansible_host=10.0.0.5 receptor_type=execution \
+  receptor_peers='["controller.example.com"]' routable_hostname=en-01.example.com
+```
+
+### Growth-playbook extras
+
+| Collection (`aap_add_node_*`) | Installer (`add_execution_nodes_*`) | Default |
+|------------------------------|-------------------------------------|---------|
+| — | *(n/a)* `aap_setup_dir` | Use `bundle_dir` in inventory |
+| `preflight_enabled` | `preflight_enabled` | `true` |
+| `enable_controller_peer` | `enable_controller_peer` | `false` |
+| `enable_controller_listener` | `enable_controller_listener` | `true` |
+| `serial_receptor` | `serial_receptor` | `1` |
+| `skip_image_load` | `skip_image_load` | `false` |
+| `skip_image_load_if_present` | `skip_image_load_if_present` | `true` |
+| `inventory_group` | `inventory_group` | `execution_nodes` |
+| `target_group` | `target_group` | `execution_nodes_new` |
+| `controller_target` | `controller_host` | `automationcontroller[0]` |
+| `controller_container` | `controller_container` | `automation-controller-task` |
+| `listener_port` | *(inventory `receptor_port`)* | `27199` |
+
+### Runtime facts (synthetic control host)
+
+| Fact | Purpose |
+|------|---------|
+| `add_execution_nodes_has_work` | Gate plays after discover |
+| `add_execution_nodes_mesh_ca_cert` / `_key` | Mint certs without new CA |
+| `add_execution_nodes_work_public_key` | Execution-node signing |
+| `add_execution_nodes_bundle_dir` | Per-host minted TLS tree |
+
+---
+
+## Required installer changes (minimal)
+
+These are edits **inside** `ansible.containerized_installer` at implementation time — not in this repo.
+
+1. **Split registration from full controller init**  
+   Extract EN/HN `awx-manage` steps from `automationcontroller/tasks/init.yml` into a shared
+   include used by both `install` and `add_execution_nodes`. **Exclude** migrate, preload, and
+   inventory-diff **deprovision** from the growth path.
+
+2. **Peer policy for zero-downtime growth**  
+   Prefer requiring `receptor_peers` on new nodes (outbound dial). Avoid the growth path that
+   auto-adds new ENs to controller peer lists in `receptor/tasks/facts.yml`—that rewrites and
+   restarts controller receptor. Document outbound dial as the supported additive topology.
+
+3. **Host limiting**  
+   Never apply `common` / `receptor` to gateway, hub, EDA, redis, or existing controllers
+   (except optional AIO listener helper).
+
+4. **Idempotency**  
+   Same rule as this collection's `discover_new_nodes` (see § Discovery and idempotency):
+   heartbeat ⇒ skip; registered but no heartbeat ⇒ re-run join; `provision_instance` remains idempotent.
+
+5. **Documentation in setup tree**  
    - Inventory examples (EN→controller, EN→hop→controller)
-   - Disk sizing for EE image load on new nodes (lab: ~9 GB roots failed on `ee-supported`; ≥32–64 GB recommended)
+   - Disk sizing for EE image load on new nodes (lab: ~9 GB roots failed on `ee-supported`; ≥32–64 GB recommended)
    - Expect a short settle time before instances show green heartbeats / capacity
 
-6. **Platform CA before `common` on new nodes**
+6. **Prefer on-node TLS if redundant**  
+   Collection mints on the ansible control host; evaluate whether installer `receptor` role can
+   sign on-node during growth and drop control-host mint if equivalent.
+
+7. **Platform CA before `common` on new nodes**
    Copy the mesh/platform CA **public** cert to `~/aap/tls/ca.cert` before `import_role: common`.
    Do not pass `ca_tls_cert` without `ca_tls_key` — installer `tls.yml` imports only when
    **both** are set and generates only when **neither** is set; cert-only skips both and
@@ -172,80 +333,87 @@ en-01.example.com ansible_host=... receptor_type=execution \
 
 ---
 
-## 5. What disappears from this collection
+## ADR alignment
 
-Once upstream ships the additive playbook in the containerized installer:
+| ADR | Requirement for installer port |
+|-----|-------------------------------|
+| [ADR-001](.sdlc/adrs/ADR-001-cli-first-approach.md) | Ansible playbook only — no separate UI/CLI |
+| [ADR-002](.sdlc/adrs/ADR-002-serial-registration.md) | `serial: 1` on registration play |
+| [ADR-003](.sdlc/adrs/ADR-003-outbound-first-topology.md) | Outbound dial default; inbound opt-in |
+| [ADR-004](.sdlc/adrs/ADR-004-installer-role-reuse.md) | `import_role: common` / `receptor` — no duplicated installer logic |
+| [ADR-005](.sdlc/adrs/ADR-005-preflight-opt-out.md) | Preflight on by default |
+
+---
+
+## Validation
+
+Reuse [TEST.md](TEST.md) scenarios against **`ansible.containerized_installer.add_execution_nodes`**
+(record `Playbook: installer` in the results log).
+
+| Priority | Target | Scenarios |
+|----------|--------|-----------|
+| 1 | 2.7 AIO | T-27-AIO-EN, HN, EN-VIA-HN, RERUN, DEPROV-REJOIN, FULL-UPGRADE |
+| 2 | 2.7 cluster | T-27-CLU-* (requires `controller_host` wiring) |
+| 3 | 2.6 | Same matrix as 2.7 analogs |
+
+Pass criteria: playbook exit 0; `list_instances` shows hostnames; green heartbeat within minutes;
+topology matches `receptor_peers`; post-join full `install` still succeeds (inventory compatibility).
+
+---
+
+## Open items (track here until resolved)
+
+| ID | Item | Notes |
+|----|------|-------|
+| OI-001 | HA `controller_host` everywhere | Collection has `aap_add_node_controller_target`; ensure all installer delegate tasks honor it |
+| OI-002 | Shared registration include | `init.yml` vs `register_execution_nodes.yml` — single source for install + growth |
+| OI-003 | Control-host mint vs on-node TLS | Decide if growth can drop `mint_certs.yml` |
+| OI-004 | `generate_bundle` / mesh job test | Explicitly out of additive playbook; separate workflows |
+| OI-005 | Installer lab validation | No installer-matrix results logged yet — run after upstream lands |
+
+---
+
+## Out of scope
+
+| Item | Reason |
+|------|--------|
+| RPM / OpenShift | Different install mechanics |
+| AAP 2.5 and earlier | Pre-gateway architecture |
+| Full `install` behaviour changes | Greenfield path must remain stable |
+| Gateway OAuth / Controller API registration | Stay on `awx-manage` (collection API paths removed) |
+| Automated deprovision playbook | Manual `awx-manage deprovision_instance` sufficient initially |
+| Offline bundle generation | `roles/generate_bundle` — separate workflow |
+
+---
+
+## Collection retirement
+
+After installer parity on the TEST.md matrix for **2.7** then **2.6**:
 
 | Collection piece | Fate |
 |------------------|------|
-| `playbooks/add_node.yml` flow | Maps 1:1 onto `ansible.containerized_installer.add_execution_nodes` |
-| `host_prep` / `install_receptor_node` | Unnecessary wrappers around installer `common` / `receptor` |
-| `register_instance` | Replaced by extracted installer register tasks |
-| `fetch_or_mint_certs` (control-host mint) | Prefer on-node installer TLS; drop if redundant |
-| `fetch_mesh_material` / `enable_controller_listener` | Fold into installer helper tasks or receptor role |
-| `discover_new_nodes` / `list_instances` / `verify_mesh` | Thin installer tasks |
-| `validate_setup_dir` | Unnecessary when running from the setup tree itself |
-| Image-skip lab helpers | Optional installer extras or omit |
-
-`redhat_official.aap_containerized_add_node` then becomes a thin compatibility shim or is retired. Keep it as the reference implementation until the containerized installer change merges and is validated.
-
----
-
-## 6. Validation and upstream path
-
-### Validation
-
-Reuse scenarios from [TEST.md](TEST.md) against the **new containerized installer playbook** (not this collection), in version order:
-
-1. **2.7** AIO — T-27 analogs of EN, HN, EN-VIA-HN, re-run, deprov-rejoin, **full-upgrade** (primary gate)
-2. **2.7** multi-controller — after AIO is solid
-3. **2.6** — same scenario set as follow-on / backport validation (lab: additive join + **T-26-AIO-FULL-UPGRADE** already passed on AIO)
-
-| ID (2.6 lab refs; rename for 2.7 as needed) | Scenario |
-|---------------------------------------------|----------|
-| T-26-AIO-EN / T-27-AIO-EN | Execution → controller |
-| T-26-AIO-HN / T-27-AIO-HN | Hop → controller |
-| T-26-AIO-EN-VIA-HN / T-27-AIO-EN-VIA-HN | Hop + EN via hop (one run) |
-| T-*-AIO-RERUN | Mid-join failure then re-run |
-| T-*-AIO-DEPROV-REJOIN | Deprovision, rebuild, join again |
-| T-26-AIO-FULL-UPGRADE / T-27-AIO-FULL-UPGRADE | Full `install` after collection- or overlay-added HN+EN (inventory list-form peers) |
-
-Do **not** require 2.5 (or earlier) validation for installer merge.
-
-### Upstream
-
-1. Propose the design (this document) against `ansible.containerized_installer` for the **2.7** containerized setup release train first.
-2. Land docs with the additive command alongside the existing install instructions:
-
-   ```bash
-   ansible-playbook -i inventory ansible.containerized_installer.add_execution_nodes
-   ```
-
-3. Backport or re-validate on **2.6** after 2.7.
-4. Retire or archive this collection after parity is proven on the TEST.md matrix for the supported installer versions (2.7, then 2.6).
-
----
-
-## 7. Non-goals
-
-- **RPM installer** — out of scope; this plan targets containerized only.
-- **Containerized AAP 2.5 and earlier** — out of scope (2.7 first, then 2.6).
-- **OpenShift** — already has UI install-bundle add-node.
-- **Changing greenfield `ansible.containerized_installer.install` behavior** beyond not breaking it (full install remains the path for new clusters).
-- **Automated deprovision / uninstall playbook** — optional later; manual `awx-manage deprovision_instance` remains sufficient initially.
-- **Gateway OAuth / `ansible.controller.instance` registration** — the containerized installer already uses `awx-manage`; stay on that path.
+| `playbooks/add_node.yml` | Maps to `add_execution_nodes` |
+| `host_prep` / `install_receptor_node` | Wrappers — drop when installer owns orchestration |
+| `register_instance` | Replaced by extracted installer tasks |
+| `validate_setup_dir` | Unnecessary from setup tree |
+| Entire collection | Thin shim or archive |
 
 ---
 
 ## Summary
 
-| | `ansible.containerized_installer.install` today | Target additive path |
-|--|-----------------------------------------------|----------------------|
-| Hosts touched | Entire inventory / stack | New EN/HN (+ optional controller listener) |
+| | Full `install` today | Target `add_execution_nodes` |
+|--|---------------------|------------------------------|
+| Hosts touched | Entire inventory | New EN/HN (+ optional AIO listener) |
 | Roles | Full platform | `common` + `receptor` + extracted register |
-| Mesh CA | Part of full install flow | Reuse existing |
-| Deprovision missing hosts | Yes (hazard on growth) | No |
-| Maintenance window | Yes | Near-zero (outbound peers) |
-| Admin command | `ansible-playbook -i inventory ansible.containerized_installer.install` | `ansible-playbook -i inventory ansible.containerized_installer.add_execution_nodes` |
+| Mesh CA | Part of full flow | Reuse existing |
+| Deprovision missing hosts | Yes (hazard) | **No** |
+| Maintenance window | Typically yes | Near-zero (outbound peers) |
 
-The missing piece is not new join technology—it is a **narrow playbook and a clean split of registration from full controller init**. This collection proves the flow; the containerized installer should own it.
+The missing piece is not new join technology — it is a **narrow playbook** and a **clean split
+of registration from full controller init**. This collection proves the flow; the containerized
+installer should own it.
+
+---
+
+**Plan revision:** 2026-08-13 — Merged `devel` INSTALLER_PLAN expansion; added platform CA pre-seed requirement (item 7).

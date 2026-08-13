@@ -8,7 +8,7 @@
 | Scenario Results Log | Matching `scenarios/S-*.md` | Date, AAP, OS, Pass/Fail, short notes |
 | Platform matrix | [test-plan.md](../test-plan.md), REQ-004 | Only when a new OS/AAP cell is proven |
 
-**Do commit:** pass/fail, versions, OS, topology, collection git ref, pointers to public issues.
+**Do commit:** pass/fail, versions, OS, topology, playbook type (`collection` or `installer`), git ref, pointers to public issues.
 
 **Do not commit:** secrets, inventory with real IPs/passwords, full ansible stdout (may contain host data).
 
