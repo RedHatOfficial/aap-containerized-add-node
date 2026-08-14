@@ -12,15 +12,27 @@
 - name: Decide whether to skip installer image copy/load
   ansible.builtin.include_tasks: image_skip.yml
 
-# Import cluster platform CA (do not generate a new CA on the EN)
+# Seed cluster platform CA public cert before installer common. Do not pass
+# ca_tls_cert/ca_tls_key to common — tls.yml requires both or neither; cert-only
+# skips import and generate, leaving no ca.cert for update-ca-trust.
+- name: Ensure platform TLS directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/aap/tls"
+    state: directory
+    mode: '0750'
+
+- name: Seed cluster platform CA certificate (public cert only)
+  ansible.builtin.copy:
+    src: "{{ aap_add_node_mesh_ca_cert }}"
+    dest: "{{ ansible_user_dir }}/aap/tls/ca.cert"
+    mode: '0640'
+
 - name: Set installer common vars for this node
   ansible.builtin.set_fact:
     # When skipping images: leave offline bundle path and avoid registry pulls.
     # common still configures podman/tls/firewalld.
     bundle_install: "{{ false if (aap_add_node_skip_image_load_effective | bool) else (aap_add_node_bundle_install | default(true)) }}"
     bundle_dir: "{{ aap_setup_dir }}/bundle"
-    ca_tls_cert: "{{ aap_add_node_mesh_ca_cert }}"
-    # ca_tls_key intentionally NOT distributed to EN/HN — mesh CA private key stays on control host
     registry_ns_aap: "{{ registry_ns_aap | default(aap_add_node_default_registry_ns_aap) | default('ansible-automation-platform-26') }}"
     receptor_image: "{{ receptor_image | default(aap_add_node_default_receptor_image) | default('receptor-rhel9:latest') }}"
     container_pull_images: "{{ false if (aap_add_node_skip_image_load_effective | bool) else (container_pull_images | default(true)) }}"

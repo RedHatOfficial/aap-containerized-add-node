@@ -2,7 +2,7 @@
 
 Install and configure receptor on the new node via `ansible.containerized_installer.receptor`, using certs minted by `fetch_or_mint_certs`.
 
-Forces `routable_hostname` to the API/cert FQDN (not `ansible_host` IP). Seeds peer dial facts on peer inventory hosts. Work signing keys are set for execution nodes only.
+Forces `routable_hostname` to the API/cert FQDN (not `ansible_host` IP). Seeds peer dial facts on peer inventory hosts using the same `_receptor_hostname` resolution as installer `roles/receptor/tasks/facts.yml` (`routable_hostname | default(ansible_host)`). Work signing keys are set for execution nodes only.
 
 ## Requirements
 

@@ -8,11 +8,9 @@ argument_specs:
         type: path
         required: true
       aap_add_node_mesh_ca_cert:
-        description: Path to the cluster mesh/platform CA certificate for installer common.
-        type: path
-        required: true
-      aap_add_node_mesh_ca_key:
-        description: Path to the cluster mesh/platform CA private key for installer common.
+        description: >-
+          Path to the cluster mesh/platform CA certificate (public cert only).
+          Pre-seeded to ~/aap/tls/ca.cert before installer common runs.
         type: path
         required: true
       aap_add_node_type:
