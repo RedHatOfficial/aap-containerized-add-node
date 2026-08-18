@@ -1,0 +1,24 @@
+---
+name: DCO Check
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main, devel]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dco:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: DCO Check
+        uses: dcoapp/app@c361dc7df34f7d9a2c7e60b2449e5bb1dc1bfd9c  # v1.0.4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
