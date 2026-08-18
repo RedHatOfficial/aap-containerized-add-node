@@ -1,14 +1,25 @@
-# CODEOWNERS - Define code review requirements
+# CODEOWNERS - Defines code review requirements
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default owners for everything
-* @RedHatOfficial/aap-containerized-add-node-maintainers
+* @ffirg @lennysh
 
-# Security-sensitive files require additional review
-.github/workflows/ @RedHatOfficial/aap-containerized-add-node-maintainers
-.pre-commit-config.yaml @RedHatOfficial/aap-containerized-add-node-maintainers
-SECURITY.md @RedHatOfficial/aap-containerized-add-node-maintainers
+# Ansible roles and playbooks
+/roles/ @ffirg @lennysh
+/playbooks/ @ffirg @lennysh
+/meta/ @ffirg @lennysh
 
-# Playbooks and roles
-playbooks/ @RedHatOfficial/aap-containerized-add-node-maintainers
-roles/ @RedHatOfficial/aap-containerized-add-node-maintainers
+# CI/CD and GitHub configuration
+/.github/ @ffirg @lennysh
+
+# Documentation
+/docs/ @ffirg @lennysh
+README.md @ffirg @lennysh
+CONTRIBUTING.md @ffirg @lennysh
+
+# SDLC artifacts
+/.sdlc/ @ffirg @lennysh
+
+# Security-sensitive files
+SECURITY.md @ffirg @lennysh
+.gitleaks.toml @ffirg @lennysh
