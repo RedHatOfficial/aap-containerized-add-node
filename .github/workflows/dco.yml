@@ -16,7 +16,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
 
       - name: DCO Check
-        uses: dave-tucker/dco-action@bb873a6a085f761773ff43f2322a938d543bd75c
+        run: |
+          echo "Checking commits for DCO sign-off..."
+          COMMITS=$(git log --format='%H' origin/${{ github.event.pull_request.base.ref }}..HEAD)
+          FAILED=0
+          for SHA in $COMMITS; do
+            if ! git log -1 --format='%B' "$SHA" | grep -q "^Signed-off-by: .* <.*>"; then
+              echo "::error::Commit $SHA missing DCO sign-off"
+              git log -1 --format='%h %s' "$SHA"
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -eq 1 ]; then
+            echo ""
+            echo "All commits must include: Signed-off-by: Your Name <email@example.com>"
+            echo "Use: git commit -s"
+            exit 1
+          fi
+          echo "All commits have DCO sign-off"
