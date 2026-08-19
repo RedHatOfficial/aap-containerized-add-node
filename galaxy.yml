@@ -9,7 +9,8 @@ authors:
 description: >-
   Add execution/hop nodes to containerized AAP 2.6+ without
   re-running the full installer (awx-manage + receptor mint).
-  RPM and OpenShift are not supported.
+  RPM is not supported. For OpenShift/operator-based workflows,
+  use the native AAP UI node setup flow (see README links).
 license:
   - GPL-3.0-or-later
 license_file: LICENSE

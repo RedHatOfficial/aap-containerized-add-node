@@ -1,6 +1,9 @@
 # Architecture: additive EN/HN join for containerized AAP
 
-> **Scope:** containerized AAP **2.6+** only. RPM and OpenShift are **not** supported.
+> **Scope:** containerized AAP **2.6+** only. RPM is **not** supported.
+> OpenShift/operator-based node setup should use the native AAP UI workflow:
+> [AAP 2.6](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/administer-proc_set_up_virtual_machines),
+> [AAP 2.7](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/administer-proc_set_up_virtual_machines).
 > Historical installer research (including RPM) lives in [FINDINGS.md](FINDINGS.md).
 
 ## Goals

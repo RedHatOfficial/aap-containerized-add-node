@@ -75,7 +75,12 @@ See [docs/QUICKSTART.md](docs/QUICKSTART.md) for prerequisites and detailed step
 | Containerized AAP 2.7+ | Supported |
 | RHEL 9/10 nodes | Tested |
 | RPM installs | Not supported |
-| OpenShift / Operator | Not supported |
+| OpenShift / Operator | Use native AAP UI workflow (see links below) |
+
+For operator-based (OpenShift) execution node setup, use the official AAP UI docs:
+
+- AAP 2.6: [Set up virtual machines](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/administer-proc_set_up_virtual_machines)
+- AAP 2.7: [Set up virtual machines](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/administer-proc_set_up_virtual_machines)
 
 ## Current Limitations
 

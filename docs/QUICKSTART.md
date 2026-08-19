@@ -8,6 +8,11 @@ Two installation methods available. Pick based on your network access:
 | **Online + ProxyJump** | SSH via bastion/jumpbox | SSH to jumpbox (routes to targets) |
 | **Offline** | No SSH to target nodes (air-gap, policy, hybrid cloud) | SSH to controller only |
 
+> **Scope note:** This collection targets containerized installer workflows.
+> For OpenShift/operator-based execution node setup, use native AAP UI docs:
+> [AAP 2.6](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/administer-proc_set_up_virtual_machines),
+> [AAP 2.7](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/administer-proc_set_up_virtual_machines).
+
 ---
 
 ## Method 1: Online Installation
