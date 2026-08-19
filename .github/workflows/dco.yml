@@ -19,6 +19,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: DCO Check
-        uses: dcoapp/app@c361dc7df34f7d9a2c7e60b2449e5bb1dc1bfd9c  # v1.0.4
+        uses: dcoapp/app@113757536857a840e6b607a35547d7c696dfd1dd  # v1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
