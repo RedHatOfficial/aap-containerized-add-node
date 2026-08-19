@@ -43,15 +43,33 @@ This project follows the [Red Hat Community Code of Conduct](https://www.redhat.
 1. **Fork the repository** and create a branch from `devel`
 2. **Branch naming**: `feature/description` or `fix/description`
 3. **Make your changes** following the style guidelines below
-4. **Test your changes** against a real AAP environment if possible
-5. **Submit a pull request** to `devel` branch
+4. **Sign off your commits** (see DCO below)
+5. **Test your changes** against a real AAP environment if possible
+6. **Submit a pull request** to `devel` branch
+
+### Developer Certificate of Origin (DCO)
+
+All commits must include a `Signed-off-by` line certifying you have the right to submit the code:
+
+```bash
+git commit -s -m "Add feature X"
+```
+
+This adds: `Signed-off-by: Your Name <your.email@example.com>`
+
+The DCO is a lightweight alternative to CLAs. By signing off, you certify:
+- You wrote the code, OR
+- You have the right to submit it under the project's license
+
+CI will reject commits without sign-off.
 
 ### Pull Request Process
 
 1. PRs must target `devel` branch (not `main`)
-2. All CI checks must pass
+2. All CI checks must pass (lint, syntax, DCO, gitleaks)
 3. At least one maintainer approval required
-4. Squash commits before merge (or use squash-merge)
+4. PRs are **squash merged** — your commits become one clean commit
+5. Branch auto-deleted after merge
 
 ## Development Setup
 
