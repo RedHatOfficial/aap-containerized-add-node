@@ -23,7 +23,8 @@ jobs:
       - name: DCO Check
         run: |
           echo "Checking commits for DCO sign-off..."
-          COMMITS=$(git log --format='%H' origin/${{ github.event.pull_request.base.ref }}..HEAD)
+          # Exclude merge commits (have more than 1 parent)
+          COMMITS=$(git log --no-merges --format='%H' origin/${{ github.event.pull_request.base.ref }}..HEAD)
           FAILED=0
           for SHA in $COMMITS; do
             if ! git log -1 --format='%B' "$SHA" | grep -q "^Signed-off-by: .* <.*>"; then
