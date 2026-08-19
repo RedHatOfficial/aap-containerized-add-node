@@ -45,6 +45,7 @@ markdown_extensions:
       permalink: true
 
 nav:
+  - Home: index.md
   - Installation:
       - Getting Started: installation/INSTALL.md
       - Pick Your Topology: installation/QUICKSTART.md

@@ -337,6 +337,5 @@ firewall-cmd --list-ports | grep 27199
 
 ## Related Documentation
 
-- [TOPOLOGY.md](TOPOLOGY.md) — Topology patterns and firewall requirements
-- [REQ-005](../.sdlc/specs/REQ-005-offline-bundle.md) — Requirement specification
-- [REQ-006](../.sdlc/specs/REQ-006-hybrid-cloud-topology.md) — Hybrid cloud topology
+- [Topology Patterns](../examples/topologies.md) — Topology patterns and firewall requirements
+- [Inventory Examples](../examples/inventory-examples.md) — Sample inventories including multi-hop layouts

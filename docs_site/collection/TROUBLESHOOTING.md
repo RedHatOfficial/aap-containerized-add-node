@@ -88,5 +88,5 @@ There is **no** automated rollback playbook yet. Treat `deprovision_instance` as
 
 ## Related docs
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — design and HA `[0]` controller pick
-- [README.md](../README.md) — quick start and scope
+- [Conventions](CONVENTIONS.md) — design notes and HA controller target
+- [Home](../index.md) — quick start and scope

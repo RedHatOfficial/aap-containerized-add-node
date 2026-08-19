@@ -138,7 +138,7 @@ Default is empty (use inventory order). Defined in `roles/list_instances/default
 
 ## Peer Topology
 
-See [TOPOLOGY.md](TOPOLOGY.md) for detailed peer direction documentation.
+See [Topology Patterns](../examples/topologies.md) for detailed peer direction documentation.
 
 | Mode | Variable | Disruption |
 |------|----------|------------|

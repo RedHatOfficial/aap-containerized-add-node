@@ -5,15 +5,17 @@ on: # yamllint disable-line rule:truthy
   push:
     branches: [main, devel]
     paths:
-      - "docs/**"
+      - "docs_site/**"
       - "mkdocs.yml"
       - "docs-requirements.txt"
+      - ".github/workflows/docs.yml"
   pull_request:
     branches: [main, devel]
     paths:
-      - "docs/**"
+      - "docs_site/**"
       - "mkdocs.yml"
       - "docs-requirements.txt"
+      - ".github/workflows/docs.yml"
   release:
     types: [published]
   workflow_dispatch:
