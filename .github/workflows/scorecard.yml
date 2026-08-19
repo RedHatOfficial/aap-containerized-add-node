@@ -1,7 +1,7 @@
 ---
 name: Scorecard supply-chain security
 
-on:
+on: # yamllint disable-line rule:truthy
   branch_protection_rule:
   schedule:
     - cron: "0 6 * * 1"  # Weekly Monday 6am UTC
