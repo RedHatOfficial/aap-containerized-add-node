@@ -1,0 +1,42 @@
+---
+name: DCO Check
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main, devel]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dco:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - name: DCO Check
+        run: |
+          echo "Checking commits for DCO sign-off..."
+          # Exclude merge commits (have more than 1 parent)
+          COMMITS=$(git log --no-merges --format='%H' origin/${{ github.event.pull_request.base.ref }}..HEAD)
+          FAILED=0
+          for SHA in $COMMITS; do
+            if ! git log -1 --format='%B' "$SHA" | grep -q "^Signed-off-by: .* <.*>"; then
+              echo "::error::Commit $SHA missing DCO sign-off"
+              git log -1 --format='%h %s' "$SHA"
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -eq 1 ]; then
+            echo ""
+            echo "All commits must include: Signed-off-by: Your Name <email@example.com>"
+            echo "Use: git commit -s"
+            exit 1
+          fi
+          echo "All commits have DCO sign-off"

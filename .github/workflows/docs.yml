@@ -1,0 +1,63 @@
+---
+name: Documentation
+
+on: # yamllint disable-line rule:truthy
+  push:
+    branches: [main, devel]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "docs-requirements.txt"
+  pull_request:
+    branches: [main, devel]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "docs-requirements.txt"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: docs-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r docs-requirements.txt
+
+      - name: Build docs
+        run: mkdocs build --strict
+
+      - name: Upload artifact
+        if: github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/devel')
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3.0.1
+        with:
+          path: site/
+
+  deploy:
+    if: github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/devel')
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4.0.5
