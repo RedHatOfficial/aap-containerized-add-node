@@ -23,12 +23,19 @@ Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+**
 | **Node OS** | RHEL 9.x, RHEL 10.x |
 | **Topology** | Outbound dial (default), Inbound dial (optional) |
 
+## Getting Started
+
+**New to this collection?** Follow our step-by-step wizard:
+
+**[Getting Started Guide](docs/GETTING_STARTED.md)** — Prerequisites → Topology Selection → Inventory Setup → Run → Verify
+
 ## Documentation
 
 Full documentation is available at **[redhatofficial.github.io/aap-containerized-add-node](https://redhatofficial.github.io/aap-containerized-add-node/)** or in the `docs/` directory:
 
 | Topic | Description |
 |-------|-------------|
+| [Getting Started](docs/GETTING_STARTED.md) | Step-by-step wizard for first-time users |
 | [Quick Start](docs/QUICKSTART.md) | Get started in 5 minutes |
 | [Architecture](docs/ARCHITECTURE.md) | How the collection works |
 | [Topology](docs/TOPOLOGY.md) | Network topology patterns and examples |
