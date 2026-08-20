@@ -47,7 +47,8 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation:
-      - Getting Started: installation/INSTALL.md
+      - Getting Started: installation/getting-started.md
+      - Quick Reference: installation/INSTALL.md
       - Pick Your Topology: installation/QUICKSTART.md
       - Offline Installation: installation/OFFLINE.md
       - Execution Node Prep: installation/execution-node.md
