@@ -22,16 +22,23 @@ This guide walks you through adding execution or hop nodes to your containerized
 
 Before starting, verify you have everything required.
 
-### Checklist
+### Checklist (All Workflows)
 
 | Requirement | How to verify |
 |-------------|---------------|
 | AAP 2.6+ containerized | `podman ps` on controller shows `automation-controller-*` |
 | Setup directory | You have the extracted `ansible-automation-platform-containerized-setup-2.x` |
 | SSH to controller | `ssh <install-user>@controller` works without password |
-| SSH to new node | `ssh <install-user>@new-node` works without password |
 | New node is RHEL 9/10 | `cat /etc/redhat-release` on new node |
 | Non-root user | Collection rejects root — use the same user as AAP install |
+
+### Additional Requirements by Workflow
+
+| Workflow | Additional Requirement |
+|----------|----------------------|
+| **Standard** (this guide) | SSH to new node: `ssh <install-user>@new-node` works without password |
+| **Offline** ([OFFLINE.md](OFFLINE.md)) | Physical/out-of-band access to transfer bundle to new node |
+| **Inbound dial** ([TOPOLOGY.md](TOPOLOGY.md)) | Controller can reach new node on receptor port (27199) |
 
 ### Verify Controller Container
 
@@ -85,7 +92,7 @@ Answer these questions to find your topology:
 ```
                     ┌─────────────────────────────────┐
                     │  Can new node reach controller  │
-                    │       directly (no firewall)?   │
+                    │     on receptor port (27199)?   │
                     └───────────────┬─────────────────┘
                                     │
                        ┌────────────┴────────────┐
