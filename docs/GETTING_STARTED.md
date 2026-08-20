@@ -54,6 +54,32 @@ ls /path/to/ansible-automation-platform-containerized-setup-2.x/
 
 ## Step 2: Select Your Topology
 
+### 2.1 Network Access Model
+
+First, determine your network access model:
+
+```
+Can control host SSH to both controller AND new node?
+│
+├─ YES → Standard workflow (this guide)
+│        New node dials OUT to controller/hop (default)
+│
+└─ NO → Offline workflow
+        ├─ No SSH to new node? → See OFFLINE.md (bundle generation)
+        └─ No outbound from new node? → Inbound dial (controller connects to node)
+```
+
+| Scenario | SSH Access | Solution |
+|----------|------------|----------|
+| Standard | Control host → controller ✓, control host → new node ✓ | This guide (outbound dial) |
+| Air-gapped EN | Control host → controller ✓, control host → new node ✗ | [OFFLINE.md](OFFLINE.md) — generate bundle, transfer manually |
+| No outbound | New node cannot dial out (strict egress policy) | Inbound dial — see [TOPOLOGY.md](TOPOLOGY.md#inbound-dial) |
+| Hybrid cloud | Controller in cloud, nodes on-prem | Outbound dial from on-prem to cloud (standard) |
+
+**Proceeding with standard workflow?** Continue below.
+
+### 2.2 Topology Selection
+
 Answer these questions to find your topology:
 
 ```
