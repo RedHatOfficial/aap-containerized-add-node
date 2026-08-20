@@ -45,12 +45,12 @@ Two installation methods:
 
 | Section | Content |
 |:--------|:--------|
-| [Installation](installation/INSTALL.md) | Prerequisites and step-by-step guide |
-| [Pick Your Topology](installation/QUICKSTART.md) | Online vs Offline decision tree |
-| [Offline Installation](installation/OFFLINE.md) | Air-gapped bundle workflow |
-| [FAQ](installation/FAQ.md) | Common questions |
-| [Topology Patterns](examples/topologies.md) | Peer direction and firewall rules |
-| [Collection Structure](collection/structure.md) | Roles, playbooks, variables |
+| [Installation](INSTALL.md) | Prerequisites and step-by-step guide |
+| [Pick Your Topology](QUICKSTART.md) | Online vs Offline decision tree |
+| [Offline Installation](OFFLINE.md) | Air-gapped bundle workflow |
+| [FAQ](FAQ.md) | Common questions |
+| [Topology Patterns](TOPOLOGIES.md) | Peer direction and firewall rules |
+| [Collection Structure](STRUCTURE.md) | Roles, playbooks, variables |
 
 ## Features
 

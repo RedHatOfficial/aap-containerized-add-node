@@ -529,7 +529,7 @@ podman exec automation-controller-task awx-manage register_queue \
 
 ## What the Playbook Changes on Execution Nodes
 
-For reference, the playbook makes these changes to execution nodes. For detailed package versions and RHEL 9 vs RHEL 10 specifics, see [docs/procedures/execution-node.md](procedures/execution-node.md).
+For reference, the playbook makes these changes to execution nodes. For detailed package versions and RHEL 9 vs RHEL 10 specifics, see [docs/EXECUTION_NODE.md](EXECUTION_NODE.md).
 
 ### Packages Installed
 

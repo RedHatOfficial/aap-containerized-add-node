@@ -2,7 +2,7 @@
 site_name: AAP Mesh Node Addition
 site_description: Add execution and hop nodes to containerized AAP without re-running the full installer
 site_author: Phil Griffiths
-docs_dir: docs_site
+docs_dir: docs
 
 theme:
   name: material
@@ -47,16 +47,21 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation:
-      - Getting Started: installation/getting-started.md
-      - Quick Reference: installation/INSTALL.md
-      - Pick Your Topology: installation/QUICKSTART.md
-      - Offline Installation: installation/OFFLINE.md
-      - Execution Node Prep: installation/execution-node.md
-      - FAQ: installation/FAQ.md
+      - Getting Started: GETTING_STARTED.md
+      - Quick Reference: INSTALL.md
+      - Pick Your Topology: QUICKSTART.md
+      - Offline Installation: OFFLINE.md
+      - Execution Node Prep: EXECUTION_NODE.md
+      - FAQ: FAQ.md
   - Examples:
-      - Inventory Examples: examples/inventory-examples.md
-      - Topology Patterns: examples/topologies.md
-  - Collection:
-      - Structure: collection/structure.md
-      - Conventions: collection/CONVENTIONS.md
-      - Troubleshooting: collection/TROUBLESHOOTING.md
+      - Inventory Examples: INVENTORY_EXAMPLES.md
+      - Topology Patterns: TOPOLOGIES.md
+  - Architecture:
+      - Overview: ARCHITECTURE.md
+      - Structure: STRUCTURE.md
+      - Collection Map: COLLECTION_MAP.md
+      - Topology: TOPOLOGY.md
+  - Reference:
+      - Conventions: CONVENTIONS.md
+      - Troubleshooting: TROUBLESHOOTING.md
+      - Findings: FINDINGS.md

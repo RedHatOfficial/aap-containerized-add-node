@@ -285,5 +285,5 @@ ansible-playbook playbooks/preflight.yml -i inventory -e aap_setup_dir=/path/to/
 | Topic | File |
 |-------|------|
 | Step-by-step installation | [INSTALL.md](INSTALL.md) |
-| Peer topology patterns | [Topology Patterns](../examples/topologies.md) |
-| Troubleshooting | [Troubleshooting](../collection/TROUBLESHOOTING.md) |
+| Peer topology patterns | [Topology Patterns](TOPOLOGIES.md) |
+| Troubleshooting | [Troubleshooting](TROUBLESHOOTING.md) |
