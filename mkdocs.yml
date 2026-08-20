@@ -55,7 +55,7 @@ nav:
       - FAQ: FAQ.md
   - Examples:
       - Inventory Examples: INVENTORY_EXAMPLES.md
-      - Topology Patterns: TOPOLOGIES.md
+      - Topology Patterns: TOPOLOGY.md
   - Architecture:
       - Overview: ARCHITECTURE.md
       - Structure: STRUCTURE.md

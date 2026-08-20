@@ -49,7 +49,7 @@ Two installation methods:
 | [Pick Your Topology](QUICKSTART.md) | Online vs Offline decision tree |
 | [Offline Installation](OFFLINE.md) | Air-gapped bundle workflow |
 | [FAQ](FAQ.md) | Common questions |
-| [Topology Patterns](TOPOLOGIES.md) | Peer direction and firewall rules |
+| [Topology Patterns](TOPOLOGY.md) | Peer direction and firewall rules |
 | [Collection Structure](STRUCTURE.md) | Roles, playbooks, variables |
 
 ## Features

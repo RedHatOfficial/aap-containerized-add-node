@@ -671,4 +671,4 @@ Complete, copy-paste ready inventory files for every topology. All examples use 
 5. Run preflight: `ansible-playbook playbooks/preflight.yml -i inventory.yml`
 6. Run add_node: `ansible-playbook playbooks/add_node.yml -i inventory.yml`
 
-See [Topology Patterns](TOPOLOGIES.md) for detailed firewall requirements and troubleshooting.
+See [Topology Patterns](TOPOLOGY.md) for detailed firewall requirements and troubleshooting.
