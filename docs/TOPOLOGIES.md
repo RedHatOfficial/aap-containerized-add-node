@@ -1,7 +1,7 @@
 # Mesh Topology Guide
 
-**Quick start:** [Pick Your Topology](../installation/QUICKSTART.md) — decision tree to pick your topology.
-**Ready-to-use inventories:** [Inventory Examples](inventory-examples.md) — copy and adapt.
+**Quick start:** [Pick Your Topology](QUICKSTART.md) — decision tree to pick your topology.
+**Ready-to-use inventories:** [Inventory Examples](INVENTORY_EXAMPLES.md) — copy and adapt.
 
 ## Overview
 
@@ -466,7 +466,7 @@ all:
 - Control host is outside the network (VPN not available)
 - Defense-in-depth: no direct SSH from workstations to servers
 
-**See also:** [Inventory Examples](inventory-examples.md) for a ProxyJump-ready inventory.
+**See also:** [Inventory Examples](INVENTORY_EXAMPLES.md) for a ProxyJump-ready inventory.
 
 ---
 

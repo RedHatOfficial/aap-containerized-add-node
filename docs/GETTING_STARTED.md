@@ -61,7 +61,7 @@ ls /path/to/ansible-automation-platform-containerized-setup-2.x/
 # Should contain: inventory, collections/, bundle/, etc.
 ```
 
-**Blocked?** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md#prerequisites)
+**Blocked?** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
 ---
 
@@ -100,12 +100,12 @@ Answer these questions to find your topology:
 
 | I need to... | Topology | Example File |
 |--------------|----------|--------------|
-| Add one EN that can reach controller | Single EN | [`inventory-single-en.yml`](../examples/inventory-single-en.yml) |
-| Add multiple ENs that can reach controller | Parallel ENs | [`inventory-parallel-ens.yml`](../examples/inventory-parallel-ens.yml) |
-| Add EN behind a hop node | EN via Hop | [`inventory-en-via-hn.yml`](../examples/inventory-en-via-hn.yml) |
-| Add multiple ENs behind one hop | Fan-out | [`inventory-fanout-behind-hop.yml`](../examples/inventory-fanout-behind-hop.yml) |
-| Cross multiple network tiers | Multi-hop chain | [`inventory-multi-hop-chain.yml`](../examples/inventory-multi-hop-chain.yml) |
-| On-prem nodes → cloud controller | Hybrid cloud | [`inventory-hybrid-cloud.yml`](../examples/inventory-hybrid-cloud.yml) |
+| Add one EN that can reach controller | Single EN | [`inventory-single-en.yml`](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-single-en.yml) |
+| Add multiple ENs that can reach controller | Parallel ENs | [`inventory-parallel-ens.yml`](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-parallel-ens.yml) |
+| Add EN behind a hop node | EN via Hop | [`inventory-en-via-hn.yml`](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-en-via-hn.yml) |
+| Add multiple ENs behind one hop | Fan-out | [`inventory-fanout-behind-hop.yml`](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-fanout-behind-hop.yml) |
+| Cross multiple network tiers | Multi-hop chain | [`inventory-multi-hop-chain.yml`](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-multi-hop-chain.yml) |
+| On-prem nodes → cloud controller | Hybrid cloud | [`inventory-hybrid-cloud.yml`](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-hybrid-cloud.yml) |
 
 **Not sure?** See [TOPOLOGY.md](TOPOLOGY.md) for detailed diagrams.
 

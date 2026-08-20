@@ -87,7 +87,7 @@ Controller ◄── Hop ◄── EN1
                └───── EN2
 ```
 
-See [examples/inventory-fanout-behind-hop.yml](../examples/inventory-fanout-behind-hop.yml).
+See [examples/inventory-fanout-behind-hop.yml](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-fanout-behind-hop.yml).
 
 ### Multi-hop Chain
 
@@ -95,7 +95,7 @@ See [examples/inventory-fanout-behind-hop.yml](../examples/inventory-fanout-behi
 Controller ◄── Hop1 ◄── Hop2 ◄── EN
 ```
 
-See [examples/inventory-multi-hop-chain.yml](../examples/inventory-multi-hop-chain.yml).
+See [examples/inventory-multi-hop-chain.yml](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-multi-hop-chain.yml).
 
 ### ProxyJump / Bastion
 
@@ -112,7 +112,7 @@ ansible-playbook playbooks/add_node.yml \
   -e aap_setup_dir=/path/to/setup
 ```
 
-See [examples/inventory-proxyjump.yml](../examples/inventory-proxyjump.yml).
+See [examples/inventory-proxyjump.yml](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-proxyjump.yml).
 
 **Note:** SSH routes via jumpbox; receptor mesh (27199) is direct between EN and controller.
 

@@ -265,7 +265,7 @@ all:
 
 **Tested:** 2026-08-12 with macOS control host, RHEL9 jumpbox.
 
-**See also:** [examples/inventory-proxyjump.yml](../examples/inventory-proxyjump.yml)
+**See also:** [examples/inventory-proxyjump.yml](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-proxyjump.yml)
 
 ### Option 2: Offline Bundle (Recommended)
 
@@ -357,5 +357,5 @@ firewall-cmd --list-ports | grep 27199
 ## Related Documentation
 
 - [TOPOLOGY.md](TOPOLOGY.md) — Topology patterns and firewall requirements
-- [REQ-005](../.sdlc/specs/REQ-005-offline-bundle.md) — Requirement specification
-- [REQ-006](../.sdlc/specs/REQ-006-hybrid-cloud-topology.md) — Hybrid cloud topology
+- [REQ-005](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/.sdlc/specs/REQ-005-offline-bundle.md) — Requirement specification
+- [REQ-006](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/.sdlc/specs/REQ-006-hybrid-cloud-topology.md) — Hybrid cloud topology

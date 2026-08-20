@@ -1,7 +1,7 @@
 # Mesh Topology Guide
 
 **Quick start:** [QUICKSTART.md](QUICKSTART.md) — decision tree to pick your topology.
-**Ready-to-use inventories:** [examples/README.md](../examples/README.md) — copy and adapt.
+**Ready-to-use inventories:** [examples/README.md](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/README.md) — copy and adapt.
 
 ## Overview
 
@@ -466,7 +466,7 @@ all:
 - Control host is outside the network (VPN not available)
 - Defense-in-depth: no direct SSH from workstations to servers
 
-**See also:** [examples/inventory-proxyjump.yml](../examples/inventory-proxyjump.yml)
+**See also:** [examples/inventory-proxyjump.yml](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-proxyjump.yml)
 
 ---
 
