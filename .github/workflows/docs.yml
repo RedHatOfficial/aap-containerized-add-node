@@ -5,14 +5,14 @@ on: # yamllint disable-line rule:truthy
   push:
     branches: [main, devel]
     paths:
-      - "docs_site/**"
+      - "docs/**"
       - "mkdocs.yml"
       - "docs-requirements.txt"
       - ".github/workflows/docs.yml"
   pull_request:
     branches: [main, devel]
     paths:
-      - "docs_site/**"
+      - "docs/**"
       - "mkdocs.yml"
       - "docs-requirements.txt"
       - ".github/workflows/docs.yml"
@@ -53,7 +53,9 @@ jobs:
           path: site/
 
   deploy:
-    if: github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/devel')
+    if: >-
+      github.repository_visibility == 'public' &&
+      (github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/devel'))
     needs: build
     runs-on: ubuntu-24.04
     environment:
