@@ -2,12 +2,13 @@
 
 ## Status
 
-Future
+Ready (PR #63 merged 2026-08-25)
 
 ## Timeline
 
-- **Target Start**: TBD
-- **Target Complete**: TBD
+- **Started**: 2026-08-25
+- **PR Merged**: 2026-08-25
+- **Target Public**: 2026-08-25 (pending final approval)
 
 ---
 
@@ -119,23 +120,38 @@ These require public repo (free tier doesn't support on private):
 
 ## Prerequisites
 
-- PHASE-001 complete ✓
-- PHASE-002 complete (or deferred)
-- Legal/product approval for public release
-- Support Exception template approved
+- [x] PHASE-001 complete ✓
+- [x] PHASE-002 complete ✓
+- [x] Legal/product approval for public release ✓ (2026-08-25)
+- [x] Support Exception template approved ✓
 
-## Success Criteria
+## Success Criteria (Pre-Public)
 
-- [ ] Repository publicly accessible
-- [ ] Support model clearly documented in SUPPORT.md
-- [ ] README includes SE banner at top
-- [ ] SE request process documented (TAM/account team contact)
-- [ ] Installation docs updated (GitHub Release download + install)
-- [ ] GitHub Release tested (tag triggers tarball build)
-- [ ] Contribution process documented for external contributors
-- [ ] Branch protection enabled on main and devel
-- [ ] CodeQL code scanning enabled
-- [ ] Dependabot alerts enabled
+- [x] Support model clearly documented in SUPPORT.md
+- [x] README includes SE banner at top
+- [x] SE request process documented (TAM/account team contact)
+- [x] Installation docs updated (GitHub Release download + install)
+- [x] GitHub Release workflow tested (v1.0.0-rc1 validated)
+- [x] Contribution process documented for external contributors
+- [x] Branch protection docs prepared (.github/BRANCH_PROTECTION.md)
+- [x] CodeQL workflow configured (.github/workflows/codeql.yml)
+- [x] Dependency Review workflow configured
+- [x] Documentation Pages workflow configured (mkdocs → GitHub Pages)
+- [x] Dependabot alerts enabled
+- [x] Gitleaks security scan passed
+- [x] DCO sign-off verified
+- [x] PR #63 merged to devel
+
+## Success Criteria (Post-Public)
+
+- [ ] Repository visibility changed to public
+- [ ] Branch protection rules enabled (main + devel)
+- [ ] GitHub Pages enabled (Settings → Pages → Source: GitHub Actions)
+- [ ] Secret scanning enabled
+- [ ] Push protection enabled
+- [ ] v1.0.0 release tagged and published
+- [ ] Internal announcements sent (TAM/Support/PM teams)
+- [ ] AAPRFE-3069 updated with public repo link
 
 ## Notes
 

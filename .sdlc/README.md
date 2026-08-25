@@ -63,21 +63,23 @@ Skills ensure consistency. Do not bypass them by guessing implementation.
 
 ## Phases
 
-| Phase | Title | Status |
-|-------|-------|--------|
-| [PHASE-001](phases/PHASE-001-initial-collection.md) | Initial Collection | Complete |
-| [PHASE-002](phases/PHASE-002-offline-bundle.md) | Offline Bundle | Planned |
-| [PHASE-003](phases/PHASE-003-upstream-migration.md) | Upstream Migration | Future |
+| Phase | Title | Status | Completed |
+|-------|-------|--------|-----------|
+| [PHASE-001](phases/PHASE-001-initial-collection.md) | Initial Collection | ✅ Complete | 2026-08-10 |
+| [PHASE-002](phases/PHASE-002-offline-bundle.md) | Offline Bundle | ✅ Complete | 2026-08-12 |
+| [PHASE-003](phases/PHASE-003-public-release.md) | Public Release | 🚀 Ready | 2026-08-25 (PR merged) |
 
 ## Requirements
 
 | REQ | Title | Status | Phase |
 |-----|-------|--------|-------|
-| [REQ-001](specs/REQ-001-additive-node-join.md) | Additive Node Join | Implemented | PHASE-001 |
-| [REQ-002](specs/REQ-002-hop-and-execution-nodes.md) | Hop and Execution Node Support | Implemented | PHASE-001 |
-| [REQ-003](specs/REQ-003-bidirectional-peering.md) | Bidirectional Peering | Implemented | PHASE-001 |
-| [REQ-004](specs/REQ-004-platform-compatibility.md) | Platform Compatibility | Implemented | PHASE-001 |
-| [REQ-005](specs/REQ-005-offline-bundle.md) | Offline Join Bundle | Open | PHASE-002 |
+| [REQ-001](specs/REQ-001-additive-node-join.md) | Additive Node Join | ✅ Implemented | PHASE-001 |
+| [REQ-002](specs/REQ-002-hop-and-execution-nodes.md) | Hop and Execution Node Support | ✅ Implemented | PHASE-001 |
+| [REQ-003](specs/REQ-003-bidirectional-peering.md) | Bidirectional Peering | ✅ Implemented | PHASE-001 |
+| [REQ-004](specs/REQ-004-platform-compatibility.md) | Platform Compatibility | ✅ Implemented | PHASE-001 |
+| [REQ-005](specs/REQ-005-offline-bundle.md) | Offline Join Bundle | ✅ Implemented | PHASE-002 |
+| [REQ-006](specs/REQ-006-hybrid-cloud-topology.md) | Hybrid Cloud Topology | ✅ Implemented | PHASE-002 |
+| [REQ-007](specs/REQ-007-byo-tls-certificates.md) | BYO TLS Certificates | 📋 Planned | Future |
 
 ## ADRs (Architecture Decisions)
 
