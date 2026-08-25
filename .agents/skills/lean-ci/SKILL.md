@@ -7,7 +7,7 @@ argument-hint: "[workflow-name]"
 user-invocable: true
 metadata:
   author: AAP Add Node Team
-  version: 1.2.0
+  version: 1.4.0
 ---
 
 # Lean CI
@@ -32,7 +32,7 @@ Distribution is **manual** (customer handoff of the collection tarball). Do
 
 ## Workflow Structure
 
-CI has two workflows in `.github/workflows/`:
+CI workflows in `.github/workflows/` that this skill covers:
 
 ### ci.yml
 
@@ -49,11 +49,31 @@ Required status checks (see `.github/BRANCH_PROTECTION.md`): `changelog`, `lint`
 
 ### release.yml
 
-Runs on tags matching `v*`:
+Fallback. Runs on tags matching `v*` (manual `git tag` / `git push --tags`):
 
 - Builds collection with `ansible-galaxy collection build`
 - Creates a **GitHub Release** and attaches the `.tar.gz` for manual customer distribution
+- Uses GitHub `generate_release_notes` (commit history), not antsibull
 - Does **not** publish to Ansible Galaxy or Automation Hub
+
+### release_collection.yml
+
+One pipeline, two triggers, shared jobs:
+
+| Trigger | Version |
+| --- | --- |
+| `workflow_dispatch` | Optional `collection_version`; empty means auto from fragments |
+| `schedule` (`0 0 1,15 * *`) | Always auto from fragments; skip when there are none |
+
+`.github/scripts/calculate_release_version.py` bumps the latest `v*` tag from fragment sections (`major_changes`/`breaking_changes` → major, `minor_changes` → minor, otherwise patch).
+
+Then the same jobs:
+
+- Generate changelog (`antsibull-changelog release`), commit `release/X.Y.Z`
+- Create tag `vX.Y.Z` and a GitHub Release whose body is the antsibull section
+- Attach the collection tarball
+- Open a squash PR into `devel`
+- Do **not** publish to Ansible Galaxy or Automation Hub
 
 ## Changelog fragments
 
@@ -92,6 +112,9 @@ ansible-lint
 # Changelog (against devel; requires fetch of origin/devel)
 python3 .github/scripts/validate_changelog.py --ref devel
 
+# Next release version (optional --version X.Y.Z to override auto-calc)
+python3 .github/scripts/calculate_release_version.py
+
 # Syntax check (install collection first)
 ansible-galaxy collection install -r requirements.yml
 ansible-galaxy collection install . --force
@@ -110,6 +133,7 @@ ansible-galaxy collection build
 3. **Syntax failure**: Check YAML formatting, variable references, FQCNs
 4. **Build failure**: Check `galaxy.yml` and `build_ignore`
 5. **Action failure**: Check action version compatibility
+6. **Release collection**: Run `python3 .github/scripts/calculate_release_version.py` locally; check fragment section keys and the latest `v*` tag. Confirm `GH_WORKFLOW_KEY` or Actions can create `v*` tags.
 
 ## Adding New Checks
 

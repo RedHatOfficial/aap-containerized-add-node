@@ -151,6 +151,7 @@ aap_add_node_receptor_image: >-
 
 Release notes are generated into [CHANGELOG.rst](CHANGELOG.rst) via antsibull-changelog.
 [CHANGELOG.md](CHANGELOG.md) only points at that file — do not maintain duplicate release notes there.
+Merged fragments are what the **1st and 15th** automated release consumes; without them, that run skips.
 
 Example fragment (`changelogs/fragments/my-change.yml`):
 
@@ -192,12 +193,25 @@ Test against a real AAP environment:
 
 ## Release Process
 
-1. Changes merge to `devel`
-2. When ready for release, `devel` merges to `main`
-3. Run `antsibull-changelog release` (updates `CHANGELOG.rst` / `changelogs/changelog.yaml`) and bump `galaxy.yml` version
-4. Tag created on `main` (e.g., `v1.0.0`)
-5. `release.yml` builds the collection and attaches the `.tar.gz` to a GitHub Release
+Releases are **automatic on the 1st and 15th of every month** (00:00 UTC) when
+changelog fragments have been merged since the last release. If nothing changed,
+the scheduled run exits without publishing.
+
+**Manual releases between those dates are optional** when a fix or feature
+should ship sooner. Use Actions → **Release collection**; leave
+**collection_version** empty to auto-calculate from fragments, or enter
+`MAJOR.MINOR.PATCH` to pin the version.
+
+Mechanics:
+
+1. Changes merge to `devel` with antsibull fragments under `changelogs/fragments/`
+2. **Release collection** (`.github/workflows/release_collection.yml`) is the shared pipeline for both the schedule and manual dispatch
+3. That workflow generates `CHANGELOG.rst`, pushes `release/X.Y.Z`, creates tag `vX.Y.Z`, attaches the collection tarball, and uses the antsibull notes as the GitHub Release body
+4. It opens a PR into `devel` so the changelog and `galaxy.yml` bump land on the default branch (devel is protected, so the PR may wait for review)
+5. Fallback: tag `main` (e.g. `v1.0.1`) and let `release.yml` build the tarball (GitHub commit notes, not antsibull)
 6. Distribute that tarball to customers manually (not published to Ansible Galaxy or Automation Hub)
+
+If tag creation fails, allow **GitHub Actions** to create `v*` tags (do not use a PAT for the tag — a PAT would also fire `release.yml` and duplicate the GitHub Release). Optional repo secret `GH_WORKFLOW_KEY` is only for pushing `release/*` and opening the devel PR when `GITHUB_TOKEN` cannot. See `.github/BRANCH_PROTECTION.md`.
 
 ## Questions?
 

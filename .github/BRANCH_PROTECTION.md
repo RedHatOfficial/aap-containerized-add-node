@@ -58,6 +58,7 @@ Settings → Tags → Add rule:
 
 - Pattern: `v*`
 - Restrict who can create: Maintainers only
+- Allow **GitHub Actions** to create matching tags so `release_collection.yml` can publish `vX.Y.Z` with `GITHUB_TOKEN` (avoids a second run of `release.yml`). Optional `GH_WORKFLOW_KEY` is for `release/*` branch push and the devel PR only.
 
 ---
 
