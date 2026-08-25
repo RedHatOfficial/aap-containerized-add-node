@@ -144,11 +144,11 @@ These require public repo (free tier doesn't support on private):
 
 ## Success Criteria (Post-Public)
 
-- [ ] Repository visibility changed to public
-- [ ] Branch protection rules enabled (main + devel)
-- [ ] GitHub Pages enabled (Settings → Pages → Source: GitHub Actions)
-- [ ] Secret scanning enabled
-- [ ] Push protection enabled
+- [x] Repository visibility changed to public (2026-08-25)
+- [x] Branch protection rules enabled (devel; main doesn't exist)
+- [x] GitHub Pages enabled (workflow build_type)
+- [x] Secret scanning enabled
+- [x] Push protection enabled
 - [ ] v1.0.0 release tagged and published
 - [ ] Internal announcements sent (TAM/Support/PM teams)
 - [ ] AAPRFE-3069 updated with public repo link
