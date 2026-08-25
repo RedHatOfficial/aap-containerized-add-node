@@ -1,4 +1,0 @@
----
-minor_changes:
-  - Consolidate intermediate ``set_fact`` usage into task/block ``vars`` and
-    single publish facts where later plays need hostvars.

@@ -1,6 +1,0 @@
----
-bugfixes:
-  - >-
-    Use explicit delegate ``connection`` for controller and remote targets so
-    ``add_node.yml`` works when the control host is a gateway, external laptop,
-    or any cluster node (not only an automationcontroller host).

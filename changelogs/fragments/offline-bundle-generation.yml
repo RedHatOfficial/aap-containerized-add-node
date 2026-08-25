@@ -1,5 +1,0 @@
----
-major_changes:
-  - Add offline bundle generation for air-gapped environments via ``playbooks/generate_bundle.yml``.
-  - Bundle includes pre-minted TLS certificates, receptor configuration, and optionally container images.
-  - Self-contained install playbook runs locally on target node without SSH from control host.

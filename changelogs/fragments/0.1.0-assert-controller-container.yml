@@ -1,5 +1,0 @@
----
-minor_changes:
-  - Add ``assert_controller_container`` preflight so ``list_instances`` and
-    ``register_instance`` fail with a clear message when SSH to the controller
-    fails or the controller task container is missing or stopped.
