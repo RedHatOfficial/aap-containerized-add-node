@@ -9,6 +9,8 @@
 [![CI](https://github.com/RedHatOfficial/aap-containerized-add-node/actions/workflows/ci.yml/badge.svg)](https://github.com/RedHatOfficial/aap-containerized-add-node/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://redhatofficial.github.io/aap-containerized-add-node/)
 
+> **Support Notice:** This collection is not part of the official Ansible Automation Platform product. For supported usage, customers must have an approved **Red Hat Support Exception**. Contact your TAM or account team to request an SE. Without an SE, this collection is provided as-is without Red Hat Support coverage. See [SUPPORT.md](SUPPORT.md) for details.
+
 Add **Execution Nodes** and **Hop Nodes** to existing **containerized AAP 2.6+** clusters without re-running the full installer.
 
 **Collection:** `redhat_official.aap_containerized_add_node`
