@@ -2,7 +2,7 @@
 # One release pipeline, two triggers (shared jobs):
 # - workflow_dispatch: optional collection_version (empty = auto from fragments)
 # - schedule (00:00 UTC on the 1st and 15th): always auto from fragments; skip if none
-# Tag-push fallback remains .github/workflows/release.yml (unchanged).
+# Tag-push fallback archived at .github/archived/release.yml
 name: Release collection
 
 concurrency:

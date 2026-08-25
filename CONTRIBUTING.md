@@ -208,10 +208,10 @@ Mechanics:
 2. **Release collection** (`.github/workflows/release_collection.yml`) is the shared pipeline for both the schedule and manual dispatch
 3. That workflow generates `CHANGELOG.rst`, pushes `release/X.Y.Z`, creates tag `vX.Y.Z`, attaches the collection tarball, and uses the antsibull notes as the GitHub Release body
 4. It opens a PR into `devel` so the changelog and `galaxy.yml` bump land on the default branch (devel is protected, so the PR may wait for review)
-5. Fallback: tag `main` (e.g. `v1.0.1`) and let `release.yml` build the tarball (GitHub commit notes, not antsibull)
+5. Fallback: the old tag-push workflow is archived at `.github/archived/release.yml` (copy to `.github/workflows/release.yml` to restore)
 6. Distribute that tarball to customers manually (not published to Ansible Galaxy or Automation Hub)
 
-If tag creation fails, allow **GitHub Actions** to create `v*` tags (do not use a PAT for the tag — a PAT would also fire `release.yml` and duplicate the GitHub Release). Optional repo secret `GH_WORKFLOW_KEY` is only for pushing `release/*` and opening the devel PR when `GITHUB_TOKEN` cannot. See `.github/BRANCH_PROTECTION.md`.
+If tag creation fails, allow **GitHub Actions** to create `v*` tags. Optional repo secret `GH_WORKFLOW_KEY` is only for pushing `release/*` and opening the devel PR when `GITHUB_TOKEN` cannot. See `.github/BRANCH_PROTECTION.md`.
 
 ## Questions?
 

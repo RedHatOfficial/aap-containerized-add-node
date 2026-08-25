@@ -47,14 +47,13 @@ Runs on push/PR to `main` and `devel`:
 
 Required status checks (see `.github/BRANCH_PROTECTION.md`): `changelog`, `lint`, `syntax-check`, `build`.
 
-### release.yml
+### release.yml (archived)
 
-Fallback. Runs on tags matching `v*` (manual `git tag` / `git push --tags`):
+Former tag-push fallback, stored at `.github/archived/release.yml` so GitHub Actions does not load it. Copy it back to `.github/workflows/release.yml` to restore.
 
-- Builds collection with `ansible-galaxy collection build`
-- Creates a **GitHub Release** and attaches the `.tar.gz` for manual customer distribution
-- Uses GitHub `generate_release_notes` (commit history), not antsibull
-- Does **not** publish to Ansible Galaxy or Automation Hub
+- Built the collection tarball on `v*` tags and attached it to a GitHub Release
+- Used GitHub `generate_release_notes` (commit history), not antsibull
+- Did **not** publish to Ansible Galaxy or Automation Hub
 
 ### release_collection.yml
 
