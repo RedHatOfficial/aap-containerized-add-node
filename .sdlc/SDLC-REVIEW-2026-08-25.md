@@ -12,7 +12,7 @@
 |-------|--------|-----------------|-------|
 | PHASE-001: Initial Collection | ✅ Complete | 2026-08-10 | All core requirements implemented |
 | PHASE-002: Offline Bundle | ✅ Complete | 2026-08-12 | Air-gapped support delivered |
-| PHASE-003: Public Release | 🚀 Ready | 2026-08-25 | PR #63 merged, ready to make public |
+| PHASE-003: Public Release | ✅ Complete | 2026-08-25 | Repository public, protections enabled |
 
 ## Requirements Coverage
 
@@ -120,12 +120,12 @@
 - [x] Workflows configured (CodeQL, dependency-review, docs)
 - [x] PR #63 merged to devel
 
-### Post-Public Tasks (Pending)
+### Post-Public Tasks
 
-- [ ] Make repository public
-- [ ] Enable branch protection (main + devel)
-- [ ] Enable GitHub Pages
-- [ ] Enable secret scanning
+- [x] Make repository public (2026-08-25)
+- [x] Enable branch protection (devel)
+- [x] Enable GitHub Pages (workflow build_type)
+- [x] Enable secret scanning + push protection
 - [ ] Tag v1.0.0 release
 - [ ] Internal announcements
 - [ ] Update AAPRFE-3069
