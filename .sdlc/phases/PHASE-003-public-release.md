@@ -149,8 +149,8 @@ These require public repo (free tier doesn't support on private):
 - [x] GitHub Pages enabled (workflow build_type)
 - [x] Secret scanning enabled
 - [x] Push protection enabled
-- [ ] v1.0.0 release tagged and published
-- [ ] Internal announcements sent (TAM/Support/PM teams)
+- [x] v1.0.0 release tagged and published (2026-08-25)
+- [x] Internal announcements sent (TAM/Support/PM teams)
 - [ ] AAPRFE-3069 updated with public repo link
 
 ## Notes
