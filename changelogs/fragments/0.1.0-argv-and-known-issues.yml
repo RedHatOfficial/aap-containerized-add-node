@@ -1,8 +1,0 @@
----
-security_fixes:
-  - Use ``argv`` lists for ``podman exec awx-manage`` in ``register_instance`` so
-    hostname and peer values cannot be split into extra command arguments.
-minor_changes:
-  - Add CI ``ansible-playbook --syntax-check`` for ``playbooks/add_node.yml``.
-known_issues:
-  - No automated integration tests against a live AAP cluster (syntax-check only in CI).

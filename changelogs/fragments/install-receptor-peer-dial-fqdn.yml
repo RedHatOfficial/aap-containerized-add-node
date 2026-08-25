@@ -1,5 +1,0 @@
----
-bugfixes:
-  - >-
-    install_receptor_node - Seed peer dial facts with installer receptor
-    hostname resolution (routable_hostname | default(ansible_host)).
