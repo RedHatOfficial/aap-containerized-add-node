@@ -1,3 +1,7 @@
 ---
 ancestor: null
-releases: {}
+releases:
+  1.0.0:
+    changes:
+      release_summary: Initial public release of redhat_official.aap_containerized_add_node.
+    release_date: "2026-08-25"

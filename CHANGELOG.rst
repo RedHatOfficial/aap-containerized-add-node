@@ -1,15 +1,13 @@
-========================================================
-redhat_official.aap_containerized_add_node Release Notes
-========================================================
+============================================================
+redhat\_official.aap\_containerized\_add\_node Release Notes
+============================================================
 
 .. contents:: Topics
 
-
-v1.0.0-devel
-============
+v1.0.0
+======
 
 Release Summary
 ---------------
 
-Development toward the first public release. See ``changelogs/fragments/`` for
-unreleased changes.
+Initial public release of redhat_official.aap_containerized_add_node.
