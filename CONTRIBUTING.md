@@ -53,26 +53,27 @@ This project follows the [Red Hat Community Code of Conduct](https://www.redhat.
 
 ### Developer Certificate of Origin (DCO)
 
-All commits must include a `Signed-off-by` line certifying you have the right to submit the code:
+All commits must include a `Signed-off-by` line certifying you have the right to submit the code.
+
+A `prepare-commit-msg` hook adds it automatically (same as `git commit -s`),
+including when Cursor commits with `--no-verify`. After pulling this change:
 
 ```bash
-git commit -s -m "Add feature X"
+pre-commit install --hook-type pre-commit --hook-type prepare-commit-msg
 ```
 
-This adds: `Signed-off-by: Your Name <your.email@example.com>`
+To always sign off as a specific identity in this clone:
+
+```bash
+git config --local dco.signoff "Your Name <you@example.com>"
+```
 
 The DCO is a lightweight alternative to CLAs. By signing off, you certify:
 - You wrote the code, OR
 - You have the right to submit it under the project's license
 
-CI will reject commits without sign-off. A local `commit-msg` hook (via
-[pre-commit](https://pre-commit.com/)) fails the commit if the trailer is
-missing. After pulling this change, reinstall hooks so `commit-msg` is
-registered:
-
-```bash
-pre-commit install --hook-type pre-commit --hook-type commit-msg
-```
+CI still rejects commits without sign-off (for example from clones that have
+not installed the hook).
 
 ### Pull Request Process
 
