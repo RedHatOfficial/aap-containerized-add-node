@@ -65,7 +65,14 @@ The DCO is a lightweight alternative to CLAs. By signing off, you certify:
 - You wrote the code, OR
 - You have the right to submit it under the project's license
 
-CI will reject commits without sign-off.
+CI will reject commits without sign-off. A local `commit-msg` hook (via
+[pre-commit](https://pre-commit.com/)) fails the commit if the trailer is
+missing. After pulling this change, reinstall hooks so `commit-msg` is
+registered:
+
+```bash
+pre-commit install --hook-type pre-commit --hook-type commit-msg
+```
 
 ### Pull Request Process
 
