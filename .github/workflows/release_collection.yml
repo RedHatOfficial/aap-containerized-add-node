@@ -1,0 +1,177 @@
+---
+# One release pipeline, two triggers (shared jobs):
+# - workflow_dispatch: optional collection_version (empty = auto from fragments)
+# - schedule (00:00 UTC on the 1st and 15th): always auto from fragments; skip if none
+# Tag-push fallback remains .github/workflows/release.yml (unchanged).
+name: Release collection
+
+concurrency:
+  group: release-collection
+  cancel-in-progress: false
+
+on: # yamllint disable-line rule:truthy
+  schedule:
+    - cron: "0 0 1,15 * *"
+  workflow_dispatch:
+    inputs:
+      collection_version:
+        description: >-
+          Optional semver MAJOR.MINOR.PATCH (e.g. 1.2.3 or v1.2.3).
+          Leave empty to auto-calculate from changelog fragments.
+          Ignored on the 1st/15th schedule (always auto).
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  FORCE_COLOR: "1"
+
+jobs:
+  calculate_version:
+    name: Calculate collection version
+    runs-on: ubuntu-24.04
+    outputs:
+      collection_version: ${{ steps.version.outputs.collection_version }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
+      change_level: ${{ steps.version.outputs.change_level }}
+      change_present: ${{ steps.version.outputs.change_present }}
+      version_source: ${{ steps.version.outputs.version_source }}
+      current_version: ${{ steps.version.outputs.current_version }}
+      fragment_count: ${{ steps.version.outputs.fragment_count }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Calculate version
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.collection_version || '' }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/calculate_release_version.py
+
+  changelog:
+    name: Generate changelog
+    needs: calculate_version
+    if: ${{ needs.calculate_version.outputs.change_present == 'true' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_WORKFLOW_KEY || github.token }}
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install --upgrade "ansible-core>=2.16" antsibull-changelog pyyaml
+
+      - name: Commit changelog to release branch
+        env:
+          VERSION: ${{ needs.calculate_version.outputs.collection_version }}
+        run: bash .github/scripts/commit_release_changelog.sh "${VERSION}"
+
+  github_release:
+    name: Create GitHub Release
+    needs:
+      - calculate_version
+      - changelog
+    if: ${{ !cancelled() && needs.changelog.result == 'success' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: release/${{ needs.calculate_version.outputs.collection_version }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install ansible-core
+
+      - name: Extract changelog notes
+        env:
+          VERSION: ${{ needs.calculate_version.outputs.collection_version }}
+        run: python3 .github/scripts/extract_changelog_notes.py --version "${VERSION}" --output release-notes.md
+
+      - name: Build collection
+        run: ansible-galaxy collection build --force
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228  # v3.0.2
+        with:
+          tag_name: ${{ needs.calculate_version.outputs.tag_name }}
+          target_commitish: release/${{ needs.calculate_version.outputs.collection_version }}
+          name: ${{ needs.calculate_version.outputs.tag_name }}
+          body_path: release-notes.md
+          files: "*.tar.gz"
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  merge_release:
+    name: Open changelog PR
+    needs:
+      - calculate_version
+      - github_release
+    if: ${{ !cancelled() && needs.github_release.result == 'success' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: release/${{ needs.calculate_version.outputs.collection_version }}
+
+      - name: Create or update release PR
+        env:
+          VERSION: ${{ needs.calculate_version.outputs.collection_version }}
+          GH_TOKEN: ${{ secrets.GH_WORKFLOW_KEY || github.token }}
+        run: bash .github/scripts/open_release_pr.sh "${VERSION}"
+
+  report:
+    name: Report version
+    needs:
+      - calculate_version
+      - changelog
+      - github_release
+    if: ${{ always() && needs.calculate_version.result == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Report calculated version
+        env:
+          VERSION: ${{ needs.calculate_version.outputs.collection_version }}
+          TAG: ${{ needs.calculate_version.outputs.tag_name }}
+          LEVEL: ${{ needs.calculate_version.outputs.change_level }}
+          PRESENT: ${{ needs.calculate_version.outputs.change_present }}
+          SOURCE: ${{ needs.calculate_version.outputs.version_source }}
+          CURRENT: ${{ needs.calculate_version.outputs.current_version }}
+          FRAGMENTS: ${{ needs.calculate_version.outputs.fragment_count }}
+          EVENT: ${{ github.event_name }}
+          CHANGELOG_RESULT: ${{ needs.changelog.result }}
+          RELEASE_RESULT: ${{ needs.github_release.result }}
+        run: echo "version=${VERSION} tag=${TAG} level=${LEVEL} source=${SOURCE} present=${PRESENT} event=${EVENT} changelog=${CHANGELOG_RESULT} release=${RELEASE_RESULT}"
