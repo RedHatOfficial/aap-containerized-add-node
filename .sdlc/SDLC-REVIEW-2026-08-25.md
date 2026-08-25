@@ -126,8 +126,8 @@
 - [x] Enable branch protection (devel)
 - [x] Enable GitHub Pages (workflow build_type)
 - [x] Enable secret scanning + push protection
-- [ ] Tag v1.0.0 release
-- [ ] Internal announcements
+- [x] Tag v1.0.0 release (2026-08-25 09:45 UTC)
+- [x] Internal announcements
 - [ ] Update AAPRFE-3069
 
 ## Gaps & Future Work
