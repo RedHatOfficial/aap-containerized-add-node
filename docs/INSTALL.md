@@ -234,13 +234,26 @@ ls -d ~/aap/ansible-automation-platform-containerized-setup-*
 
 ### 3. Install the Collection
 
-On the controller (where you'll run the playbook):
+On the control host (where you'll run the playbook):
 
 ```bash
-cd ~/aap
+# Option 1: Direct from GitHub Release URL
+ansible-galaxy collection install \
+  https://github.com/RedHatOfficial/aap-containerized-add-node/releases/download/v1.0.0/redhat_official-aap_containerized_add_node-1.0.0.tar.gz
 
-# Install the collection from tarball
-ansible-galaxy collection install /path/to/aap_add_node-1.0.0.tar.gz -p ./collections
+# Option 2: Download then install locally
+curl -LO https://github.com/RedHatOfficial/aap-containerized-add-node/releases/download/v1.0.0/redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+ansible-galaxy collection install redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+```
+
+Replace `v1.0.0` with the latest version from [Releases](https://github.com/RedHatOfficial/aap-containerized-add-node/releases).
+
+Verify installation:
+
+```bash
+ansible-galaxy collection list | grep aap_containerized_add_node
+# Expected output:
+# redhat_official.aap_containerized_add_node  1.0.0
 ```
 
 ---

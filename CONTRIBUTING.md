@@ -25,6 +25,10 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 This project follows the [Red Hat Community Code of Conduct](https://www.redhat.com/en/about/digital-accessibility). Please be respectful and inclusive in all interactions.
 
+## Support Exception Requirement
+
+**This collection is not part of the official AAP product.** For supported usage, customers must have an approved Red Hat Support Exception. See [SUPPORT.md](SUPPORT.md) for details on requesting an SE.
+
 ## How to Contribute
 
 ### Reporting Issues

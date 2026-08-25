@@ -1,5 +1,25 @@
 # Quickstart: Add Execution Nodes to AAP 2.x
 
+## Installation
+
+Install the collection from GitHub Release:
+
+```bash
+# Option 1: Direct from GitHub Release URL
+ansible-galaxy collection install \
+  https://github.com/RedHatOfficial/aap-containerized-add-node/releases/download/v1.0.0/redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+
+# Option 2: Download then install
+curl -LO https://github.com/RedHatOfficial/aap-containerized-add-node/releases/download/v1.0.0/redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+ansible-galaxy collection install redhat_official-aap_containerized_add_node-1.0.0.tar.gz
+```
+
+Replace `v1.0.0` with the latest release from [Releases](https://github.com/RedHatOfficial/aap-containerized-add-node/releases).
+
+---
+
+## Usage
+
 Two installation methods available. Pick based on your network access:
 
 | Method | Use When | Control Host Needs |
@@ -96,6 +116,25 @@ Controller ◄── Hop1 ◄── Hop2 ◄── EN
 ```
 
 See [examples/inventory-multi-hop-chain.yml](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-multi-hop-chain.yml).
+
+### ProxyJump / Bastion
+
+Control host cannot SSH directly — routes through jumpbox:
+
+```
+Control Host ──SSH──► Jumpbox ──SSH──► Controller
+                            ──SSH──► Execution Node
+```
+
+```bash
+ansible-playbook playbooks/add_node.yml \
+  -i examples/inventory-proxyjump.yml \
+  -e aap_setup_dir=/path/to/setup
+```
+
+See [examples/inventory-proxyjump.yml](https://github.com/RedHatOfficial/aap-containerized-add-node/blob/devel/examples/inventory-proxyjump.yml).
+
+**Note:** SSH routes via jumpbox; receptor mesh (27199) is direct between EN and controller.
 
 ### ProxyJump / Bastion
 
