@@ -1,4 +1,8 @@
 ---
+default_install_hook_types:
+  - pre-commit
+  - prepare-commit-msg
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -10,6 +14,16 @@ repos:
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: dco-add-signoff
+        name: Add DCO Signed-off-by
+        language: system
+        entry: python3 .github/scripts/add_dco_signoff.py
+        stages: [prepare-commit-msg]
+        always_run: true
+        pass_filenames: true
 
   - repo: https://github.com/ansible/ansible-lint
     rev: v25.6.1

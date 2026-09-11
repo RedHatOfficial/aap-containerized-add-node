@@ -1,4 +1,7 @@
 ---
+# Archived 2026-08-25. Not loaded by GitHub Actions (must live under
+# .github/workflows/ to run). Primary path is release_collection.yml.
+# To restore: copy this file to .github/workflows/release.yml
 name: Release
 
 on: # yamllint disable-line rule:truthy

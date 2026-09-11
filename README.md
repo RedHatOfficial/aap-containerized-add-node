@@ -105,6 +105,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines. All commits require DCO s
 
 See [CHANGELOG.rst](CHANGELOG.rst) for release history.
 
+Releases are **automatic on the 1st and 15th of every month** when changelog fragments have landed since the last release. Maintainers can also run a **manual release in between** those dates when a fix or feature should not wait for the next scheduled run. Details: [CONTRIBUTING.md](CONTRIBUTING.md#release-process).
+
 ## License
 
 GPL-3.0 — see [LICENSE](LICENSE).
