@@ -67,7 +67,7 @@ exec1.example.com receptor_peers='["controller.example.com"]' ansible_user=aapus
 - [ ] AAP 2.6+ containerized deployment running
 - [ ] `automation-controller-task` container running
 - [ ] SSH access from installer host (key-based)
-- [ ] Extracted installer bundle (e.g., `ansible-automation-platform-containerized-setup-2.7-3`)
+- [ ] Extracted installer bundle (e.g., `ansible-automation-platform-containerized-setup-<AAP_VERSION>`)
 
 ### Execution Nodes
 - [ ] RHEL 9.x or RHEL 10.x

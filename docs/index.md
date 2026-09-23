@@ -12,7 +12,7 @@ Two installation methods:
     # Install collection (from clone or extracted source tree)
     ansible-galaxy collection install -r requirements.yml
     ansible-galaxy collection install --force --no-deps .
-    export ANSIBLE_COLLECTIONS_PATH=./aap-setup-2.7-1/collections:${ANSIBLE_COLLECTIONS_PATH}
+    export ANSIBLE_COLLECTIONS_PATH=./aap-setup-<AAP_VERSION>/collections:${ANSIBLE_COLLECTIONS_PATH}
 
     # Run preflight checks
     ansible-playbook -i inventory.yml \
@@ -122,5 +122,6 @@ Mesh Topologies:
 | Component | Version |
 |-----------|---------|
 | AAP Controller | 2.6-8 |
+| Containerized setup | 2.7-4 (single execution node) |
 | Execution Nodes | RHEL 9.x, RHEL 10.0 |
 | Topology | Direct, Multi-hop, Offline |
