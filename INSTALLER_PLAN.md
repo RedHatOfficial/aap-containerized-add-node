@@ -281,6 +281,7 @@ en-01.example.com ansible_host=10.0.0.5 receptor_type=execution \
 | `controller_target` | `controller_host` | `automationcontroller[0]` |
 | `controller_container` | `controller_container` | `automation-controller-task` |
 | `listener_port` | *(inventory `receptor_port`)* | `27199` |
+| `clock_skew_seconds` | `clock_skew_seconds` | `60` |
 
 ### Runtime facts (synthetic control host)
 

@@ -20,6 +20,7 @@ adding execution or hop nodes. Enabled by default; opt out with
 | `aap_add_node_preflight_timeout` | `30` | TCP probe timeout (seconds) |
 | `aap_add_node_inventory_group` | `execution_nodes` | Candidate EN/HN inventory group |
 | `aap_add_node_listener_port` | `27199` | Receptor port for connectivity checks |
+| `aap_add_node_clock_skew_seconds` | `60` | Maximum controller/node clock skew before preflight fails |
 | `aap_add_node_bundle_install` | `false` | Skip registry credential checks when true |
 
 See `meta/argument_specs.yml`.

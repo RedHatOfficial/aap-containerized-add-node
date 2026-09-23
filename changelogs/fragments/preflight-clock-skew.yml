@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - Add preflight validation for controller and execution-node clock skew to catch time-sensitive receptor signature failures before node registration.

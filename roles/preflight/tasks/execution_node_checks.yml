@@ -73,6 +73,46 @@
       Add to /etc/hosts: echo "CONTROLLER_IP {{ _controller_host }}" | sudo tee -a /etc/hosts
   when: _en_dns is defined
 
+# P9: Controller/node clock skew. Receptor signatures are time-sensitive.
+- name: "Get current epoch from controller for {{ _target_host }}"
+  ansible.builtin.command:
+    cmd: "date +%s"
+  delegate_to: "{{ _controller_host }}"
+  connection: "{{ hostvars[_controller_host].ansible_connection | default('ssh') }}"
+  become: false
+  register: _controller_epoch
+  changed_when: false
+
+- name: "Get current epoch from {{ _target_host }}"
+  ansible.builtin.command:
+    cmd: "date +%s"
+  delegate_to: "{{ _target_host }}"
+  connection: "{{ hostvars[_target_host].ansible_connection | default('ssh') }}"
+  become: false
+  register: _execution_node_epoch
+  changed_when: false
+
+- name: "Calculate clock skew between {{ _controller_host }} and {{ _target_host }}"
+  ansible.builtin.set_fact:
+    _clock_skew_seconds: >-
+      {{ ((_controller_epoch.stdout | trim | int) -
+          (_execution_node_epoch.stdout | trim | int)) | abs }}
+
+- name: "Assert clock skew is within tolerance for {{ _target_host }}"
+  ansible.builtin.assert:
+    that:
+      - (_clock_skew_seconds | int) <= (aap_add_node_clock_skew_seconds | int)
+    fail_msg: >-
+      Clock skew between controller '{{ _controller_host }}' and node
+      '{{ _target_host }}' is {{ _clock_skew_seconds }} seconds, exceeding
+      the {{ aap_add_node_clock_skew_seconds }}-second limit. Synchronize
+      clocks with chrony/NTP before adding the node; receptor signatures may
+      be rejected as expired or not-yet-valid.
+    success_msg: >-
+      Clock skew between '{{ _controller_host }}' and '{{ _target_host }}' is
+      {{ _clock_skew_seconds }} seconds (limit:
+      {{ aap_add_node_clock_skew_seconds }} seconds).
+
 # P10: Machine-ID uniqueness check (cloned VMs often have duplicate machine-id)
 - name: "Get machine-id from {{ _target_host }}"
   ansible.builtin.slurp:

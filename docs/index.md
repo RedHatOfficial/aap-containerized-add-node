@@ -88,6 +88,7 @@ The `preflight.yml` playbook validates:
 | SSH to execution nodes | Network/auth issues (online only) |
 | Network EN→Controller:27199 | Firewall blocks |
 | DNS resolution | Name resolution failures |
+| Controller/node clock skew | Receptor signature expiry or validity failures |
 | Machine-ID uniqueness | Cloned VM issues |
 | Inventory format | `receptor_peers` must be list |
 | AIO local-only detection | Warns about disruption |
