@@ -21,6 +21,10 @@ argument_specs:
         description: Receptor listener port used for connectivity checks.
         type: int
         default: 27199
+      aap_add_node_clock_skew_seconds:
+        description: Maximum allowed absolute clock skew between controller and target node.
+        type: int
+        default: 60
       aap_add_node_bundle_install:
         description: >-
           When true, skip online registry credential checks (offline/bundle mode).

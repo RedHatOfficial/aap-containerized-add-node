@@ -31,6 +31,7 @@ Variables specific to this collection use `aap_add_node_` prefix to avoid confli
 | `aap_add_node_controller_container` | `automation-controller-task` | Controller container name |
 | `aap_add_node_awx_manage_retries` | `5` | Retry count for awx-manage commands |
 | `aap_add_node_instance_groups` | `[]` | Custom instance groups to add node to |
+| `aap_add_node_clock_skew_seconds` | `60` | Maximum controller/node clock skew before preflight fails |
 
 Instance **capacity** and **policy** settings (`capacity_adjustment`, `enabled`,
 `managed_by_policy`) are **not** applied by this collection. The containerized installer
