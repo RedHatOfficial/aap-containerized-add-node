@@ -5,7 +5,7 @@
 ### Controller Requirements
 - AAP 2.6+ containerized deployment running
 - SSH access to controller host
-- AAP installer bundle extracted (e.g., `ansible-automation-platform-containerized-setup-2.7-1`)
+- AAP installer bundle extracted (e.g., `ansible-automation-platform-containerized-setup-<AAP_VERSION>`)
 
 ### Execution Node Requirements (Minimal OS Install)
 
@@ -51,7 +51,7 @@ ansible_user=aapuser
 ```bash
 ansible-playbook -i inventory.yml \
   playbooks/add_node.yml \
-  -e aap_setup_dir=/path/to/ansible-automation-platform-containerized-setup-2.7-1 \
+  -e aap_setup_dir=/path/to/ansible-automation-platform-containerized-setup-<AAP_VERSION> \
   -e aap_add_node_hostname=exec1.example.com \
   -e aap_add_node_type=execution \
   -e aap_add_node_peers='["controller.example.com"]' \

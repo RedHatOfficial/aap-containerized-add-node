@@ -65,6 +65,7 @@ This collection enables adding execution nodes (and hop nodes) to containerized 
 
 **Tested Configurations:**
 - AAP 2.7.1 (Controller 4.8.3)
+- Containerized setup 2.7-4 (single execution node)
 - RHEL 9.x and RHEL 10.0 execution nodes
 - Direct topology (Execution Node → Controller)
 - Multiple nodes in single playbook run
@@ -99,7 +100,7 @@ For inbound dial (controller initiates to EN), see the Topology Guide in the col
 | Requirement | Details |
 |-------------|---------|
 | AAP Version | 2.6+ containerized deployment |
-| Installer Bundle | Extracted setup directory (e.g., `ansible-automation-platform-containerized-setup-2.7-1`) |
+| Installer Bundle | Extracted setup directory (e.g., `ansible-automation-platform-containerized-setup-<AAP_VERSION>`) |
 | SSH Access | From installer host to controller |
 | Container Running | `automation-controller-task` container must be running |
 
@@ -229,7 +230,7 @@ podman ps | grep automation-controller-task
 ls -d ~/aap/ansible-automation-platform-containerized-setup-*
 
 # Example output:
-# /home/aapuser/aap/ansible-automation-platform-containerized-setup-2.7-1
+# /home/aapuser/aap/ansible-automation-platform-containerized-setup-<AAP_VERSION>
 ```
 
 ### 3. Install the Collection
@@ -318,7 +319,7 @@ ansible-galaxy collection install -r requirements.yml
 ansible-galaxy collection install --force --no-deps .
 
 # Installer collections for image/role parity (adjust setup path)
-export ANSIBLE_COLLECTIONS_PATH=./ansible-automation-platform-containerized-setup-2.7-1/collections:${ANSIBLE_COLLECTIONS_PATH}
+export ANSIBLE_COLLECTIONS_PATH=./ansible-automation-platform-containerized-setup-<AAP_VERSION>/collections:${ANSIBLE_COLLECTIONS_PATH}
 ```
 
 Run `playbooks/*.yml` from the collection source tree (this repository root after clone or extract).
@@ -330,7 +331,7 @@ Run preflight validation before the actual install to catch issues early:
 ```bash
 ansible-playbook -i add_nodes.ini \
   playbooks/preflight.yml \
-  -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-2.7-1
+  -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-<AAP_VERSION>
 ```
 
 This validates:
@@ -349,13 +350,13 @@ This validates:
 # Dry run first (check mode)
 ansible-playbook -i add_nodes.ini \
   playbooks/add_node.yml \
-  -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-2.7-1 \
+  -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-<AAP_VERSION> \
   --check --diff
 
 # Add all nodes (registration is serialized automatically)
 ansible-playbook -i add_nodes.ini \
   playbooks/add_node.yml \
-  -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-2.7-1
+  -e aap_setup_dir=/home/aapuser/aap/ansible-automation-platform-containerized-setup-<AAP_VERSION>
 ```
 
 **Required Variables:**
