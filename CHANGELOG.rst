@@ -1,15 +1,13 @@
-========================================================
-redhat_official.aap_containerized_add_node Release Notes
-========================================================
+============================================================
+redhat\_official.aap\_containerized\_add\_node Release Notes
+============================================================
 
 .. contents:: Topics
 
+v1.1.0
+======
 
-v1.0.0-devel
-============
+Bugfixes
+--------
 
-Release Summary
----------------
-
-Development toward the first public release. See ``changelogs/fragments/`` for
-unreleased changes.
+- Add preflight validation for controller and execution-node clock skew to catch time-sensitive receptor signature failures before node registration.
