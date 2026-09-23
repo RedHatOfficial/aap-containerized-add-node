@@ -1,3 +1,11 @@
 ---
 ancestor: null
-releases: {}
+releases:
+  1.1.0:
+    changes:
+      bugfixes:
+        - Add preflight validation for controller and execution-node clock skew to
+          catch time-sensitive receptor signature failures before node registration.
+    fragments:
+      - preflight-clock-skew.yml
+    release_date: '2026-09-23'

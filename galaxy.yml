@@ -1,7 +1,7 @@
 ---
 namespace: redhat_official
 name: aap_containerized_add_node
-version: 1.0.0
+version: 1.1.0
 readme: README.md
 authors:
   - Phil Griffiths @pgriffit
