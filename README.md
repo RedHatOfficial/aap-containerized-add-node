@@ -39,6 +39,7 @@ Full documentation is available at **[redhatofficial.github.io/aap-containerized
 |-------|-------------|
 | [Getting Started](docs/GETTING_STARTED.md) | Step-by-step wizard for first-time users |
 | [Quick Start](docs/QUICKSTART.md) | Get started in 5 minutes |
+| [Add Node Overview](docs/ADD_NODE_OVERVIEW.md) | End-to-end flow, phases, scope, and runtime effects |
 | [Architecture](docs/ARCHITECTURE.md) | How the collection works |
 | [Topology](docs/TOPOLOGY.md) | Network topology patterns and examples |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and solutions |
